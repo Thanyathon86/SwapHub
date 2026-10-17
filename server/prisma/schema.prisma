@@ -1,0 +1,11 @@
+// Prisma 7: connection URL อยู่ใน prisma.config.ts
+// ยังไม่มี model ไว้ออกแบบใน step ถัดไป
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
