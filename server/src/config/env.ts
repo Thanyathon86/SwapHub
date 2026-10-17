@@ -9,6 +9,16 @@ const envSchema = z.object({
   CLIENT_ORIGIN: z.url(),
   // จำนวน proxy ที่อยู่หน้าแอป (0 = ต่อตรง) ไม่ใช้ true เพราะจะเชื่อ X-Forwarded-For ที่ client ปลอมมาได้
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  // อายุ session นับจากใช้งานล่าสุด (ต่ออายุอัตโนมัติ)
+  SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
+  // เพดานอายุนับจาก login ต่ออายุเกินนี้ไม่ได้ ต้อง login ใหม่ กัน session ที่อยู่ได้ตลอดไปถ้าโดนขโมย
+  SESSION_ABSOLUTE_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  // ใช้เฉพาะตอน seed admin คนแรก แอปปกติไม่ต้องมี
+  ADMIN_EMAIL: z.email().optional(),
+  ADMIN_PASSWORD: z.string().min(12).optional(),
+}).refine((e) => e.SESSION_ABSOLUTE_DAYS >= e.SESSION_TTL_DAYS, {
+  path: ['SESSION_ABSOLUTE_DAYS'],
+  message: 'Must be greater than or equal to SESSION_TTL_DAYS',
 })
 
 const parsed = envSchema.safeParse(process.env)

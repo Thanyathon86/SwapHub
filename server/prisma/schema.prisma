@@ -1,5 +1,4 @@
 // Prisma 7: connection URL อยู่ใน prisma.config.ts
-// ยังไม่มี model ไว้ออกแบบใน step ถัดไป
 
 generator client {
   provider = "prisma-client"
@@ -8,4 +7,44 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  // เก็บเป็นตัวพิมพ์เล็กเสมอ (normalize ใน service) เพื่อไม่ให้สมัครซ้ำด้วยตัวพิมพ์ต่างกัน
+  email        String     @unique
+  passwordHash String
+  displayName  String
+  role         Role       @default(USER)
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  // เก็บแค่ sha256 ของ token ถ้า DB หลุดก็เอาไปใช้เป็น cookie ไม่ได้
+  tokenHash String   @unique
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }

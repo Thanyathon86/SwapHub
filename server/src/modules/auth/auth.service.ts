@@ -1,0 +1,44 @@
+import { Prisma, type User } from '../../generated/prisma/client.js'
+import { AppError } from '../../lib/errors.js'
+import { burnPasswordCheck, hashPassword, verifyPassword } from '../../lib/password.js'
+import { prisma } from '../../lib/prisma.js'
+import type { LoginInput, RegisterInput } from './auth.schema.js'
+
+// เลือกเฉพาะฟิลด์ที่ส่งให้ client ได้ ห้ามส่ง passwordHash ออกไป
+export const toPublicUser = (user: Pick<User, 'id' | 'email' | 'displayName' | 'role'>) => ({
+  id: user.id,
+  email: user.email,
+  displayName: user.displayName,
+  role: user.role,
+})
+
+export const register = async (input: RegisterInput) => {
+  const passwordHash = await hashPassword(input.password)
+  try {
+    // role ใช้ค่า default (USER) เสมอ admin สร้างได้ผ่าน seed เท่านั้น
+    return await prisma.user.create({
+      data: { email: input.email, passwordHash, displayName: input.displayName },
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw new AppError(409, 'EMAIL_TAKEN', 'Email is already registered')
+    }
+    throw err
+  }
+}
+
+const invalidCredentials = () => new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password')
+
+export const login = async (input: LoginInput) => {
+  const user = await prisma.user.findUnique({ where: { email: input.email } })
+  if (!user) {
+    await burnPasswordCheck(input.password)
+    throw invalidCredentials()
+  }
+  if (!(await verifyPassword(user.passwordHash, input.password))) throw invalidCredentials()
+
+  // บอกว่าโดนระงับได้เพราะผ่านรหัสผ่านแล้ว จึงไม่ได้เปิดช่องให้เดาอีเมล
+  if (user.status !== 'ACTIVE') throw new AppError(403, 'ACCOUNT_SUSPENDED', 'Account is suspended')
+
+  return prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+}
