@@ -37,6 +37,8 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import('./layouts/AdminLayout')).AdminLayout }),
             children: [
               { index: true, lazy: async () => ({ Component: (await import('./pages/admin/DashboardPage')).default }) },
+              { path: 'users', lazy: async () => ({ Component: (await import('./pages/admin/UsersPage')).default }) },
+              { path: 'catalog', lazy: async () => ({ Component: (await import('./pages/admin/CatalogPage')).default }) },
             ],
           },
         ],

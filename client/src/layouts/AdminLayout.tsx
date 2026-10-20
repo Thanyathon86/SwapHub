@@ -5,8 +5,8 @@ import { useAuth } from '../features/auth/useAuth'
 const menu: { label: string; to?: string }[] = [
   { label: 'Dashboard', to: '/admin' },
   { label: 'ประกาศรออนุมัติ' },
-  { label: 'ผู้ใช้' },
-  { label: 'หมวดหมู่' },
+  { label: 'ผู้ใช้', to: '/admin/users' },
+  { label: 'เกมและเกรด', to: '/admin/catalog' },
   { label: 'เรื่องที่แจ้ง' },
 ]
 

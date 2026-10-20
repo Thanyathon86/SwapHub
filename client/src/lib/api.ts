@@ -54,6 +54,12 @@ const messages: Record<string, string> = {
   VALIDATION_ERROR: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง',
   UNAUTHENTICATED: 'กรุณาเข้าสู่ระบบ',
   FORBIDDEN: 'คุณไม่มีสิทธิ์เข้าถึงส่วนนี้',
+  ALREADY_EXISTS: 'ชื่อหรือ slug นี้มีอยู่แล้ว',
+  GAME_NOT_FOUND: 'ไม่พบเกมนี้ อาจถูกแก้ไขไปแล้ว ลองรีเฟรชหน้า',
+  GRADING_COMPANY_NOT_FOUND: 'ไม่พบบริษัทเกรดนี้ อาจถูกแก้ไขไปแล้ว ลองรีเฟรชหน้า',
+  USER_NOT_FOUND: 'ไม่พบผู้ใช้นี้',
+  CANNOT_MODIFY_SELF: 'เปลี่ยนสถานะบัญชีของตัวเองไม่ได้',
+  CANNOT_MODIFY_ADMIN: 'เปลี่ยนสถานะของ admin คนอื่นไม่ได้',
 }
 
 export const errorMessage = (err: unknown) =>

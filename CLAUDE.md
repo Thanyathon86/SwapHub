@@ -60,6 +60,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 | `server/` | `npm run db:migrate` | สร้าง migration และอัปเดตตารางตาม `schema.prisma` |
 | `server/` | `npm run db:generate` | สร้าง Prisma Client ใหม่ (ไปที่ `src/generated/prisma`, ไม่ commit) |
 | `server/` | `npm run db:studio` | เปิดดูข้อมูลใน DB |
+| `server/` | `npm run db:seed` | ลงเกม/บริษัทเกรดเริ่มต้น และสร้าง admin ถ้าตั้ง `ADMIN_EMAIL`/`ADMIN_PASSWORD` ไว้ (รันซ้ำได้) |
 | `client/` | `npm run dev` | รันหน้าเว็บที่ :5173 |
 | `client/` | `npm run build` | `tsc -b` + `vite build` |
 | `client/` | `npm run lint` | oxlint |
@@ -86,7 +87,7 @@ client/
 
 ```
 server/src/
-  modules/<feature>/        auth, users, listings, offers, categories, support, admin
+  modules/<feature>/        auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, admin
     <feature>.routes.ts     เส้นทาง + middleware ที่ใช้
     <feature>.service.ts    logic + เรียก Prisma
     <feature>.schema.ts     zod schema ของ request
