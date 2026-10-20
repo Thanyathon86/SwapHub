@@ -4,24 +4,40 @@
 
 ## โปรเจกต์นี้คืออะไร
 
-Web app ซื้อขายและแลกเปลี่ยนสินค้าออนไลน์ (marketplace)
+Web app ซื้อขายและแลกเปลี่ยน**การ์ดเกม** (TCG marketplace)
 
-- **ยังไม่ได้ตัดสินใจว่าจะเป็นสินค้า mass หรือ niche** ให้ออกแบบให้หมวดหมู่สินค้ายืดหยุ่น (เก็บหมวดหมู่เป็นตารางใน DB ไม่ hardcode เป็น enum) และอย่าใส่ฟิลด์เฉพาะสินค้าประเภทใดประเภทหนึ่งจนกว่าจะตัดสินใจ
+- รองรับหลายเกม (Pokémon, Yu-Gi-Oh!, MTG, One Piece ฯลฯ) เก็บเป็นตาราง `Game` ให้ admin เพิ่มเอง ห้าม hardcode ชื่อเกมเป็น enum
+- ขายได้ 3 แบบ (`itemKind`): การ์ดใบเดี่ยว `SINGLE`, การ์ดเกรด `GRADED` (PSA/BGS/CGC ฯลฯ), สินค้าซีล `SEALED` (booster, box, deck)
+- ผู้ขายกรอกข้อมูลการ์ดเอง ยังไม่มีฐานข้อมูลการ์ดกลาง (catalog)
 - มีผู้ใช้ 2 บทบาท:
   - **user**: ลงประกาศขายหรือแลกของ, ส่งคำขอซื้อหรือขอแลกไปที่ประกาศของคนอื่น, ตอบรับหรือปฏิเสธคำขอที่เข้ามา
   - **admin**: ดูข้อมูลหลังบ้าน (dashboard), อนุมัติหรือปฏิเสธประกาศ, จัดการผู้ใช้, ช่วยเหลือและตอบเรื่องที่ user แจ้งมา
 
-### แนวคิดข้อมูลหลัก (ร่าง ยังไม่ได้สร้างใน schema)
+### ข้อมูลหลัก
 
 | Entity | หน้าที่ |
 |---|---|
 | `User` | มี `role`: `USER` / `ADMIN` |
-| `Category` | หมวดหมู่สินค้า admin เพิ่ม/แก้ได้ |
-| `Listing` | ประกาศ มี `type`: `SALE` / `TRADE` / `BOTH` และ `status`: `PENDING_REVIEW` → `ACTIVE` / `REJECTED` → `CLOSED` |
-| `Offer` | คำขอซื้อหรือขอแลกต่อประกาศ มี `status`: `PENDING` / `ACCEPTED` / `DECLINED` / `CANCELLED` |
-| `SupportTicket` | เรื่องที่ user แจ้ง admin |
+| `Game` | เกมการ์ด admin เพิ่ม/แก้ได้ |
+| `GradingCompany` | บริษัทเกรด admin เพิ่มได้ |
+| `Listing` | ประกาศ มี `type`: `SALE` / `TRADE` / `BOTH`, `itemKind`: `SINGLE` / `GRADED` / `SEALED` และ `status`: `PENDING_REVIEW` → `ACTIVE` / `REJECTED` → `CLOSED` |
+| `Offer` | คำขอซื้อหรือขอแลกต่อประกาศ (ใส่เงินเพิ่มได้) มี `status`: `PENDING` / `ACCEPTED` / `DECLINED` / `CANCELLED` |
+| `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
+| `SupportTicket` | เรื่องที่ user แจ้ง admin (ยังไม่ได้สร้าง) |
 
-ก่อนสร้างจริงต้องวางแผนและให้ผู้ใช้ยืนยันก่อน (ดู Workflow)
+ฟิลด์ใน `Listing` ใช้ตาม `itemKind` (DB เป็น nullable, บังคับด้วย zod ใน service):
+
+| ฟิลด์ | SINGLE | GRADED | SEALED |
+|---|---|---|---|
+| `title`, `setName`, `language` | ✓ | ✓ | ✓ |
+| `cardNumber?`, `rarity?` | ✓ | ✓ | – |
+| `condition` (NM/LP/MP/HP/DMG) | ✓ | – | – |
+| `gradingCompanyId`, `grade`, `certNumber` | – | ✓ | – |
+| `quantity` | ≥ 1 | 1 เสมอ | ≥ 1 |
+
+กฎของ offer ที่ตรวจใน service: ของที่เอามาแลกต้องเป็นประกาศของผู้ขอเอง, `ACTIVE`, และประกาศปลายทางต้องเป็น `TRADE`/`BOTH`
+
+ยังไม่ทำ: อัปโหลดรูป (ต้องเลือกที่เก็บไฟล์ก่อน), `SupportTicket`
 
 ## Stack
 
@@ -56,7 +72,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 ```
 server/
-  prisma/schema.prisma      ยังไม่มี model
+  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem
   prisma.config.ts          ตั้งค่า Prisma 7 (URL อ่านจาก env)
   src/index.ts              เปิด server + graceful shutdown
   src/app.ts                Express app, middleware (helmet, cors, rate limit), /api/health
@@ -105,5 +121,3 @@ client/src/
 5. **รัน build/test/lint**: อย่างน้อย `server: npm run typecheck`, `client: npm run build` และ `npm run lint` ถ้ามี test ให้รันด้วย ถ้าแก้ schema ให้รัน `db:migrate` ถ้าไม่ผ่านให้แก้หรือรายงานผลตามจริง
 6. **สรุป diff**: บอกว่าแก้ไฟล์อะไร เปลี่ยนอะไร เพราะอะไร และสิ่งที่ยังไม่ได้ทำหรือยังไม่ได้ทดสอบ
 7. **ช่วย commit**: เสนอ commit message (ภาษาอังกฤษ, รูปแบบ `type: summary` เช่น `feat: add listing model`) แล้ว**ถามก่อน commit** ห้าม push ถ้าไม่ได้สั่ง เช็กว่าไม่มี `.env` หรือ `src/generated` ติดไปด้วย
-
-> ตอนนี้โฟลเดอร์ยังไม่ได้เป็น git repo ถ้าจะ commit ครั้งแรกต้อง `git init` ก่อน (ถามผู้ใช้ก่อน)

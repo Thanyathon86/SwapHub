@@ -31,7 +31,10 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  sessions Session[]
+  sessions         Session[]
+  listings         Listing[] @relation("ListingSeller")
+  reviewedListings Listing[] @relation("ListingReviewer")
+  offers           Offer[]
 }
 
 model Session {
@@ -47,4 +50,142 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+enum ListingType {
+  SALE
+  TRADE
+  BOTH
+}
+
+enum ItemKind {
+  SINGLE
+  GRADED
+  SEALED
+}
+
+enum ListingStatus {
+  PENDING_REVIEW
+  ACTIVE
+  REJECTED
+  CLOSED
+}
+
+// มาตรฐานสภาพการ์ดที่ใช้เหมือนกันทุกเกม เลยใช้ enum ได้
+enum CardCondition {
+  NM
+  LP
+  MP
+  HP
+  DMG
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+// เป็นตารางไม่ใช่ enum เพื่อให้ admin เพิ่มเกมใหม่ได้โดยไม่ต้อง migrate
+model Game {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings Listing[]
+}
+
+model GradingCompany {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings Listing[]
+}
+
+// ฟิลด์เฉพาะแต่ละ itemKind เป็น nullable ส่วนเงื่อนไขว่าแบบไหนต้องมีอะไรบังคับด้วย zod ใน service
+model Listing {
+  id       String        @id @default(uuid()) @db.Uuid
+  sellerId String        @db.Uuid
+  seller   User          @relation("ListingSeller", fields: [sellerId], references: [id])
+  gameId   String        @db.Uuid
+  game     Game          @relation(fields: [gameId], references: [id])
+  type     ListingType
+  itemKind ItemKind
+  status   ListingStatus @default(PENDING_REVIEW)
+
+  title      String
+  setName    String
+  language   String
+  cardNumber String?
+  rarity     String?
+
+  condition CardCondition?
+
+  gradingCompanyId String?         @db.Uuid
+  gradingCompany   GradingCompany? @relation(fields: [gradingCompanyId], references: [id])
+  // Decimal เพราะ BGS/CGC มีเกรดครึ่ง เช่น 9.5
+  grade            Decimal?        @db.Decimal(3, 1)
+  certNumber       String?
+
+  quantity    Int      @default(1)
+  // null ได้เมื่อเป็น TRADE อย่างเดียว
+  price       Decimal? @db.Decimal(12, 2)
+  description String?
+
+  rejectReason String?
+  reviewedById String?   @db.Uuid
+  reviewedBy   User?     @relation("ListingReviewer", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  offers    Offer[]
+  offeredIn OfferItem[]
+
+  @@index([status, gameId])
+  @@index([sellerId])
+  // ให้ admin ค้นเลขเซอร์ซ้ำตอนตรวจประกาศได้เร็ว (ไม่ทำ unique เพราะการ์ดใบเดิมลงขายใหม่ได้หลังปิดประกาศ)
+  @@index([gradingCompanyId, certNumber])
+}
+
+model Offer {
+  id          String      @id @default(uuid()) @db.Uuid
+  listingId   String      @db.Uuid
+  listing     Listing     @relation(fields: [listingId], references: [id])
+  buyerId     String      @db.Uuid
+  buyer       User        @relation(fields: [buyerId], references: [id])
+  // จำนวนที่ขอจากประกาศปลายทาง
+  quantity    Int         @default(1)
+  cashAmount  Decimal?    @db.Decimal(12, 2)
+  message     String?
+  status      OfferStatus @default(PENDING)
+  respondedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items OfferItem[]
+
+  @@index([listingId, status])
+  @@index([buyerId])
+}
+
+model OfferItem {
+  id        String  @id @default(uuid()) @db.Uuid
+  offerId   String  @db.Uuid
+  offer     Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  // ประกาศของผู้ขอที่เอามาแลก
+  listingId String  @db.Uuid
+  listing   Listing @relation(fields: [listingId], references: [id])
+  quantity  Int     @default(1)
+
+  @@unique([offerId, listingId])
+  @@index([listingId])
 }
