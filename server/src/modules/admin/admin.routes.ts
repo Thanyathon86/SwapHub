@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { requireAuth } from '../../middleware/requireAuth.js'
 import { requireRole } from '../../middleware/requireRole.js'
 import { catalogAdminRouter } from '../catalog/catalog.routes.js'
+import { listingsAdminRouter } from '../listings/listings.routes.js'
 import { usersAdminRouter } from '../users/users.routes.js'
 import * as adminService from './admin.service.js'
 
@@ -16,3 +17,4 @@ adminRouter.get('/stats', async (_req, res) => {
 
 adminRouter.use(catalogAdminRouter)
 adminRouter.use('/users', usersAdminRouter)
+adminRouter.use('/listings', listingsAdminRouter)

@@ -40,3 +40,18 @@ export const updateGradingCompany = (id: string, input: UpdateGradingCompanyInpu
   prisma.gradingCompany
     .update({ where: { id }, data: input, include: withListingCount })
     .catch(mapWriteError('GRADING_COMPANY_NOT_FOUND'))
+
+// สำหรับ user เลือกตอนลงประกาศและกรองหน้าแรก ส่งเฉพาะที่เปิดใช้และไม่ต้องมีจำนวนประกาศ
+export const listActiveGames = () =>
+  prisma.game.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, slug: true },
+    orderBy: { name: 'asc' },
+  })
+
+export const listActiveGradingCompanies = () =>
+  prisma.gradingCompany.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  })

@@ -49,3 +49,14 @@ catalogAdminRouter.patch(
     res.json({ gradingCompany })
   },
 )
+
+// เปิดให้ทุกคนดู ไม่ต้อง login เพราะใช้กรองหน้าแรกด้วย
+export const catalogPublicRouter = Router()
+
+catalogPublicRouter.get('/games', async (_req, res) => {
+  res.json({ games: await catalogService.listActiveGames() })
+})
+
+catalogPublicRouter.get('/grading-companies', async (_req, res) => {
+  res.json({ gradingCompanies: await catalogService.listActiveGradingCompanies() })
+})
