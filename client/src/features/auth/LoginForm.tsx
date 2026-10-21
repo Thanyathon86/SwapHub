@@ -30,7 +30,7 @@ export function LoginForm() {
   const fields = fieldErrors(error)
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      {error !== null && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{errorMessage(error)}</p>}
+      {error !== null && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{errorMessage(error)}</p>}
       <FormField label="อีเมล" name="email" type="email" autoComplete="email" required errors={fields.email} />
       <FormField
         label="รหัสผ่าน"
@@ -43,7 +43,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-lg bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+        className="btn btn-primary w-full py-2.5"
       >
         {submitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
       </button>

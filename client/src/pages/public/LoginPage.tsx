@@ -15,7 +15,7 @@ export default function LoginPage() {
       footer={
         <>
           ยังไม่มีบัญชี?{' '}
-          <Link to="/register" className="text-indigo-600 hover:underline">
+          <Link to="/register" className="font-medium text-zinc-900 hover:underline">
             สมัครสมาชิก
           </Link>
         </>

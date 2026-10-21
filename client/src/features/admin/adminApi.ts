@@ -1,5 +1,15 @@
 import { api } from '../../lib/api'
 import type { Role } from '../auth/authApi'
+import type { Listing, ListingStatus } from '../listings/listingsApi'
+
+// admin เห็นอีเมลผู้ขายและผู้ที่ตรวจประกาศ ซึ่งหน้า public ไม่ได้รับ
+export type AdminListing = Listing & {
+  seller: Listing['seller'] & { email: string }
+  reviewedBy: { id: string; displayName: string } | null
+}
+export type AdminListingsQuery = { status: ListingStatus; page: number }
+export type AdminListingsPage = { listings: AdminListing[]; total: number; page: number; pageSize: number }
+export type ListingReview = { decision: 'APPROVE' } | { decision: 'REJECT'; reason: string }
 
 type CatalogItem = {
   id: string
@@ -64,4 +74,9 @@ export const adminApi = {
   listUsers: (query: UsersQuery) => api<UsersPage>(`/admin/users?${usersQueryString(query)}`),
   setUserStatus: (id: string, status: UserStatus) =>
     api<{ user: AdminUser }>(`/admin/users/${id}/status`, { method: 'PATCH', body: { status } }),
+
+  listListings: ({ status, page }: AdminListingsQuery) =>
+    api<AdminListingsPage>(`/admin/listings?${new URLSearchParams({ status, page: String(page) }).toString()}`),
+  reviewListing: (id: string, review: ListingReview) =>
+    api<{ listing: AdminListing }>(`/admin/listings/${id}/review`, { method: 'PATCH', body: review }),
 }

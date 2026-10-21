@@ -4,7 +4,7 @@ import { useAuth } from '../features/auth/useAuth'
 // เมนูที่ยังไม่มีหน้า ใส่ไว้ให้เห็นโครง เปิด to เมื่อสร้างหน้าแล้ว
 const menu: { label: string; to?: string }[] = [
   { label: 'Dashboard', to: '/admin' },
-  { label: 'ประกาศรออนุมัติ' },
+  { label: 'ประกาศ', to: '/admin/listings' },
   { label: 'ผู้ใช้', to: '/admin/users' },
   { label: 'เกมและเกรด', to: '/admin/catalog' },
   { label: 'เรื่องที่แจ้ง' },

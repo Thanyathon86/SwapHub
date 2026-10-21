@@ -4,9 +4,12 @@ import { RequireAuth } from './components/RequireAuth'
 import { UserLayout } from './layouts/UserLayout'
 import ErrorPage from './pages/public/ErrorPage'
 import HomePage from './pages/public/HomePage'
+import ListingDetailPage from './pages/public/ListingDetailPage'
 import LoginPage from './pages/public/LoginPage'
 import NotFoundPage from './pages/public/NotFoundPage'
 import RegisterPage from './pages/public/RegisterPage'
+import MyListingsPage from './pages/user/MyListingsPage'
+import NewListingPage from './pages/user/NewListingPage'
 import ProfilePage from './pages/user/ProfilePage'
 
 export const router = createBrowserRouter([
@@ -17,9 +20,14 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
+      { path: 'listings/:id', element: <ListingDetailPage /> },
       {
         element: <RequireAuth />,
-        children: [{ path: 'profile', element: <ProfilePage /> }],
+        children: [
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'sell', element: <NewListingPage /> },
+          { path: 'my-listings', element: <MyListingsPage /> },
+        ],
       },
       { path: '*', element: <NotFoundPage /> },
     ],
@@ -37,6 +45,10 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import('./layouts/AdminLayout')).AdminLayout }),
             children: [
               { index: true, lazy: async () => ({ Component: (await import('./pages/admin/DashboardPage')).default }) },
+              {
+                path: 'listings',
+                lazy: async () => ({ Component: (await import('./pages/admin/ListingReviewPage')).default }),
+              },
               { path: 'users', lazy: async () => ({ Component: (await import('./pages/admin/UsersPage')).default }) },
               { path: 'catalog', lazy: async () => ({ Component: (await import('./pages/admin/CatalogPage')).default }) },
             ],

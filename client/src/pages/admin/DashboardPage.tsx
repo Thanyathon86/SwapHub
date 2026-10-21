@@ -8,8 +8,8 @@ export default function DashboardPage() {
   const { data: stats, error } = useResource(adminApi.stats)
 
   const cards = stats && [
-    { label: 'ประกาศรออนุมัติ', value: stats.pendingListings },
-    { label: 'ประกาศที่เปิดอยู่', value: stats.activeListings },
+    { label: 'ประกาศรออนุมัติ', value: stats.pendingListings, to: '/admin/listings' },
+    { label: 'ประกาศที่เปิดอยู่', value: stats.activeListings, to: '/admin/listings?status=ACTIVE' },
     { label: 'ผู้ใช้ทั้งหมด', value: stats.users, to: '/admin/users' },
     { label: 'ผู้ใช้ที่ถูกระงับ', value: stats.suspendedUsers, to: '/admin/users?status=SUSPENDED' },
     { label: 'เกมที่เปิดใช้งาน', value: stats.activeGames, to: '/admin/catalog' },

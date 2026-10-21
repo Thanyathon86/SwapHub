@@ -2,7 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `text-sm ${isActive ? 'font-semibold text-indigo-600' : 'text-slate-600 hover:text-slate-900'}`
+  `hidden text-sm transition sm:inline ${isActive ? 'font-medium text-zinc-900' : 'text-zinc-500 hover:text-zinc-900'}`
 
 // ใช้ร่วมกันทั้งหน้า public และหน้าของ user เพราะ header เหมือนกัน ต่างกันแค่เมนูตามสถานะ login
 export function UserLayout() {
@@ -15,14 +15,15 @@ export function UserLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link to="/" className="text-lg font-bold text-slate-800">
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/80 backdrop-blur-lg">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+          <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
+            <span className="grid size-7 place-items-center rounded-lg bg-zinc-900 text-xs font-bold text-white">S</span>
             SwapHub
           </Link>
           {status === 'ready' && (
-            <nav className="flex items-center gap-4">
+            <nav className="flex items-center gap-5">
               {user ? (
                 <>
                   {user.role === 'ADMIN' && (
@@ -30,30 +31,43 @@ export function UserLayout() {
                       หลังบ้าน
                     </NavLink>
                   )}
-                  <NavLink to="/profile" className={navClass}>
-                    {user.displayName}
+                  <NavLink to="/my-listings" className={navClass}>
+                    ประกาศของฉัน
                   </NavLink>
-                  <button type="button" onClick={onLogout} className="text-sm text-slate-600 hover:text-slate-900">
+                  <button type="button" onClick={onLogout} className={navClass({ isActive: false })}>
                     ออกจากระบบ
                   </button>
+                  <Link to="/sell" className="btn btn-primary">
+                    ลงประกาศ
+                  </Link>
+                  <Link
+                    to="/profile"
+                    title={user.displayName}
+                    className="grid size-9 place-items-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 uppercase hover:bg-zinc-200"
+                  >
+                    {user.displayName.slice(0, 1)}
+                  </Link>
                 </>
               ) : (
                 <>
-                  <NavLink to="/login" className={navClass}>
+                  <Link to="/login" className="text-sm text-zinc-600 hover:text-zinc-900">
                     เข้าสู่ระบบ
-                  </NavLink>
-                  <NavLink to="/register" className={navClass}>
+                  </Link>
+                  <Link to="/register" className="btn btn-primary">
                     สมัครสมาชิก
-                  </NavLink>
+                  </Link>
                 </>
               )}
             </nav>
           )}
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
         <Outlet />
       </main>
+      <footer className="border-t border-zinc-100 py-8 text-center text-xs text-zinc-400">
+        SwapHub · ตลาดซื้อขายแลกเปลี่ยนการ์ดเกม
+      </footer>
     </div>
   )
 }

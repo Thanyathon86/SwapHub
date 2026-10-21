@@ -15,7 +15,7 @@ export default function RegisterPage() {
       footer={
         <>
           มีบัญชีแล้ว?{' '}
-          <Link to="/login" className="text-indigo-600 hover:underline">
+          <Link to="/login" className="font-medium text-zinc-900 hover:underline">
             เข้าสู่ระบบ
           </Link>
         </>

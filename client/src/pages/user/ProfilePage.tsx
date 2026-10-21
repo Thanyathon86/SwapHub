@@ -1,14 +1,19 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../../features/auth/useAuth'
 import { errorMessage } from '../../lib/api'
 
 export default function ProfilePage() {
-  const { user, logoutAll } = useAuth()
+  const { user, logout, logoutAll } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState<unknown>(null)
 
   if (!user) return null
+
+  const onLogout = async () => {
+    await logout().catch(() => undefined)
+    navigate('/', { replace: true })
+  }
 
   const onLogoutAll = async () => {
     if (!window.confirm('ออกจากระบบทุกอุปกรณ์ รวมถึงเครื่องนี้?')) return
@@ -21,24 +26,35 @@ export default function ProfilePage() {
   }
 
   return (
-    <section className="max-w-lg space-y-6">
-      <h1 className="text-2xl font-bold text-slate-800">โปรไฟล์</h1>
-      <dl className="grid grid-cols-[8rem_1fr] gap-y-2 rounded-xl bg-white p-6 text-sm shadow-sm ring-1 ring-slate-200">
-        <dt className="text-slate-500">ชื่อที่แสดง</dt>
-        <dd>{user.displayName}</dd>
-        <dt className="text-slate-500">อีเมล</dt>
-        <dd>{user.email}</dd>
-      </dl>
-      <div className="space-y-2">
-        <button
-          type="button"
-          onClick={onLogoutAll}
-          className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-        >
+    <section className="mx-auto max-w-lg space-y-8">
+      <div className="flex items-center gap-4">
+        <span className="grid size-14 place-items-center rounded-full bg-zinc-100 text-xl font-semibold text-zinc-700 uppercase">
+          {user.displayName.slice(0, 1)}
+        </span>
+        <div>
+          <h1 className="text-2xl font-semibold">{user.displayName}</h1>
+          <p className="text-sm text-zinc-500">{user.email}</p>
+        </div>
+      </div>
+      <div className="divide-y divide-zinc-100 rounded-3xl ring-1 ring-zinc-200">
+        <Link to="/my-listings" className="flex justify-between px-5 py-4 text-sm hover:bg-zinc-50">
+          ประกาศของฉัน <span className="text-zinc-400">→</span>
+        </Link>
+        {user.role === 'ADMIN' && (
+          <Link to="/admin" className="flex justify-between px-5 py-4 text-sm hover:bg-zinc-50">
+            หลังบ้าน <span className="text-zinc-400">→</span>
+          </Link>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" onClick={onLogout} className="btn btn-secondary">
+          ออกจากระบบ
+        </button>
+        <button type="button" onClick={onLogoutAll} className="btn btn-danger">
           ออกจากระบบทุกอุปกรณ์
         </button>
-        {error !== null && <p className="text-sm text-red-600">{errorMessage(error)}</p>}
       </div>
+      {error !== null && <p className="text-sm text-red-600">{errorMessage(error)}</p>}
     </section>
   )
 }

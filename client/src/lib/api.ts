@@ -60,6 +60,11 @@ const messages: Record<string, string> = {
   USER_NOT_FOUND: 'ไม่พบผู้ใช้นี้',
   CANNOT_MODIFY_SELF: 'เปลี่ยนสถานะบัญชีของตัวเองไม่ได้',
   CANNOT_MODIFY_ADMIN: 'เปลี่ยนสถานะของ admin คนอื่นไม่ได้',
+  LISTING_NOT_FOUND: 'ไม่พบประกาศนี้ อาจถูกปิดไปแล้ว',
+  LISTING_NOT_CLOSABLE: 'ประกาศนี้ถูกปิดหรือไม่ผ่านการตรวจไปแล้ว',
+  LISTING_ALREADY_REVIEWED: 'ประกาศนี้ถูกตรวจไปแล้ว ลองรีเฟรชหน้า',
+  INVALID_GAME: 'เกมนี้ถูกปิดหรือไม่มีอยู่ ลองเลือกเกมใหม่',
+  INVALID_GRADING_COMPANY: 'บริษัทเกรดนี้ถูกปิดหรือไม่มีอยู่ ลองเลือกใหม่',
 }
 
 export const errorMessage = (err: unknown) =>
