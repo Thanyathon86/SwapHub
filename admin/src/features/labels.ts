@@ -1,3 +1,4 @@
+import type { TicketStatus } from '@shared/support/types'
 import type { AuditAction, EventType } from './adminApi'
 
 type Badge = { text: string; className: string }
@@ -18,6 +19,13 @@ export const eventTypeLabels: Record<EventType, Badge> = {
   RATE_LIMITED: { text: 'ส่งคำขอถี่เกิน', className: 'bg-amber-100 text-amber-800' },
   ACCESS_DENIED: { text: 'ไม่มีสิทธิ์เข้าถึง', className: 'bg-red-100 text-red-700' },
   SERVER_ERROR: { text: 'ระบบผิดพลาด', className: 'bg-red-100 text-red-700' },
+}
+
+// คำจากมุมทีมงาน OPEN คืองานที่ต้องทำ จึงเด่นกว่าสถานะอื่น
+export const ticketStatusLabels: Record<TicketStatus, Badge> = {
+  OPEN: { text: 'รอตอบ', className: 'bg-amber-100 text-amber-800' },
+  ANSWERED: { text: 'ตอบแล้ว รอผู้ใช้', className: 'bg-indigo-100 text-indigo-700' },
+  CLOSED: { text: 'ปิดแล้ว', className: 'bg-slate-100 text-slate-500' },
 }
 
 export const formatDateTime = (iso: string) => new Date(iso).toLocaleString('th-TH')

@@ -10,6 +10,8 @@ import DashboardPage from './pages/DashboardPage'
 import EventsPage from './pages/EventsPage'
 import ListingReviewPage from './pages/ListingReviewPage'
 import LoginPage from './pages/LoginPage'
+import SupportPage from './pages/SupportPage'
+import TicketDetailPage from './pages/TicketDetailPage'
 import UsersPage from './pages/UsersPage'
 
 export const router = createBrowserRouter([
@@ -31,6 +33,8 @@ export const router = createBrowserRouter([
               { path: 'catalog', element: <CatalogPage /> },
               { path: 'audit', element: <AuditLogPage /> },
               { path: 'events', element: <EventsPage /> },
+              { path: 'support', element: <SupportPage /> },
+              { path: 'support/:id', element: <TicketDetailPage /> },
               { path: '*', element: <NotFoundPage /> },
             ],
           },

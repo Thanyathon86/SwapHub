@@ -25,7 +25,8 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
 | `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร (`AuditAction`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
 | `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
-| `SupportTicket` | เรื่องที่ user แจ้ง admin (ยังไม่ได้สร้าง) |
+| `SupportTicket` | เรื่องที่ user แจ้ง admin มี `status`: `OPEN` (รอทีมงาน) ⇄ `ANSWERED` (รอผู้ใช้) → `CLOSED` และ `assigneeId` (admin ที่รับเรื่อง) |
+| `SupportMessage` | ข้อความในเรื่อง `fromStaff` บันทึกตอนเขียน แก้/ลบไม่ได้ |
 
 ฟิลด์ใน `Listing` ใช้ตาม `itemKind` (DB เป็น nullable, บังคับด้วย zod ใน service):
 
@@ -39,7 +40,9 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 กฎของ offer ที่ตรวจใน service: ของที่เอามาแลกต้องเป็นประกาศของผู้ขอเอง, `ACTIVE`, และประกาศปลายทางต้องเป็น `TRADE`/`BOTH`
 
-ยังไม่ทำ: อัปโหลดรูป (ต้องเลือกที่เก็บไฟล์ก่อน), `SupportTicket`
+กฎของ support ที่ตรวจใน service: ผู้ใช้เห็นเฉพาะเรื่องของตัวเอง (ของคนอื่นตอบ 404), เปิดค้างได้ไม่เกิน 5 เรื่อง, เรื่องที่ปิดแล้วตอบต่อไม่ได้, API ฝั่งผู้ใช้ห้ามส่งชื่อหรือ id ของ admin ที่ตอบ (หน้าเว็บแสดงเป็น "ทีมงาน SwapHub")
+
+ยังไม่ทำ: อัปโหลดรูป (ต้องเลือกที่เก็บไฟล์ก่อน), แจ้งเตือน (อีเมล/ตัวเลขบนเมนู), แชทระหว่างผู้ซื้อกับผู้ขาย
 
 ## Stack
 
@@ -81,7 +84,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 ```
 server/
-  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, AuditLog, EventLog
+  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, AuditLog, EventLog, SupportTicket, SupportMessage
   prisma.config.ts          ตั้งค่า Prisma 7 (URL อ่านจาก env)
   src/
     index.ts, app.ts        เปิด server + graceful shutdown, Express app + middleware
@@ -90,7 +93,7 @@ server/
     lib/                    prisma, session, password, errors (AppError), events (logEvent)
     middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler
     scripts/seed.ts         เกม/บริษัทเกรดเริ่มต้น + admin
-    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), audit, events, admin (dashboard)
+    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, audit, events, admin (dashboard)
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
       <feature>.schema.ts   zod schema ของ request
@@ -98,10 +101,10 @@ client/src/                 เว็บ user
   router.tsx                react-router
   pages/                    public/, user/
   layouts/UserLayout.tsx
-  features/<feature>/       auth (RegisterForm), listings (ListingCard), offers
+  features/<feature>/       auth (RegisterForm), listings (ListingCard), offers, support
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
   router.tsx, layouts/AdminLayout.tsx, components/RequireAdmin.tsx
-  pages/                    Login, Dashboard, ListingReview, Users, Catalog, AuditLog, Events
+  pages/                    Login, Dashboard, ListingReview, Users, Catalog, Support, TicketDetail, AuditLog, Events
   features/                 adminApi, labels, CatalogSection, dashboard/ (ColumnChart, BarList วาดเองไม่ใช้ library)
   lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
@@ -109,6 +112,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
   auth/                     authApi, AuthProvider, useAuth, LoginForm
   components/               Spinner, Pagination, FormField, RequireAuth, ErrorPage, NotFoundPage
   listings/                 listingsApi (types), labels, ListingArt
+  support/                  types + label หมวด, MessageThread
   styles.css                theme + .btn/.input ฯลฯ ทั้งสองแอป import หลัง tailwindcss
 ```
 

@@ -64,7 +64,10 @@ export function UserLayout() {
         <Outlet />
       </main>
       <footer className="border-t border-zinc-100 py-8 text-center text-xs text-zinc-400">
-        SwapHub · ตลาดซื้อขายแลกเปลี่ยนการ์ดเกม
+        SwapHub · ตลาดซื้อขายแลกเปลี่ยนการ์ดเกม ·{' '}
+        <Link to="/support" className="hover:text-zinc-700 hover:underline">
+          ติดต่อทีมงาน
+        </Link>
       </footer>
     </div>
   )

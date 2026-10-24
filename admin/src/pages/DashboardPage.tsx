@@ -66,7 +66,7 @@ export default function DashboardPage() {
 
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-slate-500">ต้องจัดการ</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <Tile
             label="ประกาศรออนุมัติ"
             value={attention.pendingListings}
@@ -80,6 +80,7 @@ export default function DashboardPage() {
               )
             }
           />
+          <Tile label="เรื่องที่แจ้งรอตอบ" value={attention.openTickets} to="/support" />
           <Tile label="ข้อเสนอที่รอผู้ขายตอบ" value={attention.pendingOffers} note="ผู้ใช้ตอบกันเอง แสดงไว้ดูภาพรวม" />
         </div>
       </div>

@@ -38,6 +38,9 @@ model User {
   auditActions     AuditLog[] @relation("AuditActor")
   auditTargets     AuditLog[] @relation("AuditTarget")
   events           EventLog[]
+  supportTickets   SupportTicket[]  @relation("TicketOwner")
+  assignedTickets  SupportTicket[]  @relation("TicketAssignee")
+  supportMessages  SupportMessage[]
 }
 
 model Session {
@@ -246,4 +249,55 @@ model EventLog {
 
   @@index([createdAt])
   @@index([type, createdAt])
+}
+
+enum TicketCategory {
+  ACCOUNT
+  LISTING
+  OFFER
+  BUG
+  OTHER
+}
+
+// OPEN = รอทีมงาน, ANSWERED = ทีมงานตอบแล้วรอผู้ใช้, CLOSED = ปิดแล้วตอบต่อไม่ได้
+enum TicketStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+model SupportTicket {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @db.Uuid
+  user       User           @relation("TicketOwner", fields: [userId], references: [id])
+  subject    String
+  category   TicketCategory
+  status     TicketStatus   @default(OPEN)
+  // admin ที่รับเรื่อง กันสองคนตอบเรื่องเดียวกันซ้ำ
+  assigneeId String?        @db.Uuid
+  assignee   User?          @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  closedAt   DateTime?
+  createdAt  DateTime       @default(now())
+  // ขยับทุกครั้งที่มีข้อความใหม่ ใช้เรียงคิวในหลังบ้าน
+  updatedAt  DateTime       @updatedAt
+
+  messages SupportMessage[]
+
+  @@index([status, updatedAt])
+  @@index([userId])
+}
+
+// แก้หรือลบไม่ได้ เก็บไว้เป็นหลักฐานการติดต่อ
+model SupportMessage {
+  id        String        @id @default(uuid()) @db.Uuid
+  ticketId  String        @db.Uuid
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String        @db.Uuid
+  author    User          @relation(fields: [authorId], references: [id])
+  body      String
+  // บันทึกตอนเขียน ถ้า role ของผู้เขียนเปลี่ยนภายหลัง ข้อความเก่ายังแสดงถูกฝั่ง
+  fromStaff Boolean
+  createdAt DateTime      @default(now())
+
+  @@index([ticketId, createdAt])
 }

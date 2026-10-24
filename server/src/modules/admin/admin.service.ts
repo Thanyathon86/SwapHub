@@ -38,6 +38,7 @@ export const getDashboard = async () => {
     pendingListings,
     pendingListingsOver24h,
     pendingOffers,
+    openTickets,
     deals7d,
     games,
     securityCounts,
@@ -53,6 +54,7 @@ export const getDashboard = async () => {
     prisma.listing.count({ where: { status: 'PENDING_REVIEW' } }),
     prisma.listing.count({ where: { status: 'PENDING_REVIEW', createdAt: { lt: since24h } } }),
     prisma.offer.count({ where: { status: 'PENDING' } }),
+    prisma.supportTicket.count({ where: { status: 'OPEN' } }),
     prisma.offer.count({ where: { status: 'ACCEPTED', respondedAt: { gte: since7d } } }),
     prisma.game.findMany({
       select: { id: true, name: true, isActive: true, _count: { select: { listings: { where: { status: 'ACTIVE' } } } } },
@@ -81,7 +83,7 @@ export const getDashboard = async () => {
   const security = Object.fromEntries(securityCounts.map((row) => [row.type, row._count._all]))
 
   return {
-    attention: { pendingListings, pendingListingsOver24h, pendingOffers },
+    attention: { pendingListings, pendingListingsOver24h, pendingOffers, openTickets },
     totals: { users, newUsers7d, suspendedUsers, activeListings, deals7d },
     daily: lastDays(CHART_DAYS).map((day) => ({
       day,

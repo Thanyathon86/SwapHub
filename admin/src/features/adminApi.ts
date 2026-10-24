@@ -1,6 +1,7 @@
 import { api } from '@shared/lib/api'
 import type { Role } from '@shared/auth/authApi'
 import type { Listing, ListingStatus } from '@shared/listings/listingsApi'
+import type { Ticket, TicketCategory, TicketMessage, TicketStatus } from '@shared/support/types'
 
 // admin เห็นอีเมลผู้ขายและผู้ที่ตรวจประกาศ ซึ่งหน้า public ไม่ได้รับ
 export type AdminListing = Listing & {
@@ -58,7 +59,7 @@ export type AuditLogsPage = { logs: AuditLog[]; total: number; page: number; pag
 export type DailyPoint = { day: string; users: number; listings: number; deals: number }
 
 export type Dashboard = {
-  attention: { pendingListings: number; pendingListingsOver24h: number; pendingOffers: number }
+  attention: { pendingListings: number; pendingListingsOver24h: number; pendingOffers: number; openTickets: number }
   totals: { users: number; newUsers7d: number; suspendedUsers: number; activeListings: number; deals7d: number }
   daily: DailyPoint[]
   listingsByGame: { id: string; name: string; isActive: boolean; activeListings: number }[]
@@ -95,6 +96,20 @@ export type EventLog = {
 
 export type EventsPage = { events: EventLog[]; total: number; page: number; pageSize: number }
 
+// admin เห็นอีเมลผู้แจ้งและ admin ที่รับเรื่อง ซึ่งฝั่งผู้ใช้ไม่ได้รับ
+export type AdminTicket = Ticket & {
+  user: { id: string; displayName: string; email: string; status: UserStatus }
+  assignee: { id: string; displayName: string } | null
+}
+export type AdminTicketListItem = AdminTicket & { _count: { messages: number } }
+export type AdminTicketDetail = AdminTicket & { messages: Required<TicketMessage>[] }
+export type TicketsQuery = { status: TicketStatus; category?: TicketCategory; page: number }
+export type TicketsPage = { tickets: AdminTicketListItem[]; total: number; page: number; pageSize: number }
+
+type TicketResponse = { ticket: AdminTicketDetail }
+const ticketAction = (id: string, action: 'assign' | 'close') =>
+  api<TicketResponse>(`/admin/support/tickets/${id}/${action}`, { method: 'POST' }).then((r) => r.ticket)
+
 const usersQueryString = ({ q, status, role, page }: UsersQuery) => {
   const params = new URLSearchParams({ page: String(page) })
   if (q) params.set('q', q)
@@ -105,6 +120,15 @@ const usersQueryString = ({ q, status, role, page }: UsersQuery) => {
 
 export const adminApi = {
   dashboard: () => api<Dashboard>('/admin/dashboard'),
+  listTickets: ({ status, category, page }: TicketsQuery) =>
+    api<TicketsPage>(
+      `/admin/support/tickets?${new URLSearchParams({ status, page: String(page), ...(category && { category }) })}`,
+    ),
+  getTicket: (id: string) => api<TicketResponse>(`/admin/support/tickets/${id}`).then((r) => r.ticket),
+  replyTicket: (id: string, body: string) =>
+    api<TicketResponse>(`/admin/support/tickets/${id}/messages`, { method: 'POST', body: { body } }).then((r) => r.ticket),
+  assignTicket: (id: string) => ticketAction(id, 'assign'),
+  closeTicket: (id: string) => ticketAction(id, 'close'),
   listEvents: (type: EventType | undefined, page: number) =>
     api<EventsPage>(`/admin/events?${new URLSearchParams({ page: String(page), ...(type && { type }) })}`),
 

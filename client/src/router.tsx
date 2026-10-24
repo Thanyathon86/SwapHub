@@ -9,9 +9,12 @@ import LoginPage from './pages/public/LoginPage'
 import RegisterPage from './pages/public/RegisterPage'
 import MyListingsPage from './pages/user/MyListingsPage'
 import NewListingPage from './pages/user/NewListingPage'
+import NewTicketPage from './pages/user/NewTicketPage'
 import OffersPage from './pages/user/OffersPage'
 import ProfilePage from './pages/user/ProfilePage'
 import SettingsPage from './pages/user/SettingsPage'
+import SupportListPage from './pages/user/SupportListPage'
+import TicketPage from './pages/user/TicketPage'
 
 // หน้าหลังบ้านแยกไปเป็นแอป admin/ แล้ว
 export const router = createBrowserRouter([
@@ -31,6 +34,9 @@ export const router = createBrowserRouter([
           { path: 'sell', element: <NewListingPage /> },
           { path: 'my-listings', element: <MyListingsPage /> },
           { path: 'offers', element: <OffersPage /> },
+          { path: 'support', element: <SupportListPage /> },
+          { path: 'support/new', element: <NewTicketPage /> },
+          { path: 'support/:id', element: <TicketPage /> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },

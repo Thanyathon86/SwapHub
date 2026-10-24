@@ -29,6 +29,9 @@ export default function ProfilePage() {
         <Link to="/offers" className={menuClass}>
           ข้อเสนอ <span className="text-zinc-400">→</span>
         </Link>
+        <Link to="/support" className={menuClass}>
+          ติดต่อทีมงาน <span className="text-zinc-400">→</span>
+        </Link>
         <Link to="/settings" className={menuClass}>
           ตั้งค่าบัญชี <span className="text-zinc-400">→</span>
         </Link>
