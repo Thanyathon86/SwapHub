@@ -4,7 +4,6 @@ import { Pagination } from '@shared/components/Pagination'
 import { Spinner } from '@shared/components/Spinner'
 import { adminApi, type AdminListing } from '../features/adminApi'
 import {
-  artPropsOf,
   conditionLabel,
   formatDate,
   formatGrade,
@@ -13,8 +12,8 @@ import {
   statusLabel,
   typeLabel,
 } from '@shared/listings/labels'
-import { ListingArt } from '@shared/listings/ListingArt'
-import type { ListingStatus } from '@shared/listings/listingsApi'
+import { ListingCover } from '@shared/listings/ListingCover'
+import { imageUrl, type ListingStatus } from '@shared/listings/listingsApi'
 import { errorMessage } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
 
@@ -98,8 +97,24 @@ export default function ListingReviewPage() {
           <p className="text-sm text-slate-500">ทั้งหมด {data.total} รายการ</p>
           {data.listings.map((l) => (
             <article key={l.id} className="flex gap-5 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-              <div className="w-24 shrink-0">
-                <ListingArt {...artPropsOf(l)} />
+              <div className="w-24 shrink-0 space-y-1.5">
+                <ListingCover listing={l} />
+                {/* admin ต้องดูรูปจริงครบทุกรูปก่อนอนุมัติ เปิดขนาดเต็มในแท็บใหม่ */}
+                {l.images.length > 0 && (
+                  <div className="flex flex-wrap gap-x-2 text-xs">
+                    {l.images.map((img, i) => (
+                      <a
+                        key={img.id}
+                        href={imageUrl(img.key)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-600 hover:underline"
+                      >
+                        รูป {i + 1}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="min-w-0 flex-1 space-y-1 text-sm">
                 <div className="text-xs text-slate-500">

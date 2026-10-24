@@ -27,8 +27,9 @@ export const api = async <T>(path: string, { method = 'GET', body }: Options = {
       method,
       // same-origin ผ่าน Vite proxy จึงไม่ต้องใช้ credentials: 'include' และ browser ส่ง Origin ให้เองซึ่ง server ใช้กัน CSRF
       credentials: 'same-origin',
-      headers: body === undefined ? undefined : { 'content-type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      // FormData (อัปโหลดไฟล์) ให้ browser ใส่ content-type พร้อม boundary เอง
+      headers: body === undefined || body instanceof FormData ? undefined : { 'content-type': 'application/json' },
+      body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
     })
   } catch {
     throw new ApiError(0, 'NETWORK_ERROR', 'Network error')
@@ -76,6 +77,11 @@ const messages: Record<string, string> = {
   ITEM_KIND_IMMUTABLE: 'เปลี่ยนประเภทสินค้าไม่ได้ ให้ปิดประกาศนี้แล้วลงใหม่',
   LISTING_CHANGED: 'ประกาศนี้เพิ่งถูกเปลี่ยนสถานะ ลองรีเฟรชหน้าแล้วแก้อีกครั้ง',
   LISTING_ALREADY_REVIEWED: 'ประกาศนี้ถูกตรวจไปแล้ว ลองรีเฟรชหน้า',
+  INVALID_IMAGE: 'ไฟล์นี้ไม่ใช่รูปที่รองรับ ลองใช้ JPG, PNG หรือ WebP',
+  IMAGE_TOO_LARGE: 'รูปใหญ่เกิน 5MB',
+  INVALID_UPLOAD: 'อัปโหลดไม่สำเร็จ ลองเลือกรูปใหม่',
+  TOO_MANY_IMAGES: 'ใส่รูปได้สูงสุด 6 รูปต่อประกาศ',
+  IMAGE_NOT_FOUND: 'ไม่พบรูปนี้ อาจถูกลบไปแล้ว',
   INVALID_GAME: 'เกมนี้ถูกปิดหรือไม่มีอยู่ ลองเลือกเกมใหม่',
   INVALID_GRADING_COMPANY: 'บริษัทเกรดนี้ถูกปิดหรือไม่มีอยู่ ลองเลือกใหม่',
   CANNOT_OFFER_OWN_LISTING: 'ส่งข้อเสนอให้ประกาศของตัวเองไม่ได้',

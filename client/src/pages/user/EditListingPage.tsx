@@ -1,10 +1,12 @@
-import { Link, useNavigate, useParams } from 'react-router'
+import { useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { Spinner } from '@shared/components/Spinner'
 import { errorMessage } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
-import { listingsApi } from '@shared/listings/listingsApi'
+import { listingsApi, type Listing } from '@shared/listings/listingsApi'
 import { draftFromListing } from '../../features/listings/draft'
 import { ListingForm } from '../../features/listings/ListingForm'
+import { ListingPhotos } from '../../features/listings/ListingPhotos'
 
 // บอกผู้ขายก่อนกดบันทึก ว่าแก้อะไรแล้วประกาศจะหายจากตลาดไปรอตรวจ
 const notices = {
@@ -17,7 +19,12 @@ const notices = {
 export default function EditListingPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
-  const { data: listing, error } = useResource(() => listingsApi.mineOne(id), id)
+  const location = useLocation()
+  const photoError = (location.state as { photoError?: boolean } | null)?.photoError === true
+  const { data: loaded, error } = useResource(() => listingsApi.mineOne(id), id)
+  // ผลจากการเพิ่ม/ลบรูปล่าสุด (สถานะอาจเปลี่ยนเป็นรอตรวจ) ใช้แทนข้อมูลที่โหลดมาตอนแรก
+  const [updated, setUpdated] = useState<Listing | null>(null)
+  const listing = updated?.id === id ? updated : loaded
 
   if (error !== undefined && !listing) {
     return (
@@ -53,7 +60,13 @@ export default function EditListingPage() {
         {listing.status === 'REJECTED' && listing.rejectReason && (
           <p className="mt-3 max-w-2xl rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">เหตุผลที่ไม่ผ่าน: {listing.rejectReason}</p>
         )}
+        {photoError && (
+          <p className="mt-3 max-w-2xl rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            ลงประกาศแล้ว แต่อัปโหลดรูปบางรูปไม่สำเร็จ ลองเพิ่มรูปอีกครั้งด้านล่าง
+          </p>
+        )}
       </div>
+      <ListingPhotos listing={listing} onChange={setUpdated} />
       <ListingForm
         initial={draftFromListing(listing)}
         lockKind

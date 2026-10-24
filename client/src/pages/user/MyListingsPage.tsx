@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Spinner } from '@shared/components/Spinner'
-import { artPropsOf, formatDate, formatPrice, kindLabel, typeLabel } from '@shared/listings/labels'
-import { ListingArt } from '@shared/listings/ListingArt'
+import { formatDate, formatPrice, kindLabel, typeLabel } from '@shared/listings/labels'
+import { ListingCover } from '@shared/listings/ListingCover'
 import { StatusBadge } from '../../features/listings/ListingCard'
 import { listingsApi, type Listing } from '@shared/listings/listingsApi'
 import { errorMessage } from '@shared/lib/api'
@@ -68,7 +68,7 @@ export default function MyListingsPage() {
             return (
               <li key={listing.id} className="flex gap-4 py-5 sm:gap-6">
                 <div className="w-20 shrink-0 sm:w-24">
-                  <ListingArt {...artPropsOf(listing)} />
+                  <ListingCover listing={listing} />
                 </div>
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">

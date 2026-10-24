@@ -3,7 +3,6 @@ import { Link, useLocation, useParams } from 'react-router'
 import { Spinner } from '@shared/components/Spinner'
 import { useAuth } from '@shared/auth/useAuth'
 import {
-  artPropsOf,
   conditionLabel,
   formatDate,
   formatGrade,
@@ -11,8 +10,8 @@ import {
   kindLabel,
   typeLabel,
 } from '@shared/listings/labels'
-import { ListingArt } from '@shared/listings/ListingArt'
 import { listingsApi, type Listing } from '@shared/listings/listingsApi'
+import { ListingGallery } from '../../features/listings/ListingGallery'
 import { OfferForm } from '../../features/offers/OfferForm'
 import { errorMessage } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
@@ -59,7 +58,7 @@ export default function ListingDetailPage() {
       </Link>
       <div className="grid gap-10 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
         <div className="mx-auto w-full max-w-sm md:sticky md:top-24 md:self-start">
-          <ListingArt {...artPropsOf(listing)} size="lg" />
+          <ListingGallery listing={listing} />
         </div>
 
         <div className="space-y-8">

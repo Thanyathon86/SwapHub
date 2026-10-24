@@ -22,6 +22,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 | `GradingCompany` | บริษัทเกรด admin เพิ่มได้ |
 | `Listing` | ประกาศ มี `type`: `SALE` / `TRADE` / `BOTH`, `itemKind`: `SINGLE` / `GRADED` / `SEALED` และ `status`: `PENDING_REVIEW` → `ACTIVE` / `REJECTED` → `CLOSED` |
 | `Offer` | คำขอซื้อหรือขอแลกต่อประกาศ (ใส่เงินเพิ่มได้) มี `status`: `PENDING` / `ACCEPTED` / `DECLINED` / `CANCELLED` |
+| `ListingImage` | รูปของประกาศ (สูงสุด 6) เก็บแค่ `key` ไฟล์จริงอยู่ใน storage |
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
 | `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร (`AuditAction`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
 | `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
@@ -46,7 +47,9 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 ตัวเลขแจ้งเตือนบนเมนู: `GET /api/me/counts` และ `GET /api/admin/counts` นับเฉพาะสิ่งที่ต้องทำต่อ (ยังไม่มีระบบ "อ่านแล้ว") หน้าเว็บดึงด้วย `usePolling` ทุก 60 วินาทีและทุกครั้งที่เปลี่ยนหน้า ฝั่ง client ส่งต่อให้หน้าลูกผ่าน `<Outlet context>` (`useCounts`)
 
-ยังไม่ทำ: ลืมรหัสผ่าน (ต้องมีระบบส่งอีเมลก่อน), อัปโหลดรูป (ต้องเลือกที่เก็บไฟล์ก่อน), แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
+รูปประกาศ: `POST /api/listings/:id/images` (ทีละรูป field `image`, ≤ 5MB) ผ่าน `sharp` ทุกครั้ง (ตรวจว่าเป็นรูปจริง, ย่อด้านยาว ≤ 1600px, แปลงเป็น WebP, ตัด EXIF) แล้วเก็บผ่าน `lib/storage.ts` ซึ่งตอนนี้เขียนลง `UPLOAD_DIR` (default `server/uploads`, ไม่ commit) และเสิร์ฟที่ `/uploads/*` (Vite proxy ทั้งสองแอป) ย้ายไป S3/R2 ให้แก้แค่ `storage.ts` และ `imageUrl` ใน shared เพิ่ม/ลบรูปนับเป็นการแก้ตัวการ์ด (กลับไปรอตรวจ)
+
+ยังไม่ทำ: ลืมรหัสผ่าน (ต้องมีระบบส่งอีเมลก่อน), แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
 
 ## Stack
 
@@ -121,7 +124,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
   lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource, usePolling
   auth/                     authApi, AuthProvider, useAuth, LoginForm, ChangePasswordForm
   components/               Spinner, Pagination, FormField, CountBadge, RequireAuth, ErrorPage, NotFoundPage
-  listings/                 listingsApi (types), labels, ListingArt
+  listings/                 listingsApi (types, imageUrl), labels, ListingArt, ListingCover (รูปปกหรือภาพวาด)
   support/                  types + label หมวด, MessageThread
   styles.css                theme + .btn/.input ฯลฯ ทั้งสองแอป import หลัง tailwindcss
 ```

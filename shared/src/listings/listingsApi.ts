@@ -8,6 +8,11 @@ export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG'
 export type CatalogGame = { id: string; name: string; slug: string }
 export type CatalogGradingCompany = { id: string; name: string }
 
+export type ListingImage = { id: string; key: string; width: number; height: number }
+
+// key เป็น path ภายใน storage ของ server ถ้าย้ายไป CDN แก้ที่นี่ที่เดียว
+export const imageUrl = (key: string) => `/uploads/${key}`
+
 // server ส่ง Decimal (price, grade) มาเป็น string เพื่อไม่ให้ทศนิยมเพี้ยน
 export type Listing = {
   id: string
@@ -35,6 +40,8 @@ export type Listing = {
   game: CatalogGame
   gradingCompany: CatalogGradingCompany | null
   seller: { id: string; displayName: string }
+  // เรียงตามลำดับ รูปแรกเป็นปก
+  images: ListingImage[]
 }
 
 export type ListingsPage = { listings: Listing[]; total: number; page: number; pageSize: number }
@@ -99,5 +106,12 @@ export const listingsApi = {
   mineOne: (id: string) => api<{ listing: Listing }>(`/listings/mine/${id}`).then((r) => r.listing),
   update: (id: string, input: CreateListingInput) =>
     api<{ listing: Listing }>(`/listings/${id}`, { method: 'PATCH', body: input }).then((r) => r.listing),
+  uploadImage: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('image', file)
+    return api<{ listing: Listing }>(`/listings/${id}/images`, { method: 'POST', body: form }).then((r) => r.listing)
+  },
+  removeImage: (id: string, imageId: string) =>
+    api<{ listing: Listing }>(`/listings/${id}/images/${imageId}`, { method: 'DELETE' }).then((r) => r.listing),
   close: (id: string) => api<{ listing: Listing }>(`/listings/${id}/close`, { method: 'POST' }).then((r) => r.listing),
 }

@@ -17,6 +17,8 @@ const envSchema = z.object({
   SESSION_ABSOLUTE_DAYS: z.coerce.number().int().min(1).max(365).default(30),
   // log เหตุการณ์ (EventLog) เก่ากว่านี้ถูกลบอัตโนมัติ ไม่รวม AuditLog ที่เก็บถาวร
   LOG_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(60),
+  // โฟลเดอร์เก็บรูปที่อัปโหลด (path สัมพัทธ์นับจากโฟลเดอร์ server)
+  UPLOAD_DIR: z.string().min(1).default('uploads'),
   // ใช้เฉพาะตอน seed admin คนแรก แอปปกติไม่ต้องมี
   ADMIN_EMAIL: z.email().optional(),
   ADMIN_PASSWORD: z.string().min(12).optional(),

@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
-import { artPropsOf, formatPrice, statusClass, statusLabel } from '@shared/listings/labels'
-import { ListingArt } from '@shared/listings/ListingArt'
+import { formatPrice, statusClass, statusLabel } from '@shared/listings/labels'
+import { ListingCover } from '@shared/listings/ListingCover'
 import type { Listing, ListingStatus } from '@shared/listings/listingsApi'
 
 export function ListingCard({ listing }: { listing: Listing }) {
@@ -8,7 +8,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
   return (
     <Link to={`/listings/${listing.id}`} className="group block">
       <div className="transition duration-300 group-hover:-translate-y-1 group-hover:drop-shadow-xl">
-        <ListingArt {...artPropsOf(listing)} />
+        <ListingCover listing={listing} />
       </div>
       <div className="mt-3 space-y-0.5 px-0.5">
         <div className="truncate text-sm font-medium">{listing.title}</div>

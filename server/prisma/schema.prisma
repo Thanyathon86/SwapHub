@@ -155,6 +155,7 @@ model Listing {
 
   offers    Offer[]
   offeredIn OfferItem[]
+  images    ListingImage[]
 
   @@index([status, gameId])
   @@index([sellerId])
@@ -301,4 +302,19 @@ model SupportMessage {
   createdAt DateTime      @default(now())
 
   @@index([ticketId, createdAt])
+}
+
+// รูปที่ผู้ขายอัปโหลด ไฟล์จริงอยู่ใน storage (lib/storage.ts) ในตารางเก็บแค่ key ไว้หาไฟล์
+model ListingImage {
+  id        String   @id @default(uuid()) @db.Uuid
+  listingId String   @db.Uuid
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  key       String   @unique
+  width     Int
+  height    Int
+  // ลำดับการแสดง รูปแรก (ค่าน้อยสุด) เป็นปก
+  position  Int
+  createdAt DateTime @default(now())
+
+  @@index([listingId, position])
 }

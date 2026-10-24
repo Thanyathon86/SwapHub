@@ -1,5 +1,7 @@
 import { parse } from 'dotenv'
 import { readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
 // ใช้ DB แยกชื่อ <ชื่อเดิม>_test จาก DATABASE_URL เดียวกัน ไม่ต้องเพิ่ม env และ test จะไม่แตะข้อมูลที่ใช้ dev
@@ -21,7 +23,8 @@ export default defineConfig({
     setupFiles: ['test/setup.ts'],
     // ทุกไฟล์ใช้ DB เดียวกันและล้างตารางก่อนแต่ละเคส รันพร้อมกันจะทับข้อมูลกัน
     fileParallelism: false,
-    env: { DATABASE_URL: testUrl, NODE_ENV: 'test' },
+    // รูปที่ test อัปโหลดไปอยู่ในโฟลเดอร์ชั่วคราว ไม่ปนกับรูปจริงใน server/uploads
+    env: { DATABASE_URL: testUrl, NODE_ENV: 'test', UPLOAD_DIR: join(tmpdir(), 'ge175-test-uploads') },
     // argon2 กับ DB ทำให้บางเคสช้ากว่าค่า default 5 วินาทีได้บนเครื่องช้า
     testTimeout: 20_000,
   },

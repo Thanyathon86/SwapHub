@@ -56,11 +56,13 @@ type Props = {
   // ตอนแก้ไขเปลี่ยนประเภทสินค้าไม่ได้ (server ปฏิเสธ) จึงล็อกปุ่มไว้
   lockKind?: boolean
   submitLabel: string
+  // เนื้อหาเพิ่มเติมก่อนปุ่มบันทึก เช่น ช่องเลือกรูปตอนลงประกาศใหม่
+  extra?: ReactNode
   onSubmit: (input: CreateListingInput) => Promise<void>
   onCancel: () => void
 }
 
-export function ListingForm({ initial = emptyDraft, lockKind = false, submitLabel, onSubmit: save, onCancel }: Props) {
+export function ListingForm({ initial = emptyDraft, lockKind = false, submitLabel, extra, onSubmit: save, onCancel }: Props) {
   const { data: games, error: gamesError } = useResource(listingsApi.games)
   const { data: companies } = useResource(listingsApi.gradingCompanies)
   const [draft, setDraft] = useState(initial)
@@ -280,6 +282,8 @@ export function ListingForm({ initial = emptyDraft, lockKind = false, submitLabe
             )}
           </Field>
         </section>
+
+        {extra}
 
         <div className="flex gap-3 border-t border-zinc-100 pt-6">
           <button type="submit" disabled={submitting} className="btn btn-primary px-6 py-2.5">

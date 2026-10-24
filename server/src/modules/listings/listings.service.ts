@@ -1,6 +1,9 @@
 import type { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
+import { randomUUID } from 'node:crypto'
+import { processImage } from '../../lib/images.js'
 import { prisma } from '../../lib/prisma.js'
+import { removeFile, saveFile } from '../../lib/storage.js'
 import { cancelPendingOffers } from '../offers/cancelPendingOffers.js'
 import type {
   AdminListingsQuery,
@@ -16,6 +19,7 @@ export const listingInclude = {
   gradingCompany: { select: { id: true, name: true } },
   // ผู้ใช้ทั่วไปเห็นแค่ชื่อที่แสดงของผู้ขาย ไม่ส่งอีเมลออกไป
   seller: { select: { id: true, displayName: true } },
+  images: { select: { id: true, key: true, width: true, height: true }, orderBy: { position: 'asc' } },
 } satisfies Prisma.ListingInclude
 
 // ไม่บอกคนทั่วไปว่า admin คนไหนตรวจประกาศ
@@ -197,6 +201,67 @@ export const updateListing = (sellerId: string, id: string, input: CreateListing
 
     return tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: publicOmit })
   })
+
+const MAX_IMAGES = 6
+
+// เปลี่ยนรูปนับเป็นการเปลี่ยนตัวการ์ดเหมือนแก้ชื่อหรือสภาพ ประกาศที่เปิดอยู่หรือไม่ผ่านต้องกลับไปรอตรวจ
+const sendBackToReviewIfNeeded = async (tx: Prisma.TransactionClient, id: string, status: string) => {
+  if (status !== 'ACTIVE' && status !== 'REJECTED') return
+  const { count } = await tx.listing.updateMany({
+    where: { id, status },
+    data: { status: 'PENDING_REVIEW', rejectReason: null, reviewedById: null, reviewedAt: null },
+  })
+  if (count === 0) throw new AppError(409, 'LISTING_CHANGED', 'Listing was changed by someone else, please reload')
+  if (status === 'ACTIVE') await cancelPendingOffers(tx, [id])
+}
+
+const editableListing = async (tx: Prisma.TransactionClient, sellerId: string, id: string) => {
+  const listing = await tx.listing.findFirst({ where: { id, sellerId }, select: { status: true } })
+  if (!listing) throw notFound()
+  if (listing.status === 'CLOSED') throw new AppError(409, 'LISTING_NOT_EDITABLE', 'Closed listings cannot be edited')
+  return listing
+}
+
+export const addListingImage = async (sellerId: string, id: string, file: Buffer) => {
+  // เช็กสิทธิ์ก่อนแปลงรูป ไม่ให้คนอื่นใช้ CPU ของ server แปลงรูปฟรี ๆ
+  await editableListing(prisma, sellerId, id)
+  const image = await processImage(file)
+  const key = `listings/${id}/${randomUUID()}.webp`
+  // เขียนไฟล์ก่อน ถ้าบันทึก DB ไม่สำเร็จค่อยลบทิ้ง ดีกว่ามีแถวใน DB ที่ชี้ไปไฟล์ที่ไม่มีอยู่
+  await saveFile(key, image.data)
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const listing = await editableListing(tx, sellerId, id)
+      const existing = await tx.listingImage.aggregate({ where: { listingId: id }, _count: true, _max: { position: true } })
+      if (existing._count >= MAX_IMAGES) {
+        throw new AppError(409, 'TOO_MANY_IMAGES', `A listing can have at most ${MAX_IMAGES} images`)
+      }
+      await tx.listingImage.create({
+        data: { listingId: id, key, width: image.width, height: image.height, position: (existing._max.position ?? -1) + 1 },
+      })
+      await sendBackToReviewIfNeeded(tx, id, listing.status)
+      return tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: publicOmit })
+    })
+  } catch (err) {
+    await removeFile(key)
+    throw err
+  }
+}
+
+export const removeListingImage = async (sellerId: string, id: string, imageId: string) => {
+  const { listing, key } = await prisma.$transaction(async (tx) => {
+    const current = await editableListing(tx, sellerId, id)
+    const image = await tx.listingImage.findFirst({ where: { id: imageId, listingId: id }, select: { key: true } })
+    if (!image) throw new AppError(404, 'IMAGE_NOT_FOUND', 'Image not found')
+    await tx.listingImage.delete({ where: { id: imageId } })
+    await sendBackToReviewIfNeeded(tx, id, current.status)
+    const listing = await tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: publicOmit })
+    return { listing, key: image.key }
+  })
+  // ลบไฟล์หลัง commit แล้วเท่านั้น ถ้า transaction ล้มรูปยังต้องอยู่
+  await removeFile(key).catch((err: unknown) => console.error('Failed to remove image file:', err))
+  return listing
+}
 
 export const closeListing = (sellerId: string, id: string) =>
   prisma.$transaction(async (tx) => {

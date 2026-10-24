@@ -1,16 +1,19 @@
 import { Router } from 'express'
 import { getAuthUser, requireAuth } from '../../middleware/requireAuth.js'
+import { uploadImage } from '../../middleware/uploadImage.js'
 import { validate } from '../../middleware/validate.js'
 import {
   adminListingsQuery,
   browseListingsQuery,
   createListingSchema,
   listingIdParams,
+  listingImageParams,
   reviewListingSchema,
   type AdminListingsQuery,
   type BrowseListingsQuery,
   type CreateListingInput,
   type ListingIdParams,
+  type ListingImageParams,
   type ReviewListingInput,
 } from './listings.schema.js'
 import * as listingsService from './listings.service.js'
@@ -52,6 +55,20 @@ listingsRouter.patch(
     res.json({ listing })
   },
 )
+
+// รับทีละรูป (field "image") ให้หน้าเว็บแสดงความคืบหน้าและ error ทีละไฟล์ได้
+// ตรวจสิทธิ์ก่อนรับไฟล์ คนที่ไม่ได้ล็อกอินจะไม่ได้ส่งไฟล์ขึ้นมาถึง memory
+listingsRouter.post('/:id/images', requireAuth, validate({ params: listingIdParams }), uploadImage, async (req, res) => {
+  const { id } = req.params as ListingIdParams
+  // uploadImage รับประกันว่ามี req.file แล้ว
+  const listing = await listingsService.addListingImage(getAuthUser(req).id, id, req.file!.buffer)
+  res.status(201).json({ listing })
+})
+
+listingsRouter.delete('/:id/images/:imageId', requireAuth, validate({ params: listingImageParams }), async (req, res) => {
+  const { id, imageId } = req.params as ListingImageParams
+  res.json({ listing: await listingsService.removeListingImage(getAuthUser(req).id, id, imageId) })
+})
 
 listingsRouter.post('/:id/close', requireAuth, validate({ params: listingIdParams }), async (req, res) => {
   const { id } = req.params as ListingIdParams

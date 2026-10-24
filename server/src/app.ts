@@ -7,6 +7,7 @@ import { checkOrigin } from './middleware/checkOrigin.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { notFound } from './middleware/notFound.js'
 import { apiLimiter } from './middleware/rateLimit.js'
+import { uploadRoot } from './lib/storage.js'
 import { apiRouter } from './routes.js'
 
 export const app = express()
@@ -24,6 +25,10 @@ app.use(express.json({ limit: '100kb' }))
 app.use(cookieParser())
 
 app.use('/api', apiRouter)
+
+// รูปที่อัปโหลด ชื่อไฟล์เป็น uuid ไม่เคยถูกเขียนทับ จึง cache ได้นานแบบ immutable
+// helmet ตั้ง nosniff ไว้แล้ว browser จะไม่ตีความไฟล์เป็นอย่างอื่นนอกจากรูป
+app.use('/uploads', express.static(uploadRoot, { immutable: true, maxAge: '365d', index: false, dotfiles: 'deny' }))
 
 app.use('/api', notFound)
 app.use(errorHandler)

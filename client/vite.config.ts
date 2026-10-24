@@ -14,6 +14,8 @@ export default defineConfig({
     // ส่งต่อ request /api ไปที่ backend ตอน dev (ไม่ต้องเปิด CORS กว้าง)
     proxy: {
       '/api': 'http://localhost:4000',
+      // รูปที่ผู้ขายอัปโหลด server เสิร์ฟเองที่ /uploads
+      '/uploads': 'http://localhost:4000',
     },
   },
 })

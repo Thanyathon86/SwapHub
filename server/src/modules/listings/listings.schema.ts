@@ -76,6 +76,8 @@ export const createListingSchema = z
 
 export const listingIdParams = z.strictObject({ id: z.uuid() })
 
+export const listingImageParams = z.strictObject({ id: z.uuid(), imageId: z.uuid() })
+
 const page = z.coerce.number().int().min(1).max(10_000).default(1)
 
 export const browseListingsQuery = z.strictObject({
@@ -100,6 +102,7 @@ export const reviewListingSchema = z.discriminatedUnion('decision', [
 
 export type CreateListingInput = z.infer<typeof createListingSchema>
 export type ListingIdParams = z.infer<typeof listingIdParams>
+export type ListingImageParams = z.infer<typeof listingImageParams>
 export type BrowseListingsQuery = z.infer<typeof browseListingsQuery>
 export type AdminListingsQuery = z.infer<typeof adminListingsQuery>
 export type ReviewListingInput = z.infer<typeof reviewListingSchema>

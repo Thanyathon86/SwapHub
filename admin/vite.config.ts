@@ -14,6 +14,8 @@ export default defineConfig({
     // ใช้ API server ตัวเดียวกับเว็บ user
     proxy: {
       '/api': 'http://localhost:4000',
+      // รูปที่ผู้ขายอัปโหลด server เสิร์ฟเองที่ /uploads
+      '/uploads': 'http://localhost:4000',
     },
   },
 })
