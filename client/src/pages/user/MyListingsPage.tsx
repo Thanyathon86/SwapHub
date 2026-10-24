@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Spinner } from '../../components/Spinner'
-import { artPropsOf, formatDate, formatPrice, kindLabel, typeLabel } from '../../features/listings/labels'
-import { ListingArt } from '../../features/listings/ListingArt'
+import { Spinner } from '@shared/components/Spinner'
+import { artPropsOf, formatDate, formatPrice, kindLabel, typeLabel } from '@shared/listings/labels'
+import { ListingArt } from '@shared/listings/ListingArt'
 import { StatusBadge } from '../../features/listings/ListingCard'
-import { listingsApi, type Listing } from '../../features/listings/listingsApi'
-import { errorMessage } from '../../lib/api'
-import { useResource } from '../../lib/useResource'
+import { listingsApi, type Listing } from '@shared/listings/listingsApi'
+import { errorMessage } from '@shared/lib/api'
+import { useResource } from '@shared/lib/useResource'
 
 export default function MyListingsPage() {
   const location = useLocation()

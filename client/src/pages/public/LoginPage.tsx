@@ -1,13 +1,13 @@
 import { Link, Navigate } from 'react-router'
-import { Spinner } from '../../components/Spinner'
-import { LoginForm } from '../../features/auth/LoginForm'
-import { useAuth } from '../../features/auth/useAuth'
+import { Spinner } from '@shared/components/Spinner'
+import { LoginForm } from '@shared/auth/LoginForm'
+import { useAuth } from '@shared/auth/useAuth'
 import { AuthCard } from './AuthCard'
 
 export default function LoginPage() {
   const { user, status } = useAuth()
   if (status === 'loading') return <Spinner />
-  if (user) return <Navigate to={user.role === 'ADMIN' ? '/admin' : '/'} replace />
+  if (user) return <Navigate to="/" replace />
 
   return (
     <AuthCard

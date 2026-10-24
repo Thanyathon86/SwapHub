@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { Spinner } from '../../components/Spinner'
-import { formatDate, formatPrice } from '../../features/listings/labels'
+import { Spinner } from '@shared/components/Spinner'
+import { formatDate, formatPrice } from '@shared/listings/labels'
 import { offerStatusClass, offerStatusLabel } from '../../features/offers/labels'
 import { offersApi, type Offer } from '../../features/offers/offersApi'
-import { errorMessage } from '../../lib/api'
-import { useResource } from '../../lib/useResource'
+import { errorMessage } from '@shared/lib/api'
+import { useResource } from '@shared/lib/useResource'
 
 type Tab = 'incoming' | 'outgoing'
 

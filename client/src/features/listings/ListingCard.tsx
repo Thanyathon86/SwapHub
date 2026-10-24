@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
-import { artPropsOf, formatPrice, statusClass, statusLabel } from './labels'
-import { ListingArt } from './ListingArt'
-import type { Listing, ListingStatus } from './listingsApi'
+import { artPropsOf, formatPrice, statusClass, statusLabel } from '@shared/listings/labels'
+import { ListingArt } from '@shared/listings/ListingArt'
+import type { Listing, ListingStatus } from '@shared/listings/listingsApi'
 
 export function ListingCard({ listing }: { listing: Listing }) {
   const price = formatPrice(listing.price)

@@ -7,6 +7,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.url(),
   CLIENT_ORIGIN: z.url(),
+  // แอปหลังบ้าน (admin/) ใช้ API ตัวเดียวกันแต่คนละ origin
+  ADMIN_ORIGIN: z.url().default('http://localhost:5174'),
   // จำนวน proxy ที่อยู่หน้าแอป (0 = ต่อตรง) ไม่ใช้ true เพราะจะเชื่อ X-Forwarded-For ที่ client ปลอมมาได้
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
   // อายุ session นับจากใช้งานล่าสุด (ต่ออายุอัตโนมัติ)

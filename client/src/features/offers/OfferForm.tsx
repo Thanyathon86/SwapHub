@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
-import { Field, FormField } from '../../components/FormField'
-import { Spinner } from '../../components/Spinner'
-import { errorMessage, fieldErrors } from '../../lib/api'
-import { useResource } from '../../lib/useResource'
-import { kindLabel } from '../listings/labels'
-import { listingsApi, type Listing } from '../listings/listingsApi'
+import { Field, FormField } from '@shared/components/FormField'
+import { Spinner } from '@shared/components/Spinner'
+import { errorMessage, fieldErrors } from '@shared/lib/api'
+import { useResource } from '@shared/lib/useResource'
+import { kindLabel } from '@shared/listings/labels'
+import { listingsApi, type Listing } from '@shared/listings/listingsApi'
 import { offersApi } from './offersApi'
 
 // key = id ประกาศของเราที่เลือกมาแลก, value = จำนวน

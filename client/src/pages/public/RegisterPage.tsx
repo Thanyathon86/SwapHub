@@ -1,7 +1,7 @@
 import { Link, Navigate } from 'react-router'
-import { Spinner } from '../../components/Spinner'
+import { Spinner } from '@shared/components/Spinner'
 import { RegisterForm } from '../../features/auth/RegisterForm'
-import { useAuth } from '../../features/auth/useAuth'
+import { useAuth } from '@shared/auth/useAuth'
 import { AuthCard } from './AuthCard'
 
 export default function RegisterPage() {

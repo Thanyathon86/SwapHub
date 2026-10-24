@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { useAuth } from '../../features/auth/useAuth'
-import { errorMessage } from '../../lib/api'
+import { useAuth } from '@shared/auth/useAuth'
+import { errorMessage } from '@shared/lib/api'
 
 // ข้อมูลส่วนตัวอย่างอีเมลแยกมาไว้หน้านี้ ไม่ให้โผล่ในหน้าโปรไฟล์ที่เปิดบ่อยหรือเผลอแคปหน้าจอให้คนอื่นเห็น
 export default function SettingsPage() {

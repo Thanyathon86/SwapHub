@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
-import { Spinner } from '../../components/Spinner'
-import { useAuth } from '../../features/auth/useAuth'
+import { Spinner } from '@shared/components/Spinner'
+import { useAuth } from '@shared/auth/useAuth'
 import {
   artPropsOf,
   conditionLabel,
@@ -10,12 +10,12 @@ import {
   formatPrice,
   kindLabel,
   typeLabel,
-} from '../../features/listings/labels'
-import { ListingArt } from '../../features/listings/ListingArt'
-import { listingsApi, type Listing } from '../../features/listings/listingsApi'
+} from '@shared/listings/labels'
+import { ListingArt } from '@shared/listings/ListingArt'
+import { listingsApi, type Listing } from '@shared/listings/listingsApi'
 import { OfferForm } from '../../features/offers/OfferForm'
-import { errorMessage } from '../../lib/api'
-import { useResource } from '../../lib/useResource'
+import { errorMessage } from '@shared/lib/api'
+import { useResource } from '@shared/lib/useResource'
 
 const detailsOf = (l: Listing): [string, string | number | null][] => [
   ['เกม', l.game.name],

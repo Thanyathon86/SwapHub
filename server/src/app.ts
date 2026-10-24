@@ -16,7 +16,7 @@ app.disable('x-powered-by')
 app.set('trust proxy', env.TRUST_PROXY)
 
 app.use(helmet())
-app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }))
+app.use(cors({ origin: [env.CLIENT_ORIGIN, env.ADMIN_ORIGIN], credentials: true }))
 // จำกัดก่อน parse body เพื่อไม่เสียแรง parse request ที่จะโดนปฏิเสธอยู่แล้ว
 app.use('/api', apiLimiter)
 app.use('/api', checkOrigin)

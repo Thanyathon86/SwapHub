@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
-import { useAuth } from '../features/auth/useAuth'
+import { useAuth } from '@shared/auth/useAuth'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `hidden text-sm transition sm:inline ${isActive ? 'font-medium text-zinc-900' : 'text-zinc-500 hover:text-zinc-900'}`
@@ -26,11 +26,6 @@ export function UserLayout() {
             <nav className="flex items-center gap-5">
               {user ? (
                 <>
-                  {user.role === 'ADMIN' && (
-                    <NavLink to="/admin" className={navClass}>
-                      หลังบ้าน
-                    </NavLink>
-                  )}
                   <NavLink to="/my-listings" className={navClass}>
                     ประกาศของฉัน
                   </NavLink>

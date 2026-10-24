@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { FormField } from '../../components/FormField'
-import { errorMessage, fieldErrors } from '../../lib/api'
-import { useAuth } from './useAuth'
+import { FormField } from '@shared/components/FormField'
+import { errorMessage, fieldErrors } from '@shared/lib/api'
+import { useAuth } from '@shared/auth/useAuth'
 
 export function RegisterForm() {
   const { register } = useAuth()

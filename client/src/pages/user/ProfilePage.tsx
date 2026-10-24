@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router'
-import { useAuth } from '../../features/auth/useAuth'
+import { useAuth } from '@shared/auth/useAuth'
 
 const menuClass = 'flex justify-between px-5 py-4 text-sm hover:bg-zinc-50'
 
@@ -29,11 +29,6 @@ export default function ProfilePage() {
         <Link to="/offers" className={menuClass}>
           ข้อเสนอ <span className="text-zinc-400">→</span>
         </Link>
-        {user.role === 'ADMIN' && (
-          <Link to="/admin" className={menuClass}>
-            หลังบ้าน <span className="text-zinc-400">→</span>
-          </Link>
-        )}
         <Link to="/settings" className={menuClass}>
           ตั้งค่าบัญชี <span className="text-zinc-400">→</span>
         </Link>

@@ -1,9 +1,9 @@
 import type { FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { Pagination } from '../../components/Pagination'
-import { Spinner } from '../../components/Spinner'
-import { useAuth } from '../../features/auth/useAuth'
-import { kindLabel } from '../../features/listings/labels'
+import { Pagination } from '@shared/components/Pagination'
+import { Spinner } from '@shared/components/Spinner'
+import { useAuth } from '@shared/auth/useAuth'
+import { kindLabel } from '@shared/listings/labels'
 import { ListingCard } from '../../features/listings/ListingCard'
 import {
   listingsApi,
@@ -11,9 +11,9 @@ import {
   type BrowseSort,
   type ItemKind,
   type ListingType,
-} from '../../features/listings/listingsApi'
-import { errorMessage } from '../../lib/api'
-import { useResource } from '../../lib/useResource'
+} from '@shared/listings/listingsApi'
+import { errorMessage } from '@shared/lib/api'
+import { useResource } from '@shared/lib/useResource'
 
 const kinds: ItemKind[] = ['SINGLE', 'GRADED', 'SEALED']
 const sorts: { value: BrowseSort; label: string }[] = [

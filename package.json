@@ -1,0 +1,13 @@
+{
+  "name": "ge175",
+  "private": true,
+  "workspaces": [
+    "client",
+    "admin",
+    "shared"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  }
+}

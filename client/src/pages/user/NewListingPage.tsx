@@ -1,18 +1,18 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
-import { Field, FormField } from '../../components/FormField'
-import { Spinner } from '../../components/Spinner'
-import { conditionLabel, kindLabel, typeLabel } from '../../features/listings/labels'
-import { ListingArt } from '../../features/listings/ListingArt'
+import { Field, FormField } from '@shared/components/FormField'
+import { Spinner } from '@shared/components/Spinner'
+import { conditionLabel, kindLabel, typeLabel } from '@shared/listings/labels'
+import { ListingArt } from '@shared/listings/ListingArt'
 import {
   listingsApi,
   type CardCondition,
   type CreateListingInput,
   type ItemKind,
   type ListingType,
-} from '../../features/listings/listingsApi'
-import { errorMessage, fieldErrors } from '../../lib/api'
-import { useResource } from '../../lib/useResource'
+} from '@shared/listings/listingsApi'
+import { errorMessage, fieldErrors } from '@shared/lib/api'
+import { useResource } from '@shared/lib/useResource'
 
 const kinds: { value: ItemKind; hint: string }[] = [
   { value: 'SINGLE', hint: 'การ์ดดิบ ระบุสภาพเอง' },

@@ -42,13 +42,17 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 ## Stack
 
 ```
-client/   React 19 + Vite 8 + Tailwind CSS 4 + TypeScript 6
+client/   เว็บ user   React 19 + Vite 8 + Tailwind CSS 4 + TypeScript 6
+admin/    เว็บหลังบ้าน stack เดียวกับ client
+shared/   โค้ด frontend ที่ client กับ admin ใช้ร่วมกัน (ไม่มี build ของตัวเอง)
 server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript 6
 ```
 
-- Node 24, Windows, ใช้ npm (มี `package-lock.json` แยกในแต่ละโฟลเดอร์)
+- Node 24, Windows, ใช้ npm
+- `client`, `admin`, `shared` เป็น npm workspaces มี `package-lock.json` และ `node_modules` อันเดียวที่ root (ติดตั้งด้วย `npm install` ที่ root เท่านั้น ห้ามรันใน `client/` หรือ `admin/` จะได้ React สองชุด) ส่วน `server/` ไม่อยู่ใน workspace มี lockfile ของตัวเอง
 - Database: `ge175` บน `localhost:5432` ต่อด้วย user `ge175_app` (ค่าอยู่ใน `server/.env` ห้าม commit ห้ามพิมพ์รหัสผ่านออกมาใน output)
-- Vite proxy `/api` → `http://localhost:4000` ตอน dev
+- Vite ของทั้ง client (:5173) และ admin (:5174) proxy `/api` → `http://localhost:4000` ใช้ API server ตัวเดียวกัน server รับทั้งสอง origin (`CLIENT_ORIGIN`, `ADMIN_ORIGIN`)
+- บน localhost browser แชร์ cookie ข้าม port ถ้าจะ login user กับ admin พร้อมกันให้ใช้ incognito แยก
 
 ## คำสั่ง
 
@@ -64,6 +68,10 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 | `client/` | `npm run dev` | รันหน้าเว็บที่ :5173 |
 | `client/` | `npm run build` | `tsc -b` + `vite build` |
 | `client/` | `npm run lint` | oxlint |
+| `admin/` | `npm run dev` | รันหลังบ้านที่ :5174 |
+| `admin/` | `npm run build`, `npm run lint` | เหมือน client |
+| root | `npm install` | ติดตั้ง dependency ของ client, admin, shared |
+| root | `npm run build`, `npm run lint` | build/lint ทุก workspace |
 
 ยังไม่มี test framework และฝั่ง server ยังไม่มี lint ถ้าจะเพิ่มให้เสนอในแผนก่อน
 
@@ -84,17 +92,28 @@ server/
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
       <feature>.schema.ts   zod schema ของ request
-client/src/
-  router.tsx                react-router, โค้ดหลังบ้าน lazy load แยก chunk
-  pages/                    public/, user/, admin/
-  layouts/                  UserLayout, AdminLayout
-  features/<feature>/       auth, listings, offers, admin: component + api ของแต่ละฟีเจอร์
-  components/               UI ที่ใช้ร่วมกัน (FormField, RequireAuth, RequireAdmin ฯลฯ)
-  lib/api.ts                fetch wrapper เรียก /api + แปล error code เป็นข้อความไทย
+client/src/                 เว็บ user
+  router.tsx                react-router
+  pages/                    public/, user/
+  layouts/UserLayout.tsx
+  features/<feature>/       auth (RegisterForm), listings (ListingCard), offers
+admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
+  router.tsx, layouts/AdminLayout.tsx, components/RequireAdmin.tsx
+  pages/                    Login, Dashboard, ListingReview, Users, Catalog
+  features/                 adminApi, CatalogSection
+  lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
+shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
+  lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource
+  auth/                     authApi, AuthProvider, useAuth, LoginForm
+  components/               Spinner, Pagination, FormField, RequireAuth, ErrorPage, NotFoundPage
+  listings/                 listingsApi (types), labels, ListingArt
+  styles.css                theme + .btn/.input ฯลฯ ทั้งสองแอป import หลัง tailwindcss
 ```
 
 - route ของ admin อยู่ใต้ `/api/admin/*` และต้องผ่าน `requireRole('ADMIN')` ทุกเส้น ตรวจสิทธิ์ที่ server เสมอ การซ่อนเมนูฝั่ง client ไม่นับเป็นการป้องกัน
-- หน้า login แยกกัน: user ใช้ `/login` (`POST /api/auth/login`), admin ใช้ `/admin/login` (`POST /api/auth/admin/login`) แต่ละเส้นรับเฉพาะ role ของตัวเอง
+- หน้า login แยกกัน: เว็บ user ใช้ `POST /api/auth/login`, เว็บ admin ใช้ `POST /api/auth/admin/login` แต่ละเส้นรับเฉพาะ role ของตัวเอง
+- `shared/` ห้าม import จาก `client/` หรือ `admin/` ใส่เฉพาะของที่ทั้งสองแอปใช้จริง เพราะแก้ shared พังจะพังทั้งคู่ ของที่ใช้แอปเดียวให้อยู่ในแอปนั้น
+- แก้ `shared/` แล้วต้อง build ทั้ง client และ admin
 - อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อกันเพราะยังไม่มีแชท)
 - ตอบรับ offer จะตัด `quantity` ทั้งประกาศปลายทางและของที่แลก ประกาศที่เหลือ 0 จะกลายเป็น `CLOSED` และ offer ที่ค้างกับประกาศที่ปิดจะถูก `CANCELLED`
 
@@ -113,6 +132,6 @@ client/src/
 2. **อธิบายโครงสร้าง**: สรุปสั้น ๆ ว่าส่วนที่จะแตะอยู่ตรงไหน ทำงานอย่างไร
 3. **วางแผนก่อนแก้**: บอกไฟล์ที่จะสร้าง/แก้, schema/migration ที่จะเปลี่ยน, package ที่จะติดตั้ง แล้ว**รอผู้ใช้ยืนยันก่อนลงมือ**
 4. **แก้ทีละส่วน**: แบ่งงานเป็นชิ้นเล็ก ทำให้แต่ละชิ้นเสร็จและรันได้ก่อนไปชิ้นถัดไป
-5. **รัน build/test/lint**: อย่างน้อย `server: npm run typecheck`, `client: npm run build` และ `npm run lint` ถ้ามี test ให้รันด้วย ถ้าแก้ schema ให้รัน `db:migrate` ถ้าไม่ผ่านให้แก้หรือรายงานผลตามจริง
+5. **รัน build/test/lint**: อย่างน้อย `server: npm run typecheck`, และที่ root `npm run build` กับ `npm run lint` (ครอบ client, admin, shared) ถ้ามี test ให้รันด้วย ถ้าแก้ schema ให้รัน `db:migrate` ถ้าไม่ผ่านให้แก้หรือรายงานผลตามจริง
 6. **สรุป diff**: บอกว่าแก้ไฟล์อะไร เปลี่ยนอะไร เพราะอะไร และสิ่งที่ยังไม่ได้ทำหรือยังไม่ได้ทดสอบ
 7. **ช่วย commit**: เสนอ commit message (ภาษาอังกฤษ, รูปแบบ `type: summary` เช่น `feat: add listing model`) แล้ว**ถามก่อน commit** ห้าม push ถ้าไม่ได้สั่ง เช็กว่าไม่มี `.env` หรือ `src/generated` ติดไปด้วย

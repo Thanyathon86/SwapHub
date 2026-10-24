@@ -1,5 +1,5 @@
-import { api } from '../../lib/api'
-import type { Listing } from '../listings/listingsApi'
+import { api } from '@shared/lib/api'
+import type { Listing } from '@shared/listings/listingsApi'
 
 export type OfferStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED'
 

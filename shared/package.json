@@ -1,0 +1,13 @@
+{
+  "name": "@ge175/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint"
+  },
+  "peerDependencies": {
+    "react": "^19.2.8",
+    "react-router": "^8.4.0"
+  }
+}
