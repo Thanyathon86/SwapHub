@@ -39,7 +39,7 @@ export type Listing = {
   updatedAt: string
   game: CatalogGame
   gradingCompany: CatalogGradingCompany | null
-  seller: { id: string; displayName: string }
+  seller: { id: string; displayName: string; username: string; avatarKey: string | null }
   // เรียงตามลำดับ รูปแรกเป็นปก
   images: ListingImage[]
 }

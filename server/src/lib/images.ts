@@ -2,6 +2,7 @@ import sharp from 'sharp'
 import { AppError } from './errors.js'
 
 const MAX_SIDE = 1600
+const AVATAR_SIDE = 400
 // กันไฟล์เล็กที่ขยายเป็นรูปยักษ์ตอน decode (decompression bomb) 40 ล้าน pixel ใหญ่พอสำหรับรูปจากมือถือ
 const MAX_INPUT_PIXELS = 40_000_000
 
@@ -16,6 +17,19 @@ export const processImage = async (input: Buffer) => {
       .webp({ quality: 82 })
       .toBuffer({ resolveWithObject: true })
     return { data, width: info.width, height: info.height }
+  } catch {
+    throw new AppError(400, 'INVALID_IMAGE', 'File is not a supported image')
+  }
+}
+
+// รูปโปรไฟล์ครอปเป็นสี่เหลี่ยมจัตุรัสตรงกลาง หน้าเว็บแสดงเป็นวงกลม
+export const processAvatar = async (input: Buffer) => {
+  try {
+    return await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
+      .rotate()
+      .resize({ width: AVATAR_SIDE, height: AVATAR_SIDE, fit: 'cover' })
+      .webp({ quality: 82 })
+      .toBuffer()
   } catch {
     throw new AppError(400, 'INVALID_IMAGE', 'File is not a supported image')
   }

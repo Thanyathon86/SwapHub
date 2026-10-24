@@ -33,6 +33,7 @@ export type AdminUser = {
   id: string
   email: string
   displayName: string
+  username: string
   role: Role
   status: UserStatus
   lastLoginAt: string | null

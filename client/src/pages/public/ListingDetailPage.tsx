@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { Spinner } from '@shared/components/Spinner'
 import { useAuth } from '@shared/auth/useAuth'
+import { Avatar } from '@shared/components/Avatar'
 import {
   conditionLabel,
   formatDate,
@@ -110,15 +111,18 @@ export default function ListingDetailPage() {
             </div>
           )}
 
-          <div className="flex items-center gap-3 border-t border-zinc-100 pt-6">
-            <span className="grid size-10 place-items-center rounded-full bg-zinc-100 font-semibold text-zinc-700 uppercase">
-              {listing.seller.displayName.slice(0, 1)}
-            </span>
+          <Link
+            to={`/u/${listing.seller.username}`}
+            className="flex items-center gap-3 border-t border-zinc-100 pt-6 hover:opacity-80"
+          >
+            <Avatar user={listing.seller} />
             <div className="text-sm">
-              <div className="font-medium">{listing.seller.displayName}</div>
+              <div className="font-medium">
+                {listing.seller.displayName} <span className="font-normal text-zinc-500">@{listing.seller.username}</span>
+              </div>
               <div className="text-zinc-500">ลงประกาศ {formatDate(listing.createdAt)}</div>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
     </div>

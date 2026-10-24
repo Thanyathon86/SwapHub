@@ -17,7 +17,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 | Entity | หน้าที่ |
 |---|---|
-| `User` | มี `role`: `USER` / `ADMIN` |
+| `User` | มี `role`: `USER` / `ADMIN` และโปรไฟล์: `username` (unique ตัวพิมพ์เล็ก, DB สุ่ม `user_xxxxxxxx` ให้ตอนสร้าง), `avatarKey`, `bio`, `location` |
 | `Game` | เกมการ์ด admin เพิ่ม/แก้ได้ |
 | `GradingCompany` | บริษัทเกรด admin เพิ่มได้ |
 | `Listing` | ประกาศ มี `type`: `SALE` / `TRADE` / `BOTH`, `itemKind`: `SINGLE` / `GRADED` / `SEALED` และ `status`: `PENDING_REVIEW` → `ACTIVE` / `REJECTED` → `CLOSED` |
@@ -51,6 +51,8 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 รูปประกาศ: `POST /api/listings/:id/images` (ทีละรูป field `image`, ≤ 5MB) ผ่าน `sharp` ทุกครั้ง (ตรวจว่าเป็นรูปจริง, ย่อด้านยาว ≤ 1600px, แปลงเป็น WebP, ตัด EXIF) แล้วเก็บผ่าน `lib/storage.ts` ซึ่งตอนนี้เขียนลง `UPLOAD_DIR` (default `server/uploads`, ไม่ commit) และเสิร์ฟที่ `/uploads/*` (Vite proxy ทั้งสองแอป) ย้ายไป S3/R2 ให้แก้แค่ `storage.ts` และ `imageUrl` ใน shared เพิ่ม/ลบรูปนับเป็นการแก้ตัวการ์ด (กลับไปรอตรวจ)
 
 ลืมรหัสผ่าน: `POST /api/auth/forgot-password` ตอบ 204 เสมอ (ไม่บอกว่ามีบัญชีไหม, จำกัด 5 ครั้ง/15 นาที/IP ด้วย `resetLimiter`) ลิงก์ชี้ไปเว็บ user หรือ admin ตาม role, `POST /api/auth/reset-password` ตั้งรหัสใหม่และเตะทุก session ส่งอีเมลผ่าน `lib/mailer.ts`: ตั้ง `SMTP_URL` แล้วส่งจริง ไม่ตั้งจะพิมพ์อีเมลลง console ของ server (dev) และเก็บใน `devOutbox` ให้ test อ่าน
+
+โปรไฟล์: `PATCH /api/me/profile`, `POST|DELETE /api/me/avatar` (ครอป 400×400 WebP), `GET /api/users/:username` ดูได้โดยไม่ล็อกอิน แต่บัญชีที่ถูกระงับและบัญชี admin ตอบ 404 username ห้ามมีคำสงวน (admin, swaphub, support ฯลฯ ใน `me.service`) หน้าเว็บ: `/u/:username`, `/profile/edit`
 
 ยังไม่ทำ: แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
 
@@ -109,7 +111,7 @@ server/
     lib/                    prisma, session, password, errors (AppError), events (logEvent)
     middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler
     scripts/seed.ts         เกม/บริษัทเกรดเริ่มต้น + admin
-    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู), audit, events, admin (dashboard, counts)
+    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู, แก้โปรไฟล์, รูปโปรไฟล์), profiles (โปรไฟล์สาธารณะ), audit, events, admin (dashboard, counts)
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
       <feature>.schema.ts   zod schema ของ request
@@ -126,7 +128,7 @@ admin/src/                  เว็บหลังบ้าน route ไม่
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
   lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource, usePolling
   auth/                     authApi, AuthProvider, useAuth, LoginForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm
-  components/               Spinner, Pagination, FormField, CountBadge, RequireAuth, ErrorPage, NotFoundPage
+  components/               Spinner, Pagination, FormField, Avatar, CountBadge, RequireAuth, ErrorPage, NotFoundPage
   listings/                 listingsApi (types, imageUrl), labels, ListingArt, ListingCover (รูปปกหรือภาพวาด)
   support/                  types + label หมวด, MessageThread
   styles.css                theme + .btn/.input ฯลฯ ทั้งสองแอป import หลัง tailwindcss

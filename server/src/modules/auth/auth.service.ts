@@ -15,10 +15,12 @@ import type {
 } from './auth.schema.js'
 
 // เลือกเฉพาะฟิลด์ที่ส่งให้ client ได้ ห้ามส่ง passwordHash ออกไป
-export const toPublicUser = (user: Pick<User, 'id' | 'email' | 'displayName' | 'role'>) => ({
+export const toPublicUser = (user: Pick<User, 'id' | 'email' | 'displayName' | 'username' | 'avatarKey' | 'role'>) => ({
   id: user.id,
   email: user.email,
   displayName: user.displayName,
+  username: user.username,
+  avatarKey: user.avatarKey,
   role: user.role,
 })
 

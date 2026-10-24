@@ -4,7 +4,7 @@ declare global {
   namespace Express {
     interface Request {
       // ตั้งโดย requireAuth เท่านั้น
-      user?: { id: string; email: string; displayName: string; role: Role }
+      user?: { id: string; email: string; displayName: string; username: string; avatarKey: string | null; role: Role }
       sessionId?: string
     }
   }

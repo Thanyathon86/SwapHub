@@ -18,7 +18,7 @@ export const listingInclude = {
   game: { select: { id: true, name: true, slug: true } },
   gradingCompany: { select: { id: true, name: true } },
   // ผู้ใช้ทั่วไปเห็นแค่ชื่อที่แสดงของผู้ขาย ไม่ส่งอีเมลออกไป
-  seller: { select: { id: true, displayName: true } },
+  seller: { select: { id: true, displayName: true, username: true, avatarKey: true } },
   images: { select: { id: true, key: true, width: true, height: true }, orderBy: { position: 'asc' } },
 } satisfies Prisma.ListingInclude
 

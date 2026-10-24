@@ -6,6 +6,8 @@ export type AuthUser = {
   id: string
   email: string
   displayName: string
+  username: string
+  avatarKey: string | null
   role: Role
 }
 

@@ -11,6 +11,7 @@ const adminUserSelect = {
   id: true,
   email: true,
   displayName: true,
+  username: true,
   role: true,
   status: true,
   lastLoginAt: true,

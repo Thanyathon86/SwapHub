@@ -56,7 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, status, login, adminLogin, register, logout, logoutAll }),
+    // setUser จาก useState มี identity คงที่ ใส่ตรง ๆ ได้เลย
+    () => ({ user, status, login, adminLogin, register, logout, logoutAll, updateUser: setUser }),
     [user, status, login, adminLogin, register, logout, logoutAll],
   )
 

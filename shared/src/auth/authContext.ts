@@ -10,6 +10,8 @@ export type AuthContextValue = {
   register: (input: RegisterInput) => Promise<AuthUser>
   logout: () => Promise<void>
   logoutAll: () => Promise<void>
+  // หลังแก้โปรไฟล์หรือเปลี่ยนรูป ให้เมนูด้านบนเปลี่ยนตามทันทีโดยไม่ต้องโหลด /auth/me ใหม่
+  updateUser: (user: AuthUser) => void
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

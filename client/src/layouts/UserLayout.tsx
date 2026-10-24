@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
+import { Avatar } from '@shared/components/Avatar'
 import { CountBadge } from '@shared/components/CountBadge'
 import { usePolling } from '@shared/lib/usePolling'
 import { fetchCounts } from '../features/counts/counts'
@@ -48,9 +49,9 @@ export function UserLayout() {
                   <Link
                     to="/profile"
                     title={user.displayName}
-                    className="relative grid size-9 place-items-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 uppercase hover:bg-zinc-200"
+                    className="relative rounded-full hover:opacity-80"
                   >
-                    {user.displayName.slice(0, 1)}
+                    <Avatar user={user} />
                     {/* ทีมงานตอบเรื่องที่แจ้งแล้ว ลิงก์ไปหน้านั้นอยู่ในโปรไฟล์ */}
                     <span className="absolute -top-1.5 -right-2.5">
                       <CountBadge count={counts?.answeredTickets} label="เรื่องที่ทีมงานตอบแล้ว" />

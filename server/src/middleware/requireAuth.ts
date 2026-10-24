@@ -15,8 +15,8 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
   // cookie ต้องหมดอายุพร้อม session ใน DB ไม่งั้น browser จะทิ้ง cookie ก่อนทั้งที่ session ยังใช้ได้
   if (session.renewed) res.cookie(SESSION_COOKIE, token, sessionCookieOptions(session.expiresAt))
 
-  const { id, email, displayName, role } = session.user
-  req.user = { id, email, displayName, role }
+  const { id, email, displayName, username, avatarKey, role } = session.user
+  req.user = { id, email, displayName, username, avatarKey, role }
   req.sessionId = session.id
   next()
 }

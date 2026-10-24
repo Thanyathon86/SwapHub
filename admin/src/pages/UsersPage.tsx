@@ -157,7 +157,9 @@ export default function UsersPage() {
               {data.users.map((u) => (
                 <tr key={u.id}>
                   <td className="px-6 py-2">
-                    <div className="font-medium text-slate-800">{u.displayName}</div>
+                    <div className="font-medium text-slate-800">
+                      {u.displayName} <span className="font-normal text-slate-400">@{u.username}</span>
+                    </div>
                     <div className="text-xs text-slate-500">{u.email}</div>
                   </td>
                   <td className="px-3 py-2">

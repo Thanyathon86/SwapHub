@@ -6,7 +6,9 @@ import { UserLayout } from './layouts/UserLayout'
 import ForgotPasswordPage from './pages/public/ForgotPasswordPage'
 import HomePage from './pages/public/HomePage'
 import ListingDetailPage from './pages/public/ListingDetailPage'
+import PublicProfilePage from './pages/public/PublicProfilePage'
 import EditListingPage from './pages/user/EditListingPage'
+import EditProfilePage from './pages/user/EditProfilePage'
 import LoginPage from './pages/public/LoginPage'
 import RegisterPage from './pages/public/RegisterPage'
 import ResetPasswordPage from './pages/public/ResetPasswordPage'
@@ -31,10 +33,12 @@ export const router = createBrowserRouter([
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'reset-password', element: <ResetPasswordPage /> },
       { path: 'listings/:id', element: <ListingDetailPage /> },
+      { path: 'u/:username', element: <PublicProfilePage /> },
       {
         element: <RequireAuth />,
         children: [
           { path: 'profile', element: <ProfilePage /> },
+          { path: 'profile/edit', element: <EditProfilePage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'sell', element: <NewListingPage /> },
           { path: 'my-listings', element: <MyListingsPage /> },

@@ -25,6 +25,11 @@ model User {
   email        String     @unique
   passwordHash String
   displayName  String
+  // ชื่อในลิงก์โปรไฟล์ (/u/username) เก็บตัวพิมพ์เล็ก บัญชีใหม่ได้ชื่อสุ่มจาก DB ก่อน แล้วค่อยเปลี่ยนเองทีหลัง
+  username     String     @unique @default(dbgenerated("('user_'::text || substr(md5((random())::text), 1, 8))"))
+  avatarKey    String?
+  bio          String?
+  location     String?
   role         Role       @default(USER)
   status       UserStatus @default(ACTIVE)
   lastLoginAt  DateTime?
