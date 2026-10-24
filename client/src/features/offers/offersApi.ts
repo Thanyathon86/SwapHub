@@ -1,10 +1,20 @@
 import { api } from '@shared/lib/api'
 import type { Listing } from '@shared/listings/listingsApi'
+import type { RatingSummary } from '@shared/reviews/StarRating'
 
 export type OfferStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED'
 
 // server ส่งอีเมลมาเฉพาะ offer ที่ ACCEPTED แล้ว นอกนั้นเป็น null
-type Party = { id: string; displayName: string; email: string | null }
+export type Party = {
+  id: string
+  displayName: string
+  username: string
+  avatarKey: string | null
+  email: string | null
+  rating: RatingSummary
+}
+
+export type OfferReview = { reviewerId: string; rating: number; comment: string | null; updatedAt: string }
 
 export type Offer = {
   id: string
@@ -20,6 +30,9 @@ export type Offer = {
   listing: Omit<Listing, 'seller'> & { seller: Party }
   buyer: Party
   items: { id: string; listingId: string; quantity: number; listing: Listing }[]
+  // รีวิวของดีลนี้ (สูงสุดฝ่ายละหนึ่ง) และวันสุดท้ายที่ยังให้/แก้คะแนนได้ (null ถ้ายังไม่ตอบรับ)
+  reviews: OfferReview[]
+  reviewDeadline: string | null
 }
 
 export type CreateOfferInput = {
@@ -44,4 +57,6 @@ export const offersApi = {
   accept: (id: string) => respond(id, 'accept'),
   decline: (id: string) => respond(id, 'decline'),
   cancel: (id: string) => respond(id, 'cancel'),
+  review: (id: string, input: { rating: number; comment: string }) =>
+    api<{ review: OfferReview }>(`/offers/${id}/review`, { method: 'PUT', body: input }).then((r) => r.review),
 }

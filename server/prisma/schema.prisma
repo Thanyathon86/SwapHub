@@ -47,6 +47,8 @@ model User {
   assignedTickets  SupportTicket[]  @relation("TicketAssignee")
   supportMessages  SupportMessage[]
   resetTokens      PasswordResetToken[]
+  reviewsGiven     Review[]           @relation("ReviewAuthor")
+  reviewsReceived  Review[]           @relation("ReviewSubject")
 }
 
 model Session {
@@ -184,7 +186,8 @@ model Offer {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  items OfferItem[]
+  items   OfferItem[]
+  reviews Review[]
 
   @@index([listingId, status])
   @@index([buyerId])
@@ -340,4 +343,24 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// คะแนนที่คู่ดีลให้กันหลังตอบรับข้อเสนอ หนึ่งคนให้ได้หนึ่งรีวิวต่อดีล แก้ได้ภายใน 30 วันหลังตอบรับ (ตรวจใน service)
+model Review {
+  id         String   @id @default(uuid()) @db.Uuid
+  offerId    String   @db.Uuid
+  offer      Offer    @relation(fields: [offerId], references: [id])
+  reviewerId String   @db.Uuid
+  reviewer   User     @relation("ReviewAuthor", fields: [reviewerId], references: [id])
+  revieweeId String   @db.Uuid
+  reviewee   User     @relation("ReviewSubject", fields: [revieweeId], references: [id])
+  // 1-5 ดาว ตรวจช่วงค่าด้วย zod
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([offerId, reviewerId])
+  // หน้าโปรไฟล์ดึงรีวิวที่คนนี้ได้รับเรียงล่าสุดก่อน และคิดค่าเฉลี่ย
+  @@index([revieweeId, createdAt])
 }

@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { useAuth } from '@shared/auth/useAuth'
+import { Avatar } from '@shared/components/Avatar'
 import { Spinner } from '@shared/components/Spinner'
+import { RatingBadge } from '@shared/reviews/StarRating'
 import { formatDate, formatPrice } from '@shared/listings/labels'
 import { offerStatusClass, offerStatusLabel } from '../../features/offers/labels'
 import { offersApi, type Offer } from '../../features/offers/offersApi'
+import { ReviewPanel } from '../../features/offers/ReviewPanel'
 import { errorMessage } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
 
@@ -18,6 +22,7 @@ export default function OffersPage() {
   // เก็บแท็บใน URL เพื่อให้ลิงก์จากหน้าอื่นเปิดแท็บที่ถูกต้องได้ และกด back แล้วไม่หลุดแท็บ
   const [params, setParams] = useSearchParams()
   const tab: Tab = params.get('tab') === 'outgoing' ? 'outgoing' : 'incoming'
+  const { user } = useAuth()
   const { data: offers, error, reload } = useResource(offersApi[tab], tab)
   const [rowError, setRowError] = useState<{ id: string; error: unknown } | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -79,10 +84,17 @@ export default function OffersPage() {
                     >
                       {offerStatusLabel[offer.status]}
                     </span>
-                    <span className="text-xs text-zinc-500">
-                      {tab === 'incoming' ? 'จาก' : 'ถึง'} {counterpart.displayName} · {formatDate(offer.createdAt)}
-                    </span>
+                    <span className="text-xs text-zinc-500">{formatDate(offer.createdAt)}</span>
                   </div>
+                  {/* คะแนนของอีกฝ่ายอยู่ตรงนี้ ผู้ขายดูก่อนตัดสินใจตอบรับได้ว่าคนที่ขอมาเชื่อถือได้แค่ไหน */}
+                  <Link to={`/u/${counterpart.username}`} className="flex w-fit items-center gap-2 text-sm hover:opacity-80">
+                    <Avatar user={counterpart} />
+                    <span>
+                      <span className="text-zinc-500">{tab === 'incoming' ? 'จาก' : 'ถึง'}</span>{' '}
+                      <span className="font-medium">{counterpart.displayName}</span>
+                    </span>
+                    <RatingBadge rating={counterpart.rating} />
+                  </Link>
                   <Link to={`/listings/${offer.listing.id}`} className="block truncate font-medium hover:underline">
                     {offer.listing.title}
                     {offer.quantity > 1 && <span className="text-zinc-500"> × {offer.quantity}</span>}
@@ -111,6 +123,9 @@ export default function OffersPage() {
                     <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
                       ติดต่อ {counterpart.displayName}: {counterpart.email}
                     </p>
+                  )}
+                  {offer.status === 'ACCEPTED' && user && (
+                    <ReviewPanel offer={offer} me={user.id} other={counterpart} onSaved={reload} />
                   )}
                   {rowError?.id === offer.id && <p className="text-sm text-red-600">{errorMessage(rowError.error)}</p>}
                 </div>

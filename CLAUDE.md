@@ -23,6 +23,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 | `Listing` | ประกาศ มี `type`: `SALE` / `TRADE` / `BOTH`, `itemKind`: `SINGLE` / `GRADED` / `SEALED` และ `status`: `PENDING_REVIEW` → `ACTIVE` / `REJECTED` → `CLOSED` |
 | `Offer` | คำขอซื้อหรือขอแลกต่อประกาศ (ใส่เงินเพิ่มได้) มี `status`: `PENDING` / `ACCEPTED` / `DECLINED` / `CANCELLED` |
 | `ListingImage` | รูปของประกาศ (สูงสุด 6) เก็บแค่ `key` ไฟล์จริงอยู่ใน storage |
+| `Review` | คะแนน 1–5 + ความเห็นที่คู่ดีลให้กันหลัง offer `ACCEPTED` ฝ่ายละหนึ่งรีวิวต่อดีล (unique `offerId + reviewerId`) แก้ได้ภายใน 30 วันหลังตอบรับ |
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
 | `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร (`AuditAction`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
 | `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
@@ -54,7 +55,9 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 โปรไฟล์: `PATCH /api/me/profile`, `POST|DELETE /api/me/avatar` (ครอป 400×400 WebP), `GET /api/users/:username` ดูได้โดยไม่ล็อกอิน แต่บัญชีที่ถูกระงับและบัญชี admin ตอบ 404 username ห้ามมีคำสงวน (admin, swaphub, support ฯลฯ ใน `me.service`) หน้าเว็บ: `/u/:username`, `/profile/edit`
 
-ยังไม่ทำ: แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
+รีวิว: `PUT /api/offers/:id/review` (สร้างหรือแก้ของเดิม) ผู้รับรีวิวคืออีกฝ่ายของดีลเสมอ คะแนนเฉลี่ยคิดสดจากตาราง (`ratingSummaries` คิดหลายคนในคิวรีเดียว) แนบใน offer (ทั้งผู้ซื้อและผู้ขาย), หน้ารายละเอียดประกาศ (ผู้ขาย) และโปรไฟล์ หน้ารวมประกาศไม่แนบ รายการรีวิว: `GET /api/users/:username/reviews`
+
+ยังไม่ทำ: admin ลบรีวิวที่ไม่เหมาะสม, แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
 
 ## Stack
 
@@ -111,7 +114,7 @@ server/
     lib/                    prisma, session, password, errors (AppError), events (logEvent)
     middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler
     scripts/seed.ts         เกม/บริษัทเกรดเริ่มต้น + admin
-    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู, แก้โปรไฟล์, รูปโปรไฟล์), profiles (โปรไฟล์สาธารณะ), audit, events, admin (dashboard, counts)
+    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู, แก้โปรไฟล์, รูปโปรไฟล์), profiles (โปรไฟล์สาธารณะ), reviews, audit, events, admin (dashboard, counts)
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
       <feature>.schema.ts   zod schema ของ request
@@ -131,6 +134,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
   components/               Spinner, Pagination, FormField, Avatar, CountBadge, RequireAuth, ErrorPage, NotFoundPage
   listings/                 listingsApi (types, imageUrl), labels, ListingArt, ListingCover (รูปปกหรือภาพวาด)
   support/                  types + label หมวด, MessageThread
+  reviews/                  StarRating (RatingBadge, Stars, StarInput)
   styles.css                theme + .btn/.input ฯลฯ ทั้งสองแอป import หลัง tailwindcss
 ```
 

@@ -96,6 +96,8 @@ const messages: Record<string, string> = {
   OFFER_ALREADY_PENDING: 'คุณมีข้อเสนอที่รอตอบอยู่กับประกาศนี้แล้ว',
   OFFER_NOT_FOUND: 'ไม่พบข้อเสนอนี้',
   OFFER_NOT_PENDING: 'ข้อเสนอนี้ถูกตอบหรือยกเลิกไปแล้ว ลองรีเฟรชหน้า',
+  OFFER_NOT_ACCEPTED: 'ให้คะแนนได้เฉพาะดีลที่ตอบรับแล้ว',
+  REVIEW_WINDOW_CLOSED: 'เลยกำหนด 30 วันหลังตกลงดีลแล้ว ให้หรือแก้คะแนนไม่ได้',
   OFFER_NO_LONGER_VALID: 'การ์ดในข้อเสนอนี้ถูกปิดหรือจำนวนไม่พอแล้ว',
 }
 

@@ -1,4 +1,5 @@
 import { api } from '../lib/api'
+import type { RatingSummary } from '../reviews/StarRating'
 
 export type ListingType = 'SALE' | 'TRADE' | 'BOTH'
 export type ItemKind = 'SINGLE' | 'GRADED' | 'SEALED'
@@ -39,7 +40,8 @@ export type Listing = {
   updatedAt: string
   game: CatalogGame
   gradingCompany: CatalogGradingCompany | null
-  seller: { id: string; displayName: string; username: string; avatarKey: string | null }
+  // rating มีเฉพาะหน้ารายละเอียดประกาศ หน้ารวมไม่ได้แนบมา
+  seller: { id: string; displayName: string; username: string; avatarKey: string | null; rating?: RatingSummary }
   // เรียงตามลำดับ รูปแรกเป็นปก
   images: ListingImage[]
 }

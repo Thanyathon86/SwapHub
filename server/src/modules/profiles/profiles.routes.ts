@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { validate } from '../../middleware/validate.js'
+import { reviewsQuery, type ReviewsQuery } from '../reviews/reviews.schema.js'
 import * as profilesService from './profiles.service.js'
 
 // ดูได้โดยไม่ต้องล็อกอิน เหมือนหน้าประกาศ
@@ -13,4 +14,9 @@ type UsernameParams = z.infer<typeof usernameParams>
 profilesRouter.get('/:username', validate({ params: usernameParams }), async (req, res) => {
   const { username } = req.params as UsernameParams
   res.json(await profilesService.getProfile(username))
+})
+
+profilesRouter.get('/:username/reviews', validate({ params: usernameParams, query: reviewsQuery }), async (req, res) => {
+  const { username } = req.params as UsernameParams
+  res.json(await profilesService.getReviews(username, req.query as unknown as ReviewsQuery))
 })

@@ -1,6 +1,8 @@
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { listingInclude, publicOmit, publicWhere } from '../listings/listings.service.js'
+import { listReviewsFor, ratingOf } from '../reviews/reviews.service.js'
+import type { ReviewsQuery } from '../reviews/reviews.schema.js'
 
 // หน้าโปรไฟล์แสดงประกาศได้ไม่เกินนี้ ยังไม่แบ่งหน้าเพราะผู้ขายส่วนใหญ่มีไม่ถึง
 const PROFILE_LISTINGS = 60
@@ -31,7 +33,7 @@ export const findPublicUser = async (username: string) => {
 
 export const getProfile = async (username: string) => {
   const profile = await findPublicUser(username)
-  const [listings, deals] = await Promise.all([
+  const [listings, deals, rating] = await Promise.all([
     prisma.listing.findMany({
       where: { ...publicWhere, sellerId: profile.id },
       include: listingInclude,
@@ -41,6 +43,12 @@ export const getProfile = async (username: string) => {
     }),
     // ดีลที่ตกลงกันได้ ไม่ว่าจะเป็นฝั่งผู้ซื้อหรือผู้ขาย
     prisma.offer.count({ where: { status: 'ACCEPTED', OR: [{ buyerId: profile.id }, { listing: { sellerId: profile.id } }] } }),
+    ratingOf(profile.id),
   ])
-  return { profile: { ...profile, stats: { activeListings: listings.length, deals } }, listings }
+  return { profile: { ...profile, stats: { activeListings: listings.length, deals, rating } }, listings }
+}
+
+export const getReviews = async (username: string, query: ReviewsQuery) => {
+  const profile = await findPublicUser(username)
+  return listReviewsFor(profile.id, query)
 }

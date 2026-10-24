@@ -120,6 +120,12 @@ describe('โปรไฟล์สาธารณะ GET /api/users/:username', 
     const seller = await createUser({ username: 'seller2' })
     const listing = await createListing(seller.id)
     const res = await request(app).get(`/api/listings/${listing.id}`)
-    expect(res.body.listing.seller).toEqual({ id: seller.id, displayName: 'Test User', username: 'seller2', avatarKey: null })
+    expect(res.body.listing.seller).toEqual({
+      id: seller.id,
+      displayName: 'Test User',
+      username: 'seller2',
+      avatarKey: null,
+      rating: { average: null, count: 0 },
+    })
   })
 })

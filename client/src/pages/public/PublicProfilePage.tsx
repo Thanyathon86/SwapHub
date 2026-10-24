@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
 import { Avatar } from '@shared/components/Avatar'
 import { Spinner } from '@shared/components/Spinner'
 import { errorMessage } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
+import { RatingBadge } from '@shared/reviews/StarRating'
 import { ListingCard } from '../../features/listings/ListingCard'
+import { ProfileReviews } from '../../features/profile/ProfileReviews'
 import { profileApi } from '../../features/profile/profileApi'
 
 const joined = (iso: string) => new Date(iso).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })
@@ -22,6 +25,7 @@ export default function PublicProfilePage() {
   const { username = '' } = useParams()
   const { user } = useAuth()
   const { data, error } = useResource(() => profileApi.get(username), username)
+  const [tab, setTab] = useState<'listings' | 'reviews'>('listings')
 
   if (error !== undefined && !data) {
     return (
@@ -54,6 +58,7 @@ export default function PublicProfilePage() {
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
             <Stat value={profile.stats.activeListings} label="ประกาศ" />
             <Stat value={profile.stats.deals} label="ดีลสำเร็จ" />
+            <RatingBadge rating={profile.stats.rating} />
           </div>
           <div className="space-y-1 text-sm">
             <div className="font-semibold">{profile.displayName}</div>
@@ -65,9 +70,30 @@ export default function PublicProfilePage() {
         </div>
       </header>
 
-      <section className="border-t border-zinc-100 pt-6">
-        <h2 className="mb-4 text-sm font-medium tracking-wide text-zinc-500">ประกาศที่เปิดอยู่</h2>
-        {listings.length === 0 ? (
+      <section className="border-t border-zinc-100">
+        <div role="tablist" className="mb-6 flex justify-center gap-10 text-sm">
+          {(
+            [
+              ['listings', `ประกาศ (${profile.stats.activeListings})`],
+              ['reviews', `รีวิว (${profile.stats.rating.count})`],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={`-mt-px border-t py-3 font-medium ${tab === key ? 'border-zinc-900 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-700'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {tab === 'reviews' ? (
+          // key: เปลี่ยนไปดูโปรไฟล์คนอื่นแล้วเริ่มรายการรีวิวใหม่ ไม่ต่อท้ายของคนเดิม
+          <ProfileReviews key={profile.username} username={profile.username} />
+        ) : listings.length === 0 ? (
           <p className="py-12 text-center text-sm text-zinc-500">ยังไม่มีประกาศที่เปิดอยู่</p>
         ) : (
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">

@@ -5,6 +5,7 @@ import { processImage } from '../../lib/images.js'
 import { prisma } from '../../lib/prisma.js'
 import { removeFile, saveFile } from '../../lib/storage.js'
 import { cancelPendingOffers } from '../offers/cancelPendingOffers.js'
+import { ratingOf } from '../reviews/reviews.service.js'
 import type {
   AdminListingsQuery,
   BrowseListingsQuery,
@@ -79,7 +80,8 @@ export const getListing = async (id: string) => {
     omit: publicOmit,
   })
   if (!listing) throw notFound()
-  return listing
+  // หน้ารายละเอียดเป็นที่ที่ผู้ซื้อตัดสินใจ จึงแนบคะแนนผู้ขายมาด้วย (หน้ารวมไม่แนบ ไม่งั้นต้อง query ทุกการ์ด)
+  return { ...listing, seller: { ...listing.seller, rating: await ratingOf(listing.sellerId) } }
 }
 
 // เกมและบริษัทเกรดที่ admin ปิดไปแล้วห้ามใช้ ทั้งตอนสร้างและตอนแก้

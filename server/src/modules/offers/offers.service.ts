@@ -2,32 +2,53 @@ import type { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { listingInclude, publicOmit, publicWhere } from '../listings/listings.service.js'
+import { ratingSummaries, REVIEW_WINDOW_MS, type RatingSummary } from '../reviews/reviews.service.js'
 import { cancelPendingOffers } from './cancelPendingOffers.js'
 import type { CreateOfferInput } from './offers.schema.js'
 
 // ดึงอีเมลมาด้วยแต่จะส่งออกไปเฉพาะ offer ที่ตอบรับแล้ว (ดู toView)
-const contactUser = { select: { id: true, displayName: true, email: true } } satisfies Prisma.UserDefaultArgs
+const contactUser = {
+  select: { id: true, displayName: true, username: true, avatarKey: true, email: true },
+} satisfies Prisma.UserDefaultArgs
 
 const offerInclude = {
   listing: { include: { ...listingInclude, seller: contactUser }, omit: publicOmit },
   buyer: contactUser,
   items: { include: { listing: { include: listingInclude, omit: publicOmit } } },
+  reviews: { select: { reviewerId: true, rating: true, comment: true, updatedAt: true } },
 } satisfies Prisma.OfferInclude
 
 type OfferRow = Prisma.OfferGetPayload<{ include: typeof offerInclude }>
 
 // ยังไม่มีแชท ให้ทั้งสองฝ่ายเห็นอีเมลกันหลังตกลงแล้วเท่านั้น ก่อนหน้านั้นใครก็ส่ง offer มาเพื่อเก็บอีเมลไม่ได้
-const toView = (offer: OfferRow) => {
+// แนบคะแนนของทั้งสองฝ่าย ผู้ขายใช้ดูก่อนตัดสินใจตอบรับว่าคนที่ขอมาเชื่อถือได้ไหม
+const noRating: RatingSummary = { average: null, count: 0 }
+
+const toView = (offer: OfferRow, ratings: Map<string, RatingSummary>) => {
   const accepted = offer.status === 'ACCEPTED'
   return {
     ...offer,
-    buyer: { ...offer.buyer, email: accepted ? offer.buyer.email : null },
+    buyer: { ...offer.buyer, email: accepted ? offer.buyer.email : null, rating: ratings.get(offer.buyer.id) ?? noRating },
     listing: {
       ...offer.listing,
-      seller: { ...offer.listing.seller, email: accepted ? offer.listing.seller.email : null },
+      seller: {
+        ...offer.listing.seller,
+        email: accepted ? offer.listing.seller.email : null,
+        rating: ratings.get(offer.listing.seller.id) ?? noRating,
+      },
     },
+    // หน้าเว็บใช้ซ่อนปุ่มให้คะแนนเมื่อเลยกำหนด (server ตรวจซ้ำอีกที)
+    reviewDeadline: accepted && offer.respondedAt ? new Date(offer.respondedAt.getTime() + REVIEW_WINDOW_MS) : null,
   }
 }
+
+// ดึงคะแนนของทุกคนในรายการทีเดียว ไม่ query ทีละ offer
+const toViews = async (offers: OfferRow[]) => {
+  const ratings = await ratingSummaries(offers.flatMap((o) => [o.buyer.id, o.listing.seller.id]))
+  return offers.map((o) => toView(o, ratings))
+}
+
+const toViewOne = async (offer: OfferRow) => (await toViews([offer]))[0]!
 
 const notFound = () => new AppError(404, 'OFFER_NOT_FOUND', 'Offer not found')
 const noLongerValid = () =>
@@ -88,28 +109,28 @@ export const createOffer = async (buyerId: string, input: CreateOfferInput) => {
     },
     include: offerInclude,
   })
-  return toView(offer)
+  return toViewOne(offer)
 }
 
 export const listIncoming = async (sellerId: string) =>
-  (
+  toViews(
     await prisma.offer.findMany({
       where: { listing: { sellerId } },
       include: offerInclude,
       orderBy: { createdAt: 'desc' },
       take: LIST_LIMIT,
-    })
-  ).map(toView)
+    }),
+  )
 
 export const listOutgoing = async (buyerId: string) =>
-  (
+  toViews(
     await prisma.offer.findMany({
       where: { buyerId },
       include: offerInclude,
       orderBy: { createdAt: 'desc' },
       take: LIST_LIMIT,
-    })
-  ).map(toView)
+    }),
+  )
 
 // where ของแต่ละการกระทำบอกว่าใครมีสิทธิ์ทำกับ offer นั้น
 const sellerOf = (sellerId: string) => ({ listing: { sellerId } }) satisfies Prisma.OfferWhereInput
@@ -135,12 +156,12 @@ const markPending = async (
 
 export const declineOffer = async (sellerId: string, id: string) => {
   await markPending(prisma, id, sellerOf(sellerId), 'DECLINED')
-  return toView(await prisma.offer.findUniqueOrThrow({ where: { id }, include: offerInclude }))
+  return toViewOne(await prisma.offer.findUniqueOrThrow({ where: { id }, include: offerInclude }))
 }
 
 export const cancelOffer = async (buyerId: string, id: string) => {
   await markPending(prisma, id, buyerOf(buyerId), 'CANCELLED')
-  return toView(await prisma.offer.findUniqueOrThrow({ where: { id }, include: offerInclude }))
+  return toViewOne(await prisma.offer.findUniqueOrThrow({ where: { id }, include: offerInclude }))
 }
 
 export const acceptOffer = (sellerId: string, id: string) =>
@@ -173,5 +194,5 @@ export const acceptOffer = (sellerId: string, id: string) =>
       await cancelPendingOffers(tx, ids)
     }
 
-    return toView(await tx.offer.findUniqueOrThrow({ where: { id }, include: offerInclude }))
-  })
+    return tx.offer.findUniqueOrThrow({ where: { id }, include: offerInclude })
+  }).then(toViewOne)

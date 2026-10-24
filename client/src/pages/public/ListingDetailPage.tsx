@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from 'react-router'
 import { Spinner } from '@shared/components/Spinner'
 import { useAuth } from '@shared/auth/useAuth'
 import { Avatar } from '@shared/components/Avatar'
+import { RatingBadge } from '@shared/reviews/StarRating'
 import {
   conditionLabel,
   formatDate,
@@ -120,7 +121,10 @@ export default function ListingDetailPage() {
               <div className="font-medium">
                 {listing.seller.displayName} <span className="font-normal text-zinc-500">@{listing.seller.username}</span>
               </div>
-              <div className="text-zinc-500">ลงประกาศ {formatDate(listing.createdAt)}</div>
+              <div className="flex flex-wrap items-center gap-x-2 text-zinc-500">
+                {listing.seller.rating && <RatingBadge rating={listing.seller.rating} />}
+                <span>ลงประกาศ {formatDate(listing.createdAt)}</span>
+              </div>
             </div>
           </Link>
         </div>
