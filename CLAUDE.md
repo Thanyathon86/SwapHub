@@ -69,40 +69,34 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 ## โครงสร้างไฟล์
 
-### ปัจจุบัน
-
 ```
 server/
   prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem
   prisma.config.ts          ตั้งค่า Prisma 7 (URL อ่านจาก env)
-  src/index.ts              เปิด server + graceful shutdown
-  src/app.ts                Express app, middleware (helmet, cors, rate limit), /api/health
-  src/config/env.ts         ตรวจ env ด้วย zod ตอนเริ่ม
-  src/lib/prisma.ts         PrismaClient ตัวเดียวทั้งแอป
-client/
-  src/main.tsx, App.tsx     หน้าเดียว ยังไม่มี routing
-```
-
-### เป้าหมาย (ค่อย ๆ ย้ายไปตามนี้เมื่อเริ่มทำแต่ละฟีเจอร์)
-
-```
-server/src/
-  modules/<feature>/        auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, admin
-    <feature>.routes.ts     เส้นทาง + middleware ที่ใช้
-    <feature>.service.ts    logic + เรียก Prisma
-    <feature>.schema.ts     zod schema ของ request
-  middleware/               requireAuth, requireRole('ADMIN'), validate, errorHandler
-  config/, lib/
+  src/
+    index.ts, app.ts        เปิด server + graceful shutdown, Express app + middleware
+    routes.ts               รวม router ทุก module ใต้ /api
+    config/env.ts           ตรวจ env ด้วย zod ตอนเริ่ม
+    lib/                    prisma, session, password, errors (AppError)
+    middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler
+    scripts/seed.ts         เกม/บริษัทเกรดเริ่มต้น + admin
+    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), admin
+      <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
+      <feature>.service.ts  logic + เรียก Prisma
+      <feature>.schema.ts   zod schema ของ request
 client/src/
+  router.tsx                react-router, โค้ดหลังบ้าน lazy load แยก chunk
   pages/                    public/, user/, admin/
   layouts/                  UserLayout, AdminLayout
-  features/<feature>/       component + hook ของแต่ละฟีเจอร์
-  components/               UI ที่ใช้ร่วมกัน
-  lib/api.ts                fetch wrapper เรียก /api
+  features/<feature>/       auth, listings, offers, admin: component + api ของแต่ละฟีเจอร์
+  components/               UI ที่ใช้ร่วมกัน (FormField, RequireAuth, RequireAdmin ฯลฯ)
+  lib/api.ts                fetch wrapper เรียก /api + แปล error code เป็นข้อความไทย
 ```
 
 - route ของ admin อยู่ใต้ `/api/admin/*` และต้องผ่าน `requireRole('ADMIN')` ทุกเส้น ตรวจสิทธิ์ที่ server เสมอ การซ่อนเมนูฝั่ง client ไม่นับเป็นการป้องกัน
-- ฝั่ง client ยังไม่มี router ต้องติดตั้งเพิ่ม (เสนอในแผนก่อน)
+- หน้า login แยกกัน: user ใช้ `/login` (`POST /api/auth/login`), admin ใช้ `/admin/login` (`POST /api/auth/admin/login`) แต่ละเส้นรับเฉพาะ role ของตัวเอง
+- อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อกันเพราะยังไม่มีแชท)
+- ตอบรับ offer จะตัด `quantity` ทั้งประกาศปลายทางและของที่แลก ประกาศที่เหลือ 0 จะกลายเป็น `CLOSED` และ offer ที่ค้างกับประกาศที่ปิดจะถูก `CANCELLED`
 
 ## Conventions
 
