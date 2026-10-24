@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
 import { clientUrl } from '../lib/env'
 
@@ -41,7 +41,9 @@ export function AdminLayout() {
           ))}
         </nav>
         <div className="space-y-2 border-t border-slate-700 px-5 py-4 text-sm">
-          <div className="truncate text-slate-400">{user?.email}</div>
+          <Link to="/account" className="block truncate text-slate-400 hover:text-white" title="บัญชีของฉัน">
+            {user?.email}
+          </Link>
           <a href={clientUrl} className="block hover:text-white">
             ไปหน้าเว็บ
           </a>

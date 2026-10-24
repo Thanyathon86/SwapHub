@@ -14,5 +14,12 @@ export const loginSchema = z.strictObject({
   password: z.string().min(1).max(128),
 })
 
+// ขั้นต่ำ 8 ตามตอนสมัคร ส่วน admin ต้อง 12 ซึ่งเช็กใน service เพราะต้องรู้ role ก่อน
+export const changePasswordSchema = z.strictObject({
+  currentPassword: z.string().min(1).max(128),
+  newPassword: z.string().min(8).max(128),
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>

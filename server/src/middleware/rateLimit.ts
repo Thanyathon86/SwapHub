@@ -23,9 +23,11 @@ export const apiLimiter = rateLimit({
 })
 
 // สำหรับ login/register ให้เข้มกว่าเพื่อชะลอการเดารหัสผ่าน
+// นับเฉพาะครั้งที่ล้มเหลว (status >= 400) คนที่ล็อกอินถูกบ่อย ๆ ไม่ควรโดนบล็อก
 export const authLimiter = rateLimit({
   windowMs: WINDOW_MS,
   limit: 10,
+  skipSuccessfulRequests: true,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   handler: onLimited('auth'),

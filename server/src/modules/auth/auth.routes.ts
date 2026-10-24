@@ -11,7 +11,14 @@ import {
 } from '../../lib/session.js'
 import { AppError } from '../../lib/errors.js'
 import { logEvent } from '../../lib/events.js'
-import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from './auth.schema.js'
+import {
+  changePasswordSchema,
+  loginSchema,
+  registerSchema,
+  type ChangePasswordInput,
+  type LoginInput,
+  type RegisterInput,
+} from './auth.schema.js'
 import * as authService from './auth.service.js'
 import type { LoginPortal } from './auth.service.js'
 
@@ -71,6 +78,21 @@ authRouter.post('/logout-all', requireAuth, async (req, res) => {
   res.clearCookie(SESSION_COOKIE, sessionCookieOptions())
   res.status(204).end()
 })
+
+// ผ่าน authLimiter ด้วย กันการเดารหัสเดิมจาก session ที่ถูกขโมยมา
+authRouter.post(
+  '/change-password',
+  authLimiter,
+  requireAuth,
+  validate({ body: changePasswordSchema }),
+  async (req, res) => {
+    const user = getAuthUser(req)
+    // requireAuth ตั้ง sessionId ไว้เสมอ ใช้ ?? '' แค่ให้ type ผ่าน (ไม่มี session id ไหนเป็นสตริงว่าง)
+    await authService.changePassword(user.id, req.sessionId ?? '', req.body as ChangePasswordInput)
+    logEvent(req, { type: 'PASSWORD_CHANGED' })
+    res.status(204).end()
+  },
+)
 
 authRouter.get('/me', requireAuth, (req, res) => {
   res.json({ user: getAuthUser(req) })

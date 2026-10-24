@@ -4,6 +4,7 @@ import NotFoundPage from '@shared/components/NotFoundPage'
 import { RequireAuth } from '@shared/components/RequireAuth'
 import { RequireAdmin } from './components/RequireAdmin'
 import { AdminLayout } from './layouts/AdminLayout'
+import AccountPage from './pages/AccountPage'
 import AuditLogPage from './pages/AuditLogPage'
 import CatalogPage from './pages/CatalogPage'
 import DashboardPage from './pages/DashboardPage'
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
               { path: 'events', element: <EventsPage /> },
               { path: 'support', element: <SupportPage /> },
               { path: 'support/:id', element: <TicketDetailPage /> },
+              { path: 'account', element: <AccountPage /> },
               { path: '*', element: <NotFoundPage /> },
             ],
           },

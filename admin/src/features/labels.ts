@@ -16,6 +16,7 @@ export const eventTypeLabels: Record<EventType, Badge> = {
   LOGIN_FAILED: { text: 'ล็อกอินไม่สำเร็จ', className: 'bg-amber-100 text-amber-800' },
   REGISTER: { text: 'สมัครสมาชิก', className: 'bg-slate-100 text-slate-700' },
   LOGOUT: { text: 'ออกจากระบบ', className: 'bg-slate-100 text-slate-700' },
+  PASSWORD_CHANGED: { text: 'เปลี่ยนรหัสผ่าน', className: 'bg-slate-100 text-slate-700' },
   RATE_LIMITED: { text: 'ส่งคำขอถี่เกิน', className: 'bg-amber-100 text-amber-800' },
   ACCESS_DENIED: { text: 'ไม่มีสิทธิ์เข้าถึง', className: 'bg-red-100 text-red-700' },
   SERVER_ERROR: { text: 'ระบบผิดพลาด', className: 'bg-red-100 text-red-700' },

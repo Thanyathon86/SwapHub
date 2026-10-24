@@ -75,6 +75,7 @@ export type EventType =
   | 'LOGIN_FAILED'
   | 'REGISTER'
   | 'LOGOUT'
+  | 'PASSWORD_CHANGED'
   | 'RATE_LIMITED'
   | 'ACCESS_DENIED'
   | 'SERVER_ERROR'

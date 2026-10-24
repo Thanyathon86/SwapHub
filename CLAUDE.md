@@ -42,7 +42,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 กฎของ support ที่ตรวจใน service: ผู้ใช้เห็นเฉพาะเรื่องของตัวเอง (ของคนอื่นตอบ 404), เปิดค้างได้ไม่เกิน 5 เรื่อง, เรื่องที่ปิดแล้วตอบต่อไม่ได้, API ฝั่งผู้ใช้ห้ามส่งชื่อหรือ id ของ admin ที่ตอบ (หน้าเว็บแสดงเป็น "ทีมงาน SwapHub")
 
-ยังไม่ทำ: อัปโหลดรูป (ต้องเลือกที่เก็บไฟล์ก่อน), แจ้งเตือน (อีเมล/ตัวเลขบนเมนู), แชทระหว่างผู้ซื้อกับผู้ขาย
+ยังไม่ทำ: ลืมรหัสผ่าน (ต้องมีระบบส่งอีเมลก่อน), อัปโหลดรูป (ต้องเลือกที่เก็บไฟล์ก่อน), แจ้งเตือน (อีเมล/ตัวเลขบนเมนู), แชทระหว่างผู้ซื้อกับผู้ขาย
 
 ## Stack
 
@@ -104,12 +104,12 @@ client/src/                 เว็บ user
   features/<feature>/       auth (RegisterForm), listings (ListingCard), offers, support
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
   router.tsx, layouts/AdminLayout.tsx, components/RequireAdmin.tsx
-  pages/                    Login, Dashboard, ListingReview, Users, Catalog, Support, TicketDetail, AuditLog, Events
+  pages/                    Login, Dashboard, ListingReview, Users, Catalog, Support, TicketDetail, AuditLog, Events, Account
   features/                 adminApi, labels, CatalogSection, dashboard/ (ColumnChart, BarList วาดเองไม่ใช้ library)
   lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
   lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource
-  auth/                     authApi, AuthProvider, useAuth, LoginForm
+  auth/                     authApi, AuthProvider, useAuth, LoginForm, ChangePasswordForm
   components/               Spinner, Pagination, FormField, RequireAuth, ErrorPage, NotFoundPage
   listings/                 listingsApi (types), labels, ListingArt
   support/                  types + label หมวด, MessageThread
@@ -117,6 +117,8 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 ```
 
 - route ของ admin อยู่ใต้ `/api/admin/*` และต้องผ่าน `requireRole('ADMIN')` ทุกเส้น ตรวจสิทธิ์ที่ server เสมอ การซ่อนเมนูฝั่ง client ไม่นับเป็นการป้องกัน
+- รหัสผ่าน: user อย่างน้อย 8 ตัว, admin อย่างน้อย 12 ตัว เปลี่ยนรหัสผ่านแล้วลบ session อื่นทั้งหมดยกเว้นเครื่องที่กำลังใช้ error ที่ไม่ได้แปลว่า session หลุดห้ามใช้ 401 เพราะ client จะเด้งออกจากระบบ
+- `authLimiter` นับเฉพาะ request ที่ล้มเหลว (10 ครั้ง / 15 นาที / IP) ตอนเทสถ้าโดนบล็อก restart server เพื่อล้างตัวนับได้
 - หน้า login แยกกัน: เว็บ user ใช้ `POST /api/auth/login`, เว็บ admin ใช้ `POST /api/auth/admin/login` แต่ละเส้นรับเฉพาะ role ของตัวเอง
 - `shared/` ห้าม import จาก `client/` หรือ `admin/` ใส่เฉพาะของที่ทั้งสองแอปใช้จริง เพราะแก้ shared พังจะพังทั้งคู่ ของที่ใช้แอปเดียวให้อยู่ในแอปนั้น
 - แก้ `shared/` แล้วต้อง build ทั้ง client และ admin

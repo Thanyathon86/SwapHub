@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { ChangePasswordForm } from '@shared/auth/ChangePasswordForm'
 import { useAuth } from '@shared/auth/useAuth'
 import { errorMessage } from '@shared/lib/api'
 
@@ -42,6 +43,13 @@ export default function SettingsPage() {
             <dd className="truncate font-medium">{user.email}</dd>
           </div>
         </dl>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-sm font-medium text-zinc-500">เปลี่ยนรหัสผ่าน</h2>
+        <div className="rounded-3xl px-5 py-5 ring-1 ring-zinc-200">
+          <ChangePasswordForm />
+        </div>
       </div>
 
       <div className="space-y-3">
