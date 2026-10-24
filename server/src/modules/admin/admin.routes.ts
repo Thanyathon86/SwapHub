@@ -14,6 +14,10 @@ export const adminRouter = Router()
 // ตรวจสิทธิ์ครั้งเดียวที่ระดับ router ทุก route ที่เพิ่มในไฟล์นี้หรือ mount ใต้นี้จะถูกป้องกันอัตโนมัติ
 adminRouter.use(requireAuth, requireRole('ADMIN'))
 
+adminRouter.get('/counts', async (_req, res) => {
+  res.json(await adminService.getCounts())
+})
+
 adminRouter.get('/dashboard', async (_req, res) => {
   res.json(await adminService.getDashboard())
 })

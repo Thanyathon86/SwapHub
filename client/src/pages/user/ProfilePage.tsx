@@ -1,10 +1,13 @@
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
+import { CountBadge } from '@shared/components/CountBadge'
+import { useCounts } from '../../features/counts/counts'
 
 const menuClass = 'flex justify-between px-5 py-4 text-sm hover:bg-zinc-50'
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
+  const counts = useCounts()
   const navigate = useNavigate()
 
   if (!user) return null
@@ -27,10 +30,18 @@ export default function ProfilePage() {
           ประกาศของฉัน <span className="text-zinc-400">→</span>
         </Link>
         <Link to="/offers" className={menuClass}>
-          ข้อเสนอ <span className="text-zinc-400">→</span>
+          <span>
+            ข้อเสนอ
+            <CountBadge count={counts?.incomingOffers} label="ข้อเสนอที่รอตอบ" />
+          </span>
+          <span className="text-zinc-400">→</span>
         </Link>
         <Link to="/support" className={menuClass}>
-          ติดต่อทีมงาน <span className="text-zinc-400">→</span>
+          <span>
+            ติดต่อทีมงาน
+            <CountBadge count={counts?.answeredTickets} label="เรื่องที่ทีมงานตอบแล้ว" />
+          </span>
+          <span className="text-zinc-400">→</span>
         </Link>
         <Link to="/settings" className={menuClass}>
           ตั้งค่าบัญชี <span className="text-zinc-400">→</span>

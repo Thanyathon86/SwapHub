@@ -1,20 +1,27 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
+import { CountBadge } from '@shared/components/CountBadge'
+import { usePolling } from '@shared/lib/usePolling'
+import { adminApi, type AdminCounts } from '../features/adminApi'
 import { clientUrl } from '../lib/env'
 
-const menu: { label: string; to: string }[] = [
+const COUNTS_INTERVAL_MS = 60_000
+
+// count บอกว่าเมนูไหนมีงานค้าง ให้เห็นจากทุกหน้าโดยไม่ต้องกลับไปดู Dashboard
+const menu: { label: string; to: string; count?: keyof AdminCounts; countLabel?: string }[] = [
   { label: 'Dashboard', to: '/' },
-  { label: 'ประกาศ', to: '/listings' },
+  { label: 'ประกาศ', to: '/listings', count: 'pendingListings', countLabel: 'ประกาศรอตรวจ' },
   { label: 'ผู้ใช้', to: '/users' },
   { label: 'เกมและเกรด', to: '/catalog' },
   { label: 'ประวัติการจัดการ', to: '/audit' },
-  { label: 'เรื่องที่แจ้ง', to: '/support' },
+  { label: 'เรื่องที่แจ้ง', to: '/support', count: 'openTickets', countLabel: 'เรื่องที่รอตอบ' },
   { label: 'Log ระบบ', to: '/events' },
 ]
 
 export function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const counts = usePolling(adminApi.counts, COUNTS_INTERVAL_MS, user !== null)
 
   const onLogout = async () => {
     await logout().catch(() => undefined)
@@ -37,6 +44,7 @@ export function AdminLayout() {
               }
             >
               {item.label}
+              {item.count && <CountBadge count={counts?.[item.count]} label={item.countLabel ?? item.label} />}
             </NavLink>
           ))}
         </nav>

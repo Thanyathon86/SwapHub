@@ -1,5 +1,10 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
+import { CountBadge } from '@shared/components/CountBadge'
+import { usePolling } from '@shared/lib/usePolling'
+import { fetchCounts } from '../features/counts/counts'
+
+const COUNTS_INTERVAL_MS = 60_000
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `hidden text-sm transition sm:inline ${isActive ? 'font-medium text-zinc-900' : 'text-zinc-500 hover:text-zinc-900'}`
@@ -8,6 +13,7 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 export function UserLayout() {
   const { user, status, logout } = useAuth()
   const navigate = useNavigate()
+  const counts = usePolling(fetchCounts, COUNTS_INTERVAL_MS, user !== null)
 
   const onLogout = async () => {
     await logout().catch(() => undefined)
@@ -31,6 +37,7 @@ export function UserLayout() {
                   </NavLink>
                   <NavLink to="/offers" className={navClass}>
                     ข้อเสนอ
+                    <CountBadge count={counts?.incomingOffers} label="ข้อเสนอที่รอตอบ" />
                   </NavLink>
                   <button type="button" onClick={onLogout} className={navClass({ isActive: false })}>
                     ออกจากระบบ
@@ -41,9 +48,13 @@ export function UserLayout() {
                   <Link
                     to="/profile"
                     title={user.displayName}
-                    className="grid size-9 place-items-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 uppercase hover:bg-zinc-200"
+                    className="relative grid size-9 place-items-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 uppercase hover:bg-zinc-200"
                   >
                     {user.displayName.slice(0, 1)}
+                    {/* ทีมงานตอบเรื่องที่แจ้งแล้ว ลิงก์ไปหน้านั้นอยู่ในโปรไฟล์ */}
+                    <span className="absolute -top-1.5 -right-2.5">
+                      <CountBadge count={counts?.answeredTickets} label="เรื่องที่ทีมงานตอบแล้ว" />
+                    </span>
                   </Link>
                 </>
               ) : (
@@ -61,7 +72,7 @@ export function UserLayout() {
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-        <Outlet />
+        <Outlet context={counts} />
       </main>
       <footer className="border-t border-zinc-100 py-8 text-center text-xs text-zinc-400">
         SwapHub · ตลาดซื้อขายแลกเปลี่ยนการ์ดเกม ·{' '}

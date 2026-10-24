@@ -44,7 +44,9 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 กฎของ support ที่ตรวจใน service: ผู้ใช้เห็นเฉพาะเรื่องของตัวเอง (ของคนอื่นตอบ 404), เปิดค้างได้ไม่เกิน 5 เรื่อง, เรื่องที่ปิดแล้วตอบต่อไม่ได้, API ฝั่งผู้ใช้ห้ามส่งชื่อหรือ id ของ admin ที่ตอบ (หน้าเว็บแสดงเป็น "ทีมงาน SwapHub")
 
-ยังไม่ทำ: ลืมรหัสผ่าน (ต้องมีระบบส่งอีเมลก่อน), อัปโหลดรูป (ต้องเลือกที่เก็บไฟล์ก่อน), แจ้งเตือน (อีเมล/ตัวเลขบนเมนู), แชทระหว่างผู้ซื้อกับผู้ขาย
+ตัวเลขแจ้งเตือนบนเมนู: `GET /api/me/counts` และ `GET /api/admin/counts` นับเฉพาะสิ่งที่ต้องทำต่อ (ยังไม่มีระบบ "อ่านแล้ว") หน้าเว็บดึงด้วย `usePolling` ทุก 60 วินาทีและทุกครั้งที่เปลี่ยนหน้า ฝั่ง client ส่งต่อให้หน้าลูกผ่าน `<Outlet context>` (`useCounts`)
+
+ยังไม่ทำ: ลืมรหัสผ่าน (ต้องมีระบบส่งอีเมลก่อน), อัปโหลดรูป (ต้องเลือกที่เก็บไฟล์ก่อน), แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
 
 ## Stack
 
@@ -101,7 +103,7 @@ server/
     lib/                    prisma, session, password, errors (AppError), events (logEvent)
     middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler
     scripts/seed.ts         เกม/บริษัทเกรดเริ่มต้น + admin
-    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, audit, events, admin (dashboard)
+    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู), audit, events, admin (dashboard, counts)
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
       <feature>.schema.ts   zod schema ของ request
@@ -116,9 +118,9 @@ admin/src/                  เว็บหลังบ้าน route ไม่
   features/                 adminApi, labels, CatalogSection, dashboard/ (ColumnChart, BarList วาดเองไม่ใช้ library)
   lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
-  lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource
+  lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource, usePolling
   auth/                     authApi, AuthProvider, useAuth, LoginForm, ChangePasswordForm
-  components/               Spinner, Pagination, FormField, RequireAuth, ErrorPage, NotFoundPage
+  components/               Spinner, Pagination, FormField, CountBadge, RequireAuth, ErrorPage, NotFoundPage
   listings/                 listingsApi (types), labels, ListingArt
   support/                  types + label หมวด, MessageThread
   styles.css                theme + .btn/.input ฯลฯ ทั้งสองแอป import หลัง tailwindcss

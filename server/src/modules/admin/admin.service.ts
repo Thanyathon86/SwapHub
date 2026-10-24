@@ -14,6 +14,15 @@ const dayKey = (date: Date) => date.toLocaleDateString('en-CA', { timeZone: TIME
 const lastDays = (count: number) =>
   Array.from({ length: count }, (_, i) => dayKey(new Date(Date.now() - (count - 1 - i) * DAY_MS)))
 
+// เบากว่า getDashboard มาก ใช้กับตัวเลขบนเมนูที่ดึงทุกนาที
+export const getCounts = async () => {
+  const [pendingListings, openTickets] = await Promise.all([
+    prisma.listing.count({ where: { status: 'PENDING_REVIEW' } }),
+    prisma.supportTicket.count({ where: { status: 'OPEN' } }),
+  ])
+  return { pendingListings, openTickets }
+}
+
 export const getDashboard = async () => {
   const now = Date.now()
   const since24h = new Date(now - DAY_MS)

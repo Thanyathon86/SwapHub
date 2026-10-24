@@ -56,6 +56,8 @@ export type AuditLog = {
 
 export type AuditLogsPage = { logs: AuditLog[]; total: number; page: number; pageSize: number }
 
+export type AdminCounts = { pendingListings: number; openTickets: number }
+
 export type DailyPoint = { day: string; users: number; listings: number; deals: number }
 
 export type Dashboard = {
@@ -121,6 +123,7 @@ const usersQueryString = ({ q, status, role, page }: UsersQuery) => {
 
 export const adminApi = {
   dashboard: () => api<Dashboard>('/admin/dashboard'),
+  counts: () => api<AdminCounts>('/admin/counts'),
   listTickets: ({ status, category, page }: TicketsQuery) =>
     api<TicketsPage>(
       `/admin/support/tickets?${new URLSearchParams({ status, page: String(page), ...(category && { category }) })}`,
