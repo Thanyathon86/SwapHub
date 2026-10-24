@@ -2,16 +2,8 @@ import { useSearchParams } from 'react-router'
 import { Spinner } from '@shared/components/Spinner'
 import { errorMessage } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
-import { adminApi, type AuditAction } from '../features/adminApi'
-
-const actionLabels: Record<AuditAction, { text: string; className: string }> = {
-  USER_PROMOTED: { text: 'ตั้งเป็น admin', className: 'bg-indigo-100 text-indigo-700' },
-  USER_DEMOTED: { text: 'ถอดสิทธิ์ admin', className: 'bg-amber-100 text-amber-700' },
-  USER_SUSPENDED: { text: 'ระงับบัญชี', className: 'bg-red-100 text-red-700' },
-  USER_REACTIVATED: { text: 'ปลดระงับ', className: 'bg-green-100 text-green-700' },
-}
-
-const formatDate = (iso: string) => new Date(iso).toLocaleString('th-TH')
+import { adminApi } from '../features/adminApi'
+import { auditActionLabels, formatDateTime } from '../features/labels'
 
 export default function AuditLogPage() {
   const [params, setParams] = useSearchParams()
@@ -48,10 +40,10 @@ export default function AuditLogPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {data.logs.map((log) => {
-                const action = actionLabels[log.action]
+                const action = auditActionLabels[log.action]
                 return (
                   <tr key={log.id}>
-                    <td className="px-6 py-2 whitespace-nowrap text-slate-500">{formatDate(log.createdAt)}</td>
+                    <td className="px-6 py-2 whitespace-nowrap text-slate-500">{formatDateTime(log.createdAt)}</td>
                     <td className="px-3 py-2">
                       <div className="font-medium text-slate-800">{log.actor.displayName}</div>
                       <div className="text-xs text-slate-500">{log.actor.email}</div>

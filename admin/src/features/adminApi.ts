@@ -55,13 +55,45 @@ export type AuditLog = {
 
 export type AuditLogsPage = { logs: AuditLog[]; total: number; page: number; pageSize: number }
 
-export type AdminStats = {
-  users: number
-  suspendedUsers: number
-  activeGames: number
-  pendingListings: number
-  activeListings: number
+export type DailyPoint = { day: string; users: number; listings: number; deals: number }
+
+export type Dashboard = {
+  attention: { pendingListings: number; pendingListingsOver24h: number; pendingOffers: number }
+  totals: { users: number; newUsers7d: number; suspendedUsers: number; activeListings: number; deals7d: number }
+  daily: DailyPoint[]
+  listingsByGame: { id: string; name: string; isActive: boolean; activeListings: number }[]
+  security24h: { loginFailed: number; rateLimited: number; accessDenied: number; serverErrors: number }
+  recentAudit: (Omit<AuditLog, 'actor' | 'targetUser'> & {
+    actor: { id: string; displayName: string }
+    targetUser: { id: string; displayName: string }
+  })[]
 }
+
+export type EventType =
+  | 'LOGIN_SUCCESS'
+  | 'LOGIN_FAILED'
+  | 'REGISTER'
+  | 'LOGOUT'
+  | 'RATE_LIMITED'
+  | 'ACCESS_DENIED'
+  | 'SERVER_ERROR'
+
+export type EventLog = {
+  id: string
+  type: EventType
+  userId: string | null
+  user: AuditParty | null
+  email: string | null
+  ip: string | null
+  userAgent: string | null
+  method: string | null
+  path: string | null
+  statusCode: number | null
+  detail: string | null
+  createdAt: string
+}
+
+export type EventsPage = { events: EventLog[]; total: number; page: number; pageSize: number }
 
 const usersQueryString = ({ q, status, role, page }: UsersQuery) => {
   const params = new URLSearchParams({ page: String(page) })
@@ -72,7 +104,9 @@ const usersQueryString = ({ q, status, role, page }: UsersQuery) => {
 }
 
 export const adminApi = {
-  stats: () => api<{ stats: AdminStats }>('/admin/stats').then((r) => r.stats),
+  dashboard: () => api<Dashboard>('/admin/dashboard'),
+  listEvents: (type: EventType | undefined, page: number) =>
+    api<EventsPage>(`/admin/events?${new URLSearchParams({ page: String(page), ...(type && { type }) })}`),
 
   listGames: () => api<{ games: Game[] }>('/admin/games').then((r) => r.games),
   createGame: (input: GameInput) => api<{ game: Game }>('/admin/games', { method: 'POST', body: input }),

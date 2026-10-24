@@ -37,6 +37,7 @@ model User {
   offers           Offer[]
   auditActions     AuditLog[] @relation("AuditActor")
   auditTargets     AuditLog[] @relation("AuditTarget")
+  events           EventLog[]
 }
 
 model Session {
@@ -212,4 +213,37 @@ model AuditLog {
 
   @@index([createdAt])
   @@index([targetUserId])
+}
+
+enum EventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  REGISTER
+  LOGOUT
+  RATE_LIMITED
+  ACCESS_DENIED
+  SERVER_ERROR
+}
+
+// log เหตุการณ์ด้านความปลอดภัยและ error ลบอัตโนมัติเมื่อเกิน LOG_RETENTION_DAYS (ต่างจาก AuditLog ที่เก็บถาวร)
+// ห้ามเก็บรหัสผ่าน, token หรือ body ของ request
+model EventLog {
+  id         String    @id @default(uuid()) @db.Uuid
+  type       EventType
+  // ไม่ใช้ FK แบบ Restrict เพราะ log นี้ไม่ควรกันการลบผู้ใช้
+  userId     String?   @db.Uuid
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // อีเมลที่ใช้ลองล็อกอิน เก็บเฉพาะ LOGIN_FAILED ไว้ดูว่ามีคนเดารหัสบัญชีไหน
+  email      String?
+  ip         String?
+  userAgent  String?
+  method     String?
+  path       String?
+  statusCode Int?
+  // รหัสสั้น ๆ เช่น error code ห้ามใส่ข้อความ error เต็มเพราะอาจมีข้อมูลจาก query ติดมา
+  detail     String?
+  createdAt  DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
 }

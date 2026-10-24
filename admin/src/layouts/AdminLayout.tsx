@@ -9,6 +9,7 @@ const menu: { label: string; to?: string }[] = [
   { label: 'ผู้ใช้', to: '/users' },
   { label: 'เกมและเกรด', to: '/catalog' },
   { label: 'ประวัติการจัดการ', to: '/audit' },
+  { label: 'Log ระบบ', to: '/events' },
   { label: 'เรื่องที่แจ้ง' },
 ]
 

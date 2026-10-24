@@ -24,6 +24,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 | `Offer` | คำขอซื้อหรือขอแลกต่อประกาศ (ใส่เงินเพิ่มได้) มี `status`: `PENDING` / `ACCEPTED` / `DECLINED` / `CANCELLED` |
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
 | `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร (`AuditAction`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
+| `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
 | `SupportTicket` | เรื่องที่ user แจ้ง admin (ยังไม่ได้สร้าง) |
 
 ฟิลด์ใน `Listing` ใช้ตาม `itemKind` (DB เป็น nullable, บังคับด้วย zod ใน service):
@@ -80,16 +81,16 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 ```
 server/
-  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, AuditLog
+  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, AuditLog, EventLog
   prisma.config.ts          ตั้งค่า Prisma 7 (URL อ่านจาก env)
   src/
     index.ts, app.ts        เปิด server + graceful shutdown, Express app + middleware
     routes.ts               รวม router ทุก module ใต้ /api
     config/env.ts           ตรวจ env ด้วย zod ตอนเริ่ม
-    lib/                    prisma, session, password, errors (AppError)
+    lib/                    prisma, session, password, errors (AppError), events (logEvent)
     middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler
     scripts/seed.ts         เกม/บริษัทเกรดเริ่มต้น + admin
-    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), audit, admin
+    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), audit, events, admin (dashboard)
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
       <feature>.schema.ts   zod schema ของ request
@@ -100,8 +101,8 @@ client/src/                 เว็บ user
   features/<feature>/       auth (RegisterForm), listings (ListingCard), offers
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
   router.tsx, layouts/AdminLayout.tsx, components/RequireAdmin.tsx
-  pages/                    Login, Dashboard, ListingReview, Users, Catalog, AuditLog
-  features/                 adminApi, CatalogSection
+  pages/                    Login, Dashboard, ListingReview, Users, Catalog, AuditLog, Events
+  features/                 adminApi, labels, CatalogSection, dashboard/ (ColumnChart, BarList วาดเองไม่ใช้ library)
   lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
   lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource
@@ -117,6 +118,8 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - แก้ `shared/` แล้วต้อง build ทั้ง client และ admin
 - admin ตั้ง/ถอดสิทธิ์ admin คนอื่นได้ (`PATCH /api/admin/users/:id/role`) แต่แก้บัญชีตัวเองไม่ได้ ทำให้เหลือ admin อย่างน้อย 1 คนเสมอ ระงับ admin ตรง ๆ ไม่ได้ต้องถอดสิทธิ์ก่อน เปลี่ยน role แล้วลบ session ทั้งหมดของคนนั้น
 - การกระทำของ admin ที่กระทบผู้ใช้ ให้บันทึกด้วย `recordAudit(tx, ...)` ใน transaction เดียวกับการเปลี่ยนแปลง
+- เหตุการณ์ด้านความปลอดภัยให้บันทึกด้วย `logEvent(req, ...)` จาก `lib/events.ts` (ไม่ await, พลาดแล้ว request ไม่ล้ม) ห้ามใส่รหัสผ่าน, token, body หรือ error message เต็มลง log เหตุการณ์ที่อาจถูกยิงรัว ๆ ใช้ `logEventThrottled`
+- งานกวาดข้อมูลเก่า (session หมดอายุ, EventLog เกินกำหนด) อยู่ใน `index.ts` รันทุกชั่วโมง
 - อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อกันเพราะยังไม่มีแชท)
 - ตอบรับ offer จะตัด `quantity` ทั้งประกาศปลายทางและของที่แลก ประกาศที่เหลือ 0 จะกลายเป็น `CLOSED` และ offer ที่ค้างกับประกาศที่ปิดจะถูก `CANCELLED`
 

@@ -1,5 +1,6 @@
 import { app } from './app.js'
 import { env } from './config/env.js'
+import { deleteOldEvents } from './lib/events.js'
 import { prisma } from './lib/prisma.js'
 import { deleteExpiredSessions } from './lib/session.js'
 
@@ -7,12 +8,14 @@ const server = app.listen(env.PORT, () => {
   console.log(`API running on http://localhost:${env.PORT}`)
 })
 
-// session ที่หมดอายุแล้วไม่มีใครใช้ cookie มาอีกจะค้างใน DB จึงต้องกวาดเป็นรอบ
-const SESSION_CLEANUP_MS = 60 * 60 * 1000
-const cleanupSessions = () =>
+// session หมดอายุและ log ที่เกินระยะเก็บจะค้างใน DB ถ้าไม่กวาดเป็นรอบ
+const CLEANUP_MS = 60 * 60 * 1000
+const cleanup = () => {
   deleteExpiredSessions().catch((err: unknown) => console.error('Session cleanup failed:', err))
-void cleanupSessions()
-const cleanupTimer = setInterval(cleanupSessions, SESSION_CLEANUP_MS)
+  deleteOldEvents().catch((err: unknown) => console.error('Event log cleanup failed:', err))
+}
+cleanup()
+const cleanupTimer = setInterval(cleanup, CLEANUP_MS)
 
 const shutdown = async () => {
   clearInterval(cleanupTimer)

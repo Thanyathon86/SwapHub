@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from 'express'
 import { AppError } from '../lib/errors.js'
+import { logEvent } from '../lib/events.js'
 
 // error จาก body-parser (http-errors) มี type บอกสาเหตุ
 const bodyParserErrors: Record<string, { status: number; code: string; message: string }> = {
@@ -12,7 +13,7 @@ const bodyParserErrors: Record<string, { status: number; code: string; message: 
 const getType = (err: unknown) =>
   typeof err === 'object' && err !== null && 'type' in err && typeof err.type === 'string' ? err.type : undefined
 
-export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   // ส่ง header ไปแล้วแก้ response ไม่ได้ ให้ Express ปิด connection เอง
   if (res.headersSent) return next(err)
 
@@ -31,5 +32,8 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, next) => {
 
   // error ที่ไม่ได้คาดไว้: log เต็มที่ server แต่ไม่ส่งรายละเอียดให้ client กันข้อมูลภายใน (stack, query, DB) หลุด
   console.error(err)
+  // เก็บแค่ชื่อหรือรหัส error ไม่เก็บ message เพราะ error จาก DB อาจมีค่าจาก query ติดมา
+  const code = typeof err === 'object' && err !== null && 'code' in err && typeof err.code === 'string' ? err.code : undefined
+  logEvent(req, { type: 'SERVER_ERROR', statusCode: 500, detail: code ?? (err instanceof Error ? err.name : 'Unknown') })
   res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } })
 }

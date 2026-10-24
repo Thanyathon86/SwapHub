@@ -1,17 +1,25 @@
+import type { NextFunction, Request } from 'express'
 import rateLimit from 'express-rate-limit'
 import { AppError } from '../lib/errors.js'
+import { logEventThrottled } from '../lib/events.js'
 
 const WINDOW_MS = 15 * 60 * 1000
 
 // ส่งต่อให้ errorHandler เพื่อให้ response 429 รูปแบบเดียวกับ error อื่น
 const rateLimited = () => new AppError(429, 'RATE_LIMITED', 'Too many requests, please try again later')
 
+// บันทึกครั้งเดียวต่อ IP ต่อรอบ ไม่ให้คนที่ยิงรัวทำให้ตาราง log บวม
+const onLimited = (name: string) => (req: Request, _res: unknown, next: NextFunction) => {
+  logEventThrottled(`rate:${name}:${req.ip}`, WINDOW_MS, req, { type: 'RATE_LIMITED', statusCode: 429, detail: name })
+  next(rateLimited())
+}
+
 export const apiLimiter = rateLimit({
   windowMs: WINDOW_MS,
   limit: 300,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  handler: (_req, _res, next) => next(rateLimited()),
+  handler: onLimited('api'),
 })
 
 // สำหรับ login/register ให้เข้มกว่าเพื่อชะลอการเดารหัสผ่าน
@@ -20,5 +28,5 @@ export const authLimiter = rateLimit({
   limit: 10,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  handler: (_req, _res, next) => next(rateLimited()),
+  handler: onLimited('auth'),
 })

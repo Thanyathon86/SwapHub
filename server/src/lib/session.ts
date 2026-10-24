@@ -68,7 +68,14 @@ export const findValidSession = async (token: string) => {
 
 export const deleteExpiredSessions = () => prisma.session.deleteMany({ where: { expiresAt: { lte: new Date() } } })
 
-export const deleteSession = (token: string) => prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } })
+// คืน userId ของ session ที่ลบ ไว้ให้ log ว่าใคร logout (null ถ้าไม่มี session นี้อยู่แล้ว)
+export const deleteSession = async (token: string) => {
+  const where = { tokenHash: hashToken(token) }
+  const session = await prisma.session.findUnique({ where, select: { userId: true } })
+  // deleteMany ไม่ throw ถ้าถูกลบไปก่อนแล้ว (เช่น logout พร้อมกันสองแท็บ)
+  if (session) await prisma.session.deleteMany({ where })
+  return session?.userId ?? null
+}
 
 // ใช้ตอน admin ระงับผู้ใช้หรือผู้ใช้เปลี่ยนรหัสผ่าน เพื่อเตะออกทุกอุปกรณ์
 export const deleteAllUserSessions = (userId: string) => prisma.session.deleteMany({ where: { userId } })

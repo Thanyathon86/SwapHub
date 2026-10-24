@@ -7,6 +7,7 @@ import { AdminLayout } from './layouts/AdminLayout'
 import AuditLogPage from './pages/AuditLogPage'
 import CatalogPage from './pages/CatalogPage'
 import DashboardPage from './pages/DashboardPage'
+import EventsPage from './pages/EventsPage'
 import ListingReviewPage from './pages/ListingReviewPage'
 import LoginPage from './pages/LoginPage'
 import UsersPage from './pages/UsersPage'
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
               { path: 'users', element: <UsersPage /> },
               { path: 'catalog', element: <CatalogPage /> },
               { path: 'audit', element: <AuditLogPage /> },
+              { path: 'events', element: <EventsPage /> },
               { path: '*', element: <NotFoundPage /> },
             ],
           },

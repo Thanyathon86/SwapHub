@@ -15,6 +15,8 @@ const envSchema = z.object({
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
   // เพดานอายุนับจาก login ต่ออายุเกินนี้ไม่ได้ ต้อง login ใหม่ กัน session ที่อยู่ได้ตลอดไปถ้าโดนขโมย
   SESSION_ABSOLUTE_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  // log เหตุการณ์ (EventLog) เก่ากว่านี้ถูกลบอัตโนมัติ ไม่รวม AuditLog ที่เก็บถาวร
+  LOG_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(60),
   // ใช้เฉพาะตอน seed admin คนแรก แอปปกติไม่ต้องมี
   ADMIN_EMAIL: z.email().optional(),
   ADMIN_PASSWORD: z.string().min(12).optional(),
