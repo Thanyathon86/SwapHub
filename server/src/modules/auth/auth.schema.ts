@@ -20,6 +20,16 @@ export const changePasswordSchema = z.strictObject({
   newPassword: z.string().min(8).max(128),
 })
 
+export const forgotPasswordSchema = z.strictObject({ email })
+
+// token เป็น base64url 43 ตัว จำกัดความยาวไว้กันส่งของแปลก ๆ มา
+export const resetPasswordSchema = z.strictObject({
+  token: z.string().min(20).max(200),
+  newPassword: z.string().min(8).max(128),
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>

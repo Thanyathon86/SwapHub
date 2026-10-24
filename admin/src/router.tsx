@@ -8,16 +8,20 @@ import AccountPage from './pages/AccountPage'
 import AuditLogPage from './pages/AuditLogPage'
 import CatalogPage from './pages/CatalogPage'
 import DashboardPage from './pages/DashboardPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import EventsPage from './pages/EventsPage'
 import ListingReviewPage from './pages/ListingReviewPage'
 import LoginPage from './pages/LoginPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import SupportPage from './pages/SupportPage'
 import TicketDetailPage from './pages/TicketDetailPage'
 import UsersPage from './pages/UsersPage'
 
 export const router = createBrowserRouter([
-  // อยู่นอก guard เพราะต้องเข้าได้ตอนยังไม่ login
+  // หน้าเหล่านี้อยู่นอก guard เพราะต้องเข้าได้ตอนยังไม่ login
   { path: 'login', element: <LoginPage />, errorElement: <ErrorPage /> },
+  { path: 'forgot-password', element: <ForgotPasswordPage />, errorElement: <ErrorPage /> },
+  { path: 'reset-password', element: <ResetPasswordPage />, errorElement: <ErrorPage /> },
   {
     element: <RequireAuth />,
     errorElement: <ErrorPage />,

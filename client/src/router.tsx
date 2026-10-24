@@ -3,11 +3,13 @@ import ErrorPage from '@shared/components/ErrorPage'
 import NotFoundPage from '@shared/components/NotFoundPage'
 import { RequireAuth } from '@shared/components/RequireAuth'
 import { UserLayout } from './layouts/UserLayout'
+import ForgotPasswordPage from './pages/public/ForgotPasswordPage'
 import HomePage from './pages/public/HomePage'
 import ListingDetailPage from './pages/public/ListingDetailPage'
 import EditListingPage from './pages/user/EditListingPage'
 import LoginPage from './pages/public/LoginPage'
 import RegisterPage from './pages/public/RegisterPage'
+import ResetPasswordPage from './pages/public/ResetPasswordPage'
 import MyListingsPage from './pages/user/MyListingsPage'
 import NewListingPage from './pages/user/NewListingPage'
 import NewTicketPage from './pages/user/NewTicketPage'
@@ -26,6 +28,8 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
+      { path: 'forgot-password', element: <ForgotPasswordPage /> },
+      { path: 'reset-password', element: <ResetPasswordPage /> },
       { path: 'listings/:id', element: <ListingDetailPage /> },
       {
         element: <RequireAuth />,

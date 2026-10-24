@@ -26,6 +26,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
 | `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร (`AuditAction`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
 | `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
+| `PasswordResetToken` | ลิงก์ลืมรหัสผ่าน เก็บแค่ sha256, หมดอายุ 30 นาที, ใช้ได้ครั้งเดียว ขอใหม่แล้วอันเก่าใช้ไม่ได้ |
 | `SupportTicket` | เรื่องที่ user แจ้ง admin มี `status`: `OPEN` (รอทีมงาน) ⇄ `ANSWERED` (รอผู้ใช้) → `CLOSED` และ `assigneeId` (admin ที่รับเรื่อง) |
 | `SupportMessage` | ข้อความในเรื่อง `fromStaff` บันทึกตอนเขียน แก้/ลบไม่ได้ |
 
@@ -49,7 +50,9 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 รูปประกาศ: `POST /api/listings/:id/images` (ทีละรูป field `image`, ≤ 5MB) ผ่าน `sharp` ทุกครั้ง (ตรวจว่าเป็นรูปจริง, ย่อด้านยาว ≤ 1600px, แปลงเป็น WebP, ตัด EXIF) แล้วเก็บผ่าน `lib/storage.ts` ซึ่งตอนนี้เขียนลง `UPLOAD_DIR` (default `server/uploads`, ไม่ commit) และเสิร์ฟที่ `/uploads/*` (Vite proxy ทั้งสองแอป) ย้ายไป S3/R2 ให้แก้แค่ `storage.ts` และ `imageUrl` ใน shared เพิ่ม/ลบรูปนับเป็นการแก้ตัวการ์ด (กลับไปรอตรวจ)
 
-ยังไม่ทำ: ลืมรหัสผ่าน (ต้องมีระบบส่งอีเมลก่อน), แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
+ลืมรหัสผ่าน: `POST /api/auth/forgot-password` ตอบ 204 เสมอ (ไม่บอกว่ามีบัญชีไหม, จำกัด 5 ครั้ง/15 นาที/IP ด้วย `resetLimiter`) ลิงก์ชี้ไปเว็บ user หรือ admin ตาม role, `POST /api/auth/reset-password` ตั้งรหัสใหม่และเตะทุก session ส่งอีเมลผ่าน `lib/mailer.ts`: ตั้ง `SMTP_URL` แล้วส่งจริง ไม่ตั้งจะพิมพ์อีเมลลง console ของ server (dev) และเก็บใน `devOutbox` ให้ test อ่าน
+
+ยังไม่ทำ: แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
 
 ## Stack
 
@@ -117,12 +120,12 @@ client/src/                 เว็บ user
   features/<feature>/       auth (RegisterForm), listings (ListingCard), offers, support
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
   router.tsx, layouts/AdminLayout.tsx, components/RequireAdmin.tsx
-  pages/                    Login, Dashboard, ListingReview, Users, Catalog, Support, TicketDetail, AuditLog, Events, Account
+  pages/                    Login, ForgotPassword, ResetPassword, Dashboard, ListingReview, Users, Catalog, Support, TicketDetail, AuditLog, Events, Account
   features/                 adminApi, labels, CatalogSection, dashboard/ (ColumnChart, BarList วาดเองไม่ใช้ library)
   lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
   lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource, usePolling
-  auth/                     authApi, AuthProvider, useAuth, LoginForm, ChangePasswordForm
+  auth/                     authApi, AuthProvider, useAuth, LoginForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm
   components/               Spinner, Pagination, FormField, CountBadge, RequireAuth, ErrorPage, NotFoundPage
   listings/                 listingsApi (types, imageUrl), labels, ListingArt, ListingCover (รูปปกหรือภาพวาด)
   support/                  types + label หมวด, MessageThread

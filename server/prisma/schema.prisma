@@ -41,6 +41,7 @@ model User {
   supportTickets   SupportTicket[]  @relation("TicketOwner")
   assignedTickets  SupportTicket[]  @relation("TicketAssignee")
   supportMessages  SupportMessage[]
+  resetTokens      PasswordResetToken[]
 }
 
 model Session {
@@ -225,6 +226,8 @@ enum EventType {
   REGISTER
   LOGOUT
   PASSWORD_CHANGED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET
   RATE_LIMITED
   ACCESS_DENIED
   SERVER_ERROR
@@ -317,4 +320,19 @@ model ListingImage {
   createdAt DateTime @default(now())
 
   @@index([listingId, position])
+}
+
+// ลิงก์รีเซ็ตรหัสผ่านที่ส่งทางอีเมล เก็บแค่ sha256 ของ token เหมือน Session ถ้า DB หลุดก็เอาไปใช้ไม่ได้
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  // ใช้ได้ครั้งเดียว ตั้งค่าตอนรีเซ็ตสำเร็จ
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }

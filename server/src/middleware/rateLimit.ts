@@ -27,6 +27,17 @@ export const apiLimiter = rateLimit({
   handler: onLimited('api'),
 })
 
+// ขอลิงก์ลืมรหัสผ่านตอบสำเร็จเสมอ authLimiter (นับแค่ครั้งที่ล้มเหลว) จึงกันไม่ได้
+// นับทุกครั้ง กันคนยิงอีเมลรัว ๆ ใส่กล่องจดหมายของคนอื่น
+export const resetLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: 5,
+  skip,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  handler: onLimited('reset'),
+})
+
 // สำหรับ login/register ให้เข้มกว่าเพื่อชะลอการเดารหัสผ่าน
 // นับเฉพาะครั้งที่ล้มเหลว (status >= 400) คนที่ล็อกอินถูกบ่อย ๆ ไม่ควรโดนบล็อก
 export const authLimiter = rateLimit({

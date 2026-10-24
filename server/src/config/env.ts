@@ -19,6 +19,9 @@ const envSchema = z.object({
   LOG_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(60),
   // โฟลเดอร์เก็บรูปที่อัปโหลด (path สัมพัทธ์นับจากโฟลเดอร์ server)
   UPLOAD_DIR: z.string().min(1).default('uploads'),
+  // ไม่ตั้ง = ไม่ส่งอีเมลจริง พิมพ์ลง console แทน (ใช้ตอน dev) รูปแบบ smtp(s)://user:pass@host:port
+  SMTP_URL: z.string().regex(/^smtps?:\/\//, 'Must start with smtp:// or smtps://').optional(),
+  MAIL_FROM: z.string().min(3).default('SwapHub <no-reply@swaphub.local>'),
   // ใช้เฉพาะตอน seed admin คนแรก แอปปกติไม่ต้องมี
   ADMIN_EMAIL: z.email().optional(),
   ADMIN_PASSWORD: z.string().min(12).optional(),

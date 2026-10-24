@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express'
-import { authLimiter } from '../../middleware/rateLimit.js'
+import { authLimiter, resetLimiter } from '../../middleware/rateLimit.js'
 import { getAuthUser, requireAuth } from '../../middleware/requireAuth.js'
 import { validate } from '../../middleware/validate.js'
 import {
@@ -13,11 +13,15 @@ import { AppError } from '../../lib/errors.js'
 import { logEvent } from '../../lib/events.js'
 import {
   changePasswordSchema,
+  forgotPasswordSchema,
   loginSchema,
   registerSchema,
+  resetPasswordSchema,
   type ChangePasswordInput,
+  type ForgotPasswordInput,
   type LoginInput,
   type RegisterInput,
+  type ResetPasswordInput,
 } from './auth.schema.js'
 import * as authService from './auth.service.js'
 import type { LoginPortal } from './auth.service.js'
@@ -93,6 +97,21 @@ authRouter.post(
     res.status(204).end()
   },
 )
+
+// ตอบ 204 เสมอไม่ว่าอีเมลจะมีบัญชีหรือไม่ กันการใช้หน้านี้เช็กว่าใครเป็นสมาชิก
+authRouter.post('/forgot-password', resetLimiter, validate({ body: forgotPasswordSchema }), async (req, res) => {
+  const input = req.body as ForgotPasswordInput
+  const userId = await authService.requestPasswordReset(input)
+  logEvent(req, { type: 'PASSWORD_RESET_REQUESTED', userId: userId ?? undefined, email: userId ? undefined : input.email })
+  res.status(204).end()
+})
+
+// authLimiter นับ token ที่ผิด กันการเดา token (ยากอยู่แล้วเพราะสุ่ม 256 bit แต่ไม่ควรให้ลองได้ไม่จำกัด)
+authRouter.post('/reset-password', authLimiter, validate({ body: resetPasswordSchema }), async (req, res) => {
+  const userId = await authService.resetPassword(req.body as ResetPasswordInput)
+  logEvent(req, { type: 'PASSWORD_RESET', userId })
+  res.status(204).end()
+})
 
 authRouter.get('/me', requireAuth, (req, res) => {
   res.json({ user: getAuthUser(req) })

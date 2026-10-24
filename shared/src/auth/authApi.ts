@@ -21,6 +21,9 @@ export const authApi = {
   register: (input: RegisterInput) => api<UserResponse>('/auth/register', { method: 'POST', body: input }),
   logout: () => api<void>('/auth/logout', { method: 'POST' }),
   logoutAll: () => api<void>('/auth/logout-all', { method: 'POST' }),
+  forgotPassword: (email: string) => api<void>('/auth/forgot-password', { method: 'POST', body: { email } }),
+  resetPassword: (input: { token: string; newPassword: string }) =>
+    api<void>('/auth/reset-password', { method: 'POST', body: input }),
   changePassword: (input: { currentPassword: string; newPassword: string }) =>
     api<void>('/auth/change-password', { method: 'POST', body: input }),
 }

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { FormField } from '../components/FormField'
 import { errorMessage, fieldErrors } from '../lib/api'
 import { safeRedirect } from './redirect'
@@ -42,6 +42,12 @@ export function LoginForm({ admin = false }: { admin?: boolean }) {
         required
         errors={fields.password}
       />
+      {/* ทั้งสองแอปมีหน้า /forgot-password ของตัวเอง */}
+      <div className="-mt-2 text-right">
+        <Link to="/forgot-password" className="text-sm text-zinc-500 hover:text-zinc-900 hover:underline">
+          ลืมรหัสผ่าน?
+        </Link>
+      </div>
       <button
         type="submit"
         disabled={submitting}
