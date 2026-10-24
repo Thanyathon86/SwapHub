@@ -5,8 +5,10 @@ import { errorMessage, fieldErrors } from '../../lib/api'
 import { safeRedirect } from './redirect'
 import { useAuth } from './useAuth'
 
-export function LoginForm() {
-  const { login } = useAuth()
+// admin = ใช้ในหน้า /admin/login ซึ่ง server รับเฉพาะบัญชี ADMIN
+export function LoginForm({ admin = false }: { admin?: boolean }) {
+  const { login: userLogin, adminLogin } = useAuth()
+  const login = admin ? adminLogin : userLogin
   const navigate = useNavigate()
   const location = useLocation()
   const [error, setError] = useState<unknown>(null)

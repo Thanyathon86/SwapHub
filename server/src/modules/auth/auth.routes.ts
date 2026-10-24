@@ -35,6 +35,12 @@ authRouter.post('/login', authLimiter, validate({ body: loginSchema }), async (r
   res.json({ user: authService.toPublicUser(user) })
 })
 
+authRouter.post('/admin/login', authLimiter, validate({ body: loginSchema }), async (req, res) => {
+  const user = await authService.login(req.body as LoginInput, 'ADMIN')
+  await startSession(req, res, user.id)
+  res.json({ user: authService.toPublicUser(user) })
+})
+
 // ไม่ต้อง requireAuth: session หมดอายุแล้วก็ควร logout ได้
 authRouter.post('/logout', async (req, res) => {
   const token: unknown = req.cookies?.[SESSION_COOKIE]

@@ -16,7 +16,7 @@ export function AdminLayout() {
 
   const onLogout = async () => {
     await logout().catch(() => undefined)
-    navigate('/', { replace: true })
+    navigate('/admin/login', { replace: true })
   }
 
   return (

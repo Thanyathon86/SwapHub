@@ -17,6 +17,7 @@ export type RegisterInput = LoginInput & { displayName: string }
 export const authApi = {
   me: () => api<UserResponse>('/auth/me'),
   login: (input: LoginInput) => api<UserResponse>('/auth/login', { method: 'POST', body: input }),
+  adminLogin: (input: LoginInput) => api<UserResponse>('/auth/admin/login', { method: 'POST', body: input }),
   register: (input: RegisterInput) => api<UserResponse>('/auth/register', { method: 'POST', body: input }),
   logout: () => api<void>('/auth/logout', { method: 'POST' }),
   logoutAll: () => api<void>('/auth/logout-all', { method: 'POST' }),

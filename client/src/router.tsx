@@ -37,9 +37,15 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    // อยู่นอก guard ของ /admin เพราะต้องเข้าได้ตอนยังไม่ login
+    path: 'admin/login',
+    errorElement: <ErrorPage />,
+    lazy: async () => ({ Component: (await import('./pages/admin/AdminLoginPage')).default }),
+  },
+  {
     // แยกโค้ดหลังบ้านเป็น chunk ต่างหาก user ทั่วไปจะไม่ต้องโหลด
     path: 'admin',
-    element: <RequireAuth />,
+    element: <RequireAuth loginPath="/admin/login" />,
     errorElement: <ErrorPage />,
     children: [
       {

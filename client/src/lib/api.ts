@@ -50,6 +50,7 @@ const messages: Record<string, string> = {
   INVALID_CREDENTIALS: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
   EMAIL_TAKEN: 'อีเมลนี้ถูกใช้สมัครแล้ว',
   ACCOUNT_SUSPENDED: 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแล',
+  USE_ADMIN_LOGIN: 'บัญชีผู้ดูแลระบบ กรุณาเข้าสู่ระบบที่หน้า /admin/login',
   RATE_LIMITED: 'ลองหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่',
   VALIDATION_ERROR: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง',
   UNAUTHENTICATED: 'กรุณาเข้าสู่ระบบ',

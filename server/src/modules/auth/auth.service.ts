@@ -29,7 +29,10 @@ export const register = async (input: RegisterInput) => {
 
 const invalidCredentials = () => new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password')
 
-export const login = async (input: LoginInput) => {
+// แต่ละหน้า login รับเฉพาะ role ของตัวเอง
+export type LoginPortal = 'USER' | 'ADMIN'
+
+export const login = async (input: LoginInput, portal: LoginPortal = 'USER') => {
   const user = await prisma.user.findUnique({ where: { email: input.email } })
   if (!user) {
     await burnPasswordCheck(input.password)
@@ -39,6 +42,12 @@ export const login = async (input: LoginInput) => {
 
   // บอกว่าโดนระงับได้เพราะผ่านรหัสผ่านแล้ว จึงไม่ได้เปิดช่องให้เดาอีเมล
   if (user.status !== 'ACTIVE') throw new AppError(403, 'ACCOUNT_SUSPENDED', 'Account is suspended')
+
+  // หน้า admin ตอบเหมือนรหัสผิด ไม่ยืนยันกับคนที่ลองเข้าว่าบัญชีนี้มีอยู่จริง
+  if (portal === 'ADMIN' && user.role !== 'ADMIN') throw invalidCredentials()
+  if (portal === 'USER' && user.role === 'ADMIN') {
+    throw new AppError(403, 'USE_ADMIN_LOGIN', 'Admin accounts must sign in from the admin login page')
+  }
 
   return prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
 }
