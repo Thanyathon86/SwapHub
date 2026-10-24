@@ -10,7 +10,9 @@ import { useResource } from '@shared/lib/useResource'
 
 export default function MyListingsPage() {
   const location = useLocation()
-  const created = (location.state as { created?: boolean } | null)?.created === true
+  const state = location.state as { created?: boolean; updated?: string } | null
+  const created = state?.created === true
+  const updated = state?.updated
   const { data: listings, error, reload } = useResource(listingsApi.mine)
   const [rowError, setRowError] = useState<{ id: string; error: unknown } | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -43,6 +45,11 @@ export default function MyListingsPage() {
 
       {created && (
         <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">ส่งประกาศแล้ว รอทีมงานตรวจสักครู่</p>
+      )}
+      {updated && (
+        <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
+          {updated === 'PENDING_REVIEW' ? 'บันทึกแล้ว ประกาศถูกส่งให้ทีมงานตรวจอีกครั้ง' : 'บันทึกการแก้ไขแล้ว'}
+        </p>
       )}
 
       {error !== undefined && !listings ? (
@@ -86,6 +93,11 @@ export default function MyListingsPage() {
                       ดูประกาศ
                     </Link>
                   )}
+                  {closable || listing.status === 'REJECTED' ? (
+                    <Link to={`/my-listings/${listing.id}/edit`} className="btn btn-secondary">
+                      แก้ไข
+                    </Link>
+                  ) : null}
                   {closable && (
                     <button
                       type="button"

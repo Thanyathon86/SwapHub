@@ -5,6 +5,7 @@ import { RequireAuth } from '@shared/components/RequireAuth'
 import { UserLayout } from './layouts/UserLayout'
 import HomePage from './pages/public/HomePage'
 import ListingDetailPage from './pages/public/ListingDetailPage'
+import EditListingPage from './pages/user/EditListingPage'
 import LoginPage from './pages/public/LoginPage'
 import RegisterPage from './pages/public/RegisterPage'
 import MyListingsPage from './pages/user/MyListingsPage'
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
           { path: 'settings', element: <SettingsPage /> },
           { path: 'sell', element: <NewListingPage /> },
           { path: 'my-listings', element: <MyListingsPage /> },
+          { path: 'my-listings/:id/edit', element: <EditListingPage /> },
           { path: 'offers', element: <OffersPage /> },
           { path: 'support', element: <SupportListPage /> },
           { path: 'support/new', element: <NewTicketPage /> },

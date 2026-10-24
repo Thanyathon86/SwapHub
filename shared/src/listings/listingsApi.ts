@@ -96,5 +96,8 @@ export const listingsApi = {
   mine: () => api<{ listings: Listing[] }>('/listings/mine').then((r) => r.listings),
   create: (input: CreateListingInput) =>
     api<{ listing: Listing }>('/listings', { method: 'POST', body: input }).then((r) => r.listing),
+  mineOne: (id: string) => api<{ listing: Listing }>(`/listings/mine/${id}`).then((r) => r.listing),
+  update: (id: string, input: CreateListingInput) =>
+    api<{ listing: Listing }>(`/listings/${id}`, { method: 'PATCH', body: input }).then((r) => r.listing),
   close: (id: string) => api<{ listing: Listing }>(`/listings/${id}/close`, { method: 'POST' }).then((r) => r.listing),
 }

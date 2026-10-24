@@ -26,6 +26,11 @@ listingsRouter.get('/mine', requireAuth, async (req, res) => {
   res.json({ listings: await listingsService.listMyListings(getAuthUser(req).id) })
 })
 
+listingsRouter.get('/mine/:id', requireAuth, validate({ params: listingIdParams }), async (req, res) => {
+  const { id } = req.params as ListingIdParams
+  res.json({ listing: await listingsService.getMyListing(getAuthUser(req).id, id) })
+})
+
 listingsRouter.get('/:id', validate({ params: listingIdParams }), async (req, res) => {
   const { id } = req.params as ListingIdParams
   res.json({ listing: await listingsService.getListing(id) })
@@ -35,6 +40,18 @@ listingsRouter.post('/', requireAuth, validate({ body: createListingSchema }), a
   const listing = await listingsService.createListing(getAuthUser(req).id, req.body as CreateListingInput)
   res.status(201).json({ listing })
 })
+
+// ส่งข้อมูลทั้งชุดแบบเดียวกับตอนสร้าง (เขียนทับทุกฟิลด์) ใช้ schema เดียวกันจะได้มีกฎตรงกัน
+listingsRouter.patch(
+  '/:id',
+  requireAuth,
+  validate({ params: listingIdParams, body: createListingSchema }),
+  async (req, res) => {
+    const { id } = req.params as ListingIdParams
+    const listing = await listingsService.updateListing(getAuthUser(req).id, id, req.body as CreateListingInput)
+    res.json({ listing })
+  },
+)
 
 listingsRouter.post('/:id/close', requireAuth, validate({ params: listingIdParams }), async (req, res) => {
   const { id } = req.params as ListingIdParams
