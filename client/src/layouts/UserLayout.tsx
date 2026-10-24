@@ -34,6 +34,9 @@ export function UserLayout() {
                   <NavLink to="/my-listings" className={navClass}>
                     ประกาศของฉัน
                   </NavLink>
+                  <NavLink to="/offers" className={navClass}>
+                    ข้อเสนอ
+                  </NavLink>
                   <button type="button" onClick={onLogout} className={navClass({ isActive: false })}>
                     ออกจากระบบ
                   </button>

@@ -65,6 +65,15 @@ const messages: Record<string, string> = {
   LISTING_ALREADY_REVIEWED: 'ประกาศนี้ถูกตรวจไปแล้ว ลองรีเฟรชหน้า',
   INVALID_GAME: 'เกมนี้ถูกปิดหรือไม่มีอยู่ ลองเลือกเกมใหม่',
   INVALID_GRADING_COMPANY: 'บริษัทเกรดนี้ถูกปิดหรือไม่มีอยู่ ลองเลือกใหม่',
+  CANNOT_OFFER_OWN_LISTING: 'ส่งข้อเสนอให้ประกาศของตัวเองไม่ได้',
+  LISTING_NOT_TRADEABLE: 'ประกาศนี้ขายอย่างเดียว ไม่รับแลก',
+  LISTING_TRADE_ONLY: 'ประกาศนี้รับแลกเท่านั้น กรุณาเลือกการ์ดมาแลก',
+  INSUFFICIENT_QUANTITY: 'จำนวนที่ขอมากกว่าที่มีอยู่',
+  INVALID_OFFER_ITEMS: 'การ์ดที่เอามาแลกต้องเป็นประกาศของคุณที่เปิดอยู่',
+  OFFER_ALREADY_PENDING: 'คุณมีข้อเสนอที่รอตอบอยู่กับประกาศนี้แล้ว',
+  OFFER_NOT_FOUND: 'ไม่พบข้อเสนอนี้',
+  OFFER_NOT_PENDING: 'ข้อเสนอนี้ถูกตอบหรือยกเลิกไปแล้ว ลองรีเฟรชหน้า',
+  OFFER_NO_LONGER_VALID: 'การ์ดในข้อเสนอนี้ถูกปิดหรือจำนวนไม่พอแล้ว',
 }
 
 export const errorMessage = (err: unknown) =>

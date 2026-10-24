@@ -10,7 +10,9 @@ import NotFoundPage from './pages/public/NotFoundPage'
 import RegisterPage from './pages/public/RegisterPage'
 import MyListingsPage from './pages/user/MyListingsPage'
 import NewListingPage from './pages/user/NewListingPage'
+import OffersPage from './pages/user/OffersPage'
 import ProfilePage from './pages/user/ProfilePage'
+import SettingsPage from './pages/user/SettingsPage'
 
 export const router = createBrowserRouter([
   {
@@ -25,8 +27,10 @@ export const router = createBrowserRouter([
         element: <RequireAuth />,
         children: [
           { path: 'profile', element: <ProfilePage /> },
+          { path: 'settings', element: <SettingsPage /> },
           { path: 'sell', element: <NewListingPage /> },
           { path: 'my-listings', element: <MyListingsPage /> },
+          { path: 'offers', element: <OffersPage /> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },

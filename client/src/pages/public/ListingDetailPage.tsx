@@ -1,5 +1,7 @@
-import { Link, useParams } from 'react-router'
+import { useState } from 'react'
+import { Link, useLocation, useParams } from 'react-router'
 import { Spinner } from '../../components/Spinner'
+import { useAuth } from '../../features/auth/useAuth'
 import {
   artPropsOf,
   conditionLabel,
@@ -11,6 +13,7 @@ import {
 } from '../../features/listings/labels'
 import { ListingArt } from '../../features/listings/ListingArt'
 import { listingsApi, type Listing } from '../../features/listings/listingsApi'
+import { OfferForm } from '../../features/offers/OfferForm'
 import { errorMessage } from '../../lib/api'
 import { useResource } from '../../lib/useResource'
 
@@ -31,6 +34,9 @@ const detailsOf = (l: Listing): [string, string | number | null][] => [
 export default function ListingDetailPage() {
   const { id = '' } = useParams()
   const { data: listing, error } = useResource(() => listingsApi.get(id), id)
+  const { user } = useAuth()
+  const location = useLocation()
+  const [offering, setOffering] = useState(false)
 
   if (error !== undefined && !listing) {
     return (
@@ -45,6 +51,7 @@ export default function ListingDetailPage() {
   if (!listing) return <Spinner />
 
   const price = formatPrice(listing.price)
+  const actionLabel = listing.type === 'TRADE' ? 'ขอแลก' : listing.type === 'BOTH' ? 'ส่งข้อเสนอซื้อหรือแลก' : 'ส่งคำขอซื้อ'
   return (
     <div className="space-y-6">
       <Link to="/" className="text-sm text-zinc-500 hover:text-zinc-900">
@@ -71,10 +78,19 @@ export default function ListingDetailPage() {
             <div className="text-sm text-zinc-500">{price ? 'ราคา' : 'ประกาศนี้'}</div>
             <div className="mt-1 text-3xl font-semibold tabular-nums">{price ?? 'รับแลกเท่านั้น'}</div>
             {listing.type === 'BOTH' && <p className="mt-1 text-sm text-zinc-500">หรือเสนอแลกด้วยการ์ดของคุณ</p>}
-            {/* ยังไม่มี module offers ปุ่มนี้แสดงไว้ให้เห็น flow ก่อน */}
-            <button type="button" disabled className="btn btn-primary mt-5 w-full py-3">
-              {listing.type === 'TRADE' ? 'ขอแลก' : 'ส่งคำขอซื้อ'} · เร็ว ๆ นี้
-            </button>
+            {user?.id === listing.seller.id ? (
+              <p className="mt-5 text-sm text-zinc-500">นี่คือประกาศของคุณ ดูข้อเสนอที่เข้ามาได้ที่หน้าข้อเสนอ</p>
+            ) : offering ? (
+              <OfferForm listing={listing} onCancel={() => setOffering(false)} />
+            ) : user ? (
+              <button type="button" onClick={() => setOffering(true)} className="btn btn-primary mt-5 w-full py-3">
+                {actionLabel}
+              </button>
+            ) : (
+              <Link to="/login" state={{ from: location.pathname }} className="btn btn-primary mt-5 w-full py-3">
+                เข้าสู่ระบบเพื่อ{actionLabel}
+              </Link>
+            )}
           </div>
 
           <dl className="divide-y divide-zinc-100 text-sm">
