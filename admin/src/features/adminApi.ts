@@ -38,8 +38,22 @@ export type AdminUser = {
   createdAt: string
 }
 
-export type UsersQuery = { q?: string; status?: UserStatus; page: number }
+export type UsersQuery = { q?: string; status?: UserStatus; role?: Role; page: number }
 export type UsersPage = { users: AdminUser[]; total: number; page: number; pageSize: number }
+
+export type AuditAction = 'USER_PROMOTED' | 'USER_DEMOTED' | 'USER_SUSPENDED' | 'USER_REACTIVATED'
+
+type AuditParty = { id: string; displayName: string; email: string }
+
+export type AuditLog = {
+  id: string
+  action: AuditAction
+  createdAt: string
+  actor: AuditParty
+  targetUser: AuditParty
+}
+
+export type AuditLogsPage = { logs: AuditLog[]; total: number; page: number; pageSize: number }
 
 export type AdminStats = {
   users: number
@@ -49,10 +63,11 @@ export type AdminStats = {
   activeListings: number
 }
 
-const usersQueryString = ({ q, status, page }: UsersQuery) => {
+const usersQueryString = ({ q, status, role, page }: UsersQuery) => {
   const params = new URLSearchParams({ page: String(page) })
   if (q) params.set('q', q)
   if (status) params.set('status', status)
+  if (role) params.set('role', role)
   return params.toString()
 }
 
@@ -74,6 +89,9 @@ export const adminApi = {
   listUsers: (query: UsersQuery) => api<UsersPage>(`/admin/users?${usersQueryString(query)}`),
   setUserStatus: (id: string, status: UserStatus) =>
     api<{ user: AdminUser }>(`/admin/users/${id}/status`, { method: 'PATCH', body: { status } }),
+  setUserRole: (id: string, role: Role) =>
+    api<{ user: AdminUser }>(`/admin/users/${id}/role`, { method: 'PATCH', body: { role } }),
+  listAuditLogs: (page: number) => api<AuditLogsPage>(`/admin/audit-logs?page=${page}`),
 
   listListings: ({ status, page }: AdminListingsQuery) =>
     api<AdminListingsPage>(`/admin/listings?${new URLSearchParams({ status, page: String(page) }).toString()}`),

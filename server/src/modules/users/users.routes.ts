@@ -3,9 +3,11 @@ import { getAuthUser } from '../../middleware/requireAuth.js'
 import { validate } from '../../middleware/validate.js'
 import {
   listUsersQuery,
+  updateUserRoleSchema,
   updateUserStatusSchema,
   userIdParams,
   type ListUsersQuery,
+  type UpdateUserRoleInput,
   type UpdateUserStatusInput,
   type UserIdParams,
 } from './users.schema.js'
@@ -27,3 +29,9 @@ usersAdminRouter.patch(
     res.json({ user })
   },
 )
+
+usersAdminRouter.patch('/:id/role', validate({ params: userIdParams, body: updateUserRoleSchema }), async (req, res) => {
+  const { id } = req.params as UserIdParams
+  const user = await usersService.setUserRole(getAuthUser(req).id, id, req.body as UpdateUserRoleInput)
+  res.json({ user })
+})

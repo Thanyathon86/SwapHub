@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router'
 import { Spinner } from '@shared/components/Spinner'
+import type { Role } from '@shared/auth/authApi'
 import { adminApi, type AdminUser, type UsersQuery, type UserStatus } from '../features/adminApi'
 import { useAuth } from '@shared/auth/useAuth'
 import { errorMessage } from '@shared/lib/api'
@@ -13,10 +14,12 @@ const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleString('
 // เก็บตัวกรองไว้ใน URL ให้กดย้อนกลับหรือแชร์ลิงก์แล้วได้หน้าเดิม
 const readQuery = (params: URLSearchParams): UsersQuery & { q: string } => {
   const status = params.get('status')
+  const role = params.get('role')
   const page = Number(params.get('page'))
   return {
     q: params.get('q') ?? '',
     status: status === 'ACTIVE' || status === 'SUSPENDED' ? status : undefined,
+    role: role === 'USER' || role === 'ADMIN' ? role : undefined,
     page: Number.isInteger(page) && page > 0 ? page : 1,
   }
 }
@@ -29,11 +32,12 @@ export default function UsersPage() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<unknown>(null)
 
-  const updateParams = (next: { q?: string; status?: string; page?: number }) => {
+  const updateParams = (next: { q?: string; status?: string; role?: string; page?: number }) => {
     const merged = { ...query, ...next }
     const p = new URLSearchParams()
     if (merged.q) p.set('q', merged.q)
     if (merged.status) p.set('status', merged.status)
+    if (merged.role) p.set('role', merged.role)
     if (merged.page > 1) p.set('page', String(merged.page))
     setParams(p)
   }
@@ -41,26 +45,51 @@ export default function UsersPage() {
   const onSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
-    updateParams({ q: String(form.get('q')).trim(), status: String(form.get('status')) || undefined, page: 1 })
+    updateParams({
+      q: String(form.get('q')).trim(),
+      status: String(form.get('status')) || undefined,
+      role: String(form.get('role')) || undefined,
+      page: 1,
+    })
   }
 
-  const onToggleStatus = async (user: AdminUser) => {
-    const next: UserStatus = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'
-    const message =
-      next === 'SUSPENDED'
-        ? `ระงับ ${user.email}? ผู้ใช้จะถูกออกจากระบบทุกอุปกรณ์ทันที`
-        : `ปลดระงับ ${user.email}?`
+  const run = async (user: AdminUser, message: string, action: () => Promise<unknown>) => {
     if (!window.confirm(message)) return
     setBusyId(user.id)
     setActionError(null)
     try {
-      await adminApi.setUserStatus(user.id, next)
+      await action()
       reload()
     } catch (err) {
       setActionError(err)
     } finally {
       setBusyId(null)
     }
+  }
+
+  const onToggleStatus = (user: AdminUser) => {
+    const next: UserStatus = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'
+    const message =
+      next === 'SUSPENDED'
+        ? `ระงับ ${user.email}? ผู้ใช้จะถูกออกจากระบบทุกอุปกรณ์ทันที`
+        : `ปลดระงับ ${user.email}?`
+    return run(user, message, () => adminApi.setUserStatus(user.id, next))
+  }
+
+  // เตือนเรื่องล็อกอินคนละหน้า เพราะบัญชี admin ใช้เว็บซื้อขายไม่ได้ ถ้ายกบัญชีที่ใช้ซื้อขายอยู่เจ้าของจะใช้ต่อไม่ได้
+  const onToggleRole = (user: AdminUser) => {
+    const next: Role = user.role === 'ADMIN' ? 'USER' : 'ADMIN'
+    const message =
+      next === 'ADMIN'
+        ? `ตั้ง ${user.email} เป็น admin?
+
+- บัญชีนี้จะเข้าหลังบ้านได้ทุกเมนู
+- จะล็อกอินเว็บซื้อขายด้วยบัญชีนี้ไม่ได้อีก ควรใช้บัญชีที่สมัครไว้ทำงาน admin โดยเฉพาะ
+- เจ้าของบัญชีจะถูกออกจากระบบทุกอุปกรณ์`
+        : `ถอดสิทธิ์ admin ของ ${user.email}?
+
+บัญชีจะกลับเป็นผู้ใช้ธรรมดาและถูกออกจากระบบทุกอุปกรณ์`
+    return run(user, message, () => adminApi.setUserRole(user.id, next))
   }
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
@@ -87,6 +116,16 @@ export default function UsersPage() {
           <option value="">ทุกสถานะ</option>
           <option value="ACTIVE">ใช้งาน</option>
           <option value="SUSPENDED">ระงับ</option>
+        </select>
+        <select
+          name="role"
+          defaultValue={query.role ?? ''}
+          aria-label="บทบาท"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        >
+          <option value="">ทุกบทบาท</option>
+          <option value="USER">User</option>
+          <option value="ADMIN">Admin</option>
         </select>
         <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
           ค้นหา
@@ -121,7 +160,13 @@ export default function UsersPage() {
                     <div className="font-medium text-slate-800">{u.displayName}</div>
                     <div className="text-xs text-slate-500">{u.email}</div>
                   </td>
-                  <td className="px-3 py-2">{u.role === 'ADMIN' ? 'Admin' : 'User'}</td>
+                  <td className="px-3 py-2">
+                    {u.role === 'ADMIN' ? (
+                      <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">Admin</span>
+                    ) : (
+                      'User'
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs ${
@@ -133,19 +178,35 @@ export default function UsersPage() {
                   </td>
                   <td className="px-3 py-2 text-slate-500">{formatDate(u.lastLoginAt)}</td>
                   <td className="px-3 py-2 text-slate-500">{formatDate(u.createdAt)}</td>
-                  <td className="px-6 py-2 text-right">
+                  <td className="px-6 py-2 text-right whitespace-nowrap">
                     {/* server กันไว้แล้ว ซ่อนปุ่มแค่ไม่ให้กดแล้วเจอ error */}
-                    {u.role !== 'ADMIN' && u.id !== me?.id && (
-                      <button
-                        type="button"
-                        onClick={() => onToggleStatus(u)}
-                        disabled={busyId === u.id}
-                        className={`hover:underline disabled:opacity-60 ${
-                          u.status === 'ACTIVE' ? 'text-red-600' : 'text-indigo-600'
-                        }`}
-                      >
-                        {u.status === 'ACTIVE' ? 'ระงับ' : 'ปลดระงับ'}
-                      </button>
+                    {u.id === me?.id ? (
+                      <span className="text-xs text-slate-400">บัญชีของคุณ</span>
+                    ) : (
+                      <div className="flex justify-end gap-4">
+                        {(u.role === 'ADMIN' || u.status === 'ACTIVE') && (
+                          <button
+                            type="button"
+                            onClick={() => onToggleRole(u)}
+                            disabled={busyId === u.id}
+                            className="text-slate-600 hover:underline disabled:opacity-60"
+                          >
+                            {u.role === 'ADMIN' ? 'ถอดสิทธิ์ admin' : 'ตั้งเป็น admin'}
+                          </button>
+                        )}
+                        {u.role !== 'ADMIN' && (
+                          <button
+                            type="button"
+                            onClick={() => onToggleStatus(u)}
+                            disabled={busyId === u.id}
+                            className={`hover:underline disabled:opacity-60 ${
+                              u.status === 'ACTIVE' ? 'text-red-600' : 'text-indigo-600'
+                            }`}
+                          >
+                            {u.status === 'ACTIVE' ? 'ระงับ' : 'ปลดระงับ'}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>

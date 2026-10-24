@@ -23,6 +23,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 | `Listing` | ประกาศ มี `type`: `SALE` / `TRADE` / `BOTH`, `itemKind`: `SINGLE` / `GRADED` / `SEALED` และ `status`: `PENDING_REVIEW` → `ACTIVE` / `REJECTED` → `CLOSED` |
 | `Offer` | คำขอซื้อหรือขอแลกต่อประกาศ (ใส่เงินเพิ่มได้) มี `status`: `PENDING` / `ACCEPTED` / `DECLINED` / `CANCELLED` |
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
+| `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร (`AuditAction`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
 | `SupportTicket` | เรื่องที่ user แจ้ง admin (ยังไม่ได้สร้าง) |
 
 ฟิลด์ใน `Listing` ใช้ตาม `itemKind` (DB เป็น nullable, บังคับด้วย zod ใน service):
@@ -79,7 +80,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 ```
 server/
-  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem
+  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, AuditLog
   prisma.config.ts          ตั้งค่า Prisma 7 (URL อ่านจาก env)
   src/
     index.ts, app.ts        เปิด server + graceful shutdown, Express app + middleware
@@ -88,7 +89,7 @@ server/
     lib/                    prisma, session, password, errors (AppError)
     middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler
     scripts/seed.ts         เกม/บริษัทเกรดเริ่มต้น + admin
-    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), admin
+    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), audit, admin
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
       <feature>.schema.ts   zod schema ของ request
@@ -99,7 +100,7 @@ client/src/                 เว็บ user
   features/<feature>/       auth (RegisterForm), listings (ListingCard), offers
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
   router.tsx, layouts/AdminLayout.tsx, components/RequireAdmin.tsx
-  pages/                    Login, Dashboard, ListingReview, Users, Catalog
+  pages/                    Login, Dashboard, ListingReview, Users, Catalog, AuditLog
   features/                 adminApi, CatalogSection
   lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
@@ -114,6 +115,8 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - หน้า login แยกกัน: เว็บ user ใช้ `POST /api/auth/login`, เว็บ admin ใช้ `POST /api/auth/admin/login` แต่ละเส้นรับเฉพาะ role ของตัวเอง
 - `shared/` ห้าม import จาก `client/` หรือ `admin/` ใส่เฉพาะของที่ทั้งสองแอปใช้จริง เพราะแก้ shared พังจะพังทั้งคู่ ของที่ใช้แอปเดียวให้อยู่ในแอปนั้น
 - แก้ `shared/` แล้วต้อง build ทั้ง client และ admin
+- admin ตั้ง/ถอดสิทธิ์ admin คนอื่นได้ (`PATCH /api/admin/users/:id/role`) แต่แก้บัญชีตัวเองไม่ได้ ทำให้เหลือ admin อย่างน้อย 1 คนเสมอ ระงับ admin ตรง ๆ ไม่ได้ต้องถอดสิทธิ์ก่อน เปลี่ยน role แล้วลบ session ทั้งหมดของคนนั้น
+- การกระทำของ admin ที่กระทบผู้ใช้ ให้บันทึกด้วย `recordAudit(tx, ...)` ใน transaction เดียวกับการเปลี่ยนแปลง
 - อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อกันเพราะยังไม่มีแชท)
 - ตอบรับ offer จะตัด `quantity` ทั้งประกาศปลายทางและของที่แลก ประกาศที่เหลือ 0 จะกลายเป็น `CLOSED` และ offer ที่ค้างกับประกาศที่ปิดจะถูก `CANCELLED`
 

@@ -35,6 +35,8 @@ model User {
   listings         Listing[] @relation("ListingSeller")
   reviewedListings Listing[] @relation("ListingReviewer")
   offers           Offer[]
+  auditActions     AuditLog[] @relation("AuditActor")
+  auditTargets     AuditLog[] @relation("AuditTarget")
 }
 
 model Session {
@@ -188,4 +190,26 @@ model OfferItem {
 
   @@unique([offerId, listingId])
   @@index([listingId])
+}
+
+enum AuditAction {
+  USER_PROMOTED
+  USER_DEMOTED
+  USER_SUSPENDED
+  USER_REACTIVATED
+}
+
+// บันทึกว่า admin คนไหนทำอะไรกับใคร ไว้ตรวจย้อนหลังเมื่อมีการใช้สิทธิ์ผิด
+// ไม่มี API แก้หรือลบ log เพื่อให้ admin ลบร่องรอยตัวเองไม่ได้
+model AuditLog {
+  id           String      @id @default(uuid()) @db.Uuid
+  actorId      String      @db.Uuid
+  actor        User        @relation("AuditActor", fields: [actorId], references: [id])
+  action       AuditAction
+  targetUserId String      @db.Uuid
+  targetUser   User        @relation("AuditTarget", fields: [targetUserId], references: [id])
+  createdAt    DateTime    @default(now())
+
+  @@index([createdAt])
+  @@index([targetUserId])
 }
