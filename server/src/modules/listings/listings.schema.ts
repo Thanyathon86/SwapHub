@@ -3,7 +3,7 @@ import { CardCondition, ItemKind, ListingStatus, ListingType } from '../../gener
 
 const text = (max: number) => z.string().trim().min(1).max(max)
 // ช่องที่ไม่บังคับ ถ้า form ส่งสตริงว่างมาให้ถือว่าไม่ได้กรอก
-const optionalText = (max: number) =>
+export const optionalText = (max: number) =>
   z
     .string()
     .trim()
@@ -12,13 +12,13 @@ const optionalText = (max: number) =>
     .transform((v) => v || undefined)
 
 // ตรงกับ Decimal(12, 2) ใน DB เช็กทศนิยมเองเพราะ multipleOf(0.01) พังกับเลขทศนิยมของ float
-const price = z
+export const price = z
   .number()
   .positive()
   .max(9_999_999_999.99)
   .refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6, 'At most 2 decimal places')
 
-const quantity = z.number().int().min(1).max(999)
+export const quantity = z.number().int().min(1).max(999)
 
 const base = {
   gameId: z.uuid(),

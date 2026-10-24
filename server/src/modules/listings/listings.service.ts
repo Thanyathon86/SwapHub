@@ -1,6 +1,7 @@
 import type { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
+import { cancelPendingOffers } from '../offers/cancelPendingOffers.js'
 import type {
   AdminListingsQuery,
   BrowseListingsQuery,
@@ -10,7 +11,7 @@ import type {
 
 const PAGE_SIZE = 24
 
-const listingInclude = {
+export const listingInclude = {
   game: { select: { id: true, name: true, slug: true } },
   gradingCompany: { select: { id: true, name: true } },
   // ผู้ใช้ทั่วไปเห็นแค่ชื่อที่แสดงของผู้ขาย ไม่ส่งอีเมลออกไป
@@ -18,10 +19,10 @@ const listingInclude = {
 } satisfies Prisma.ListingInclude
 
 // ไม่บอกคนทั่วไปว่า admin คนไหนตรวจประกาศ
-const publicOmit = { reviewedById: true } satisfies Prisma.ListingOmit
+export const publicOmit = { reviewedById: true } satisfies Prisma.ListingOmit
 
 // ประกาศที่คนทั่วไปเห็นได้: ผ่านการตรวจแล้ว และเกมกับผู้ขายยังไม่ถูกปิด
-const publicWhere = {
+export const publicWhere = {
   status: 'ACTIVE',
   game: { isActive: true },
   seller: { status: 'ACTIVE' },
@@ -105,20 +106,21 @@ export const listMyListings = (sellerId: string) =>
     take: 100,
   })
 
-export const closeListing = async (sellerId: string, id: string) => {
-  // เช็กเงื่อนไข status ใน where เดียวกับ update กันกรณี admin ตรวจประกาศพร้อมกับที่ผู้ขายกดปิด
-  const { count } = await prisma.listing.updateMany({
-    where: { id, sellerId, status: { in: ['PENDING_REVIEW', 'ACTIVE'] } },
-    data: { status: 'CLOSED' },
+export const closeListing = (sellerId: string, id: string) =>
+  prisma.$transaction(async (tx) => {
+    // เช็กเงื่อนไข status ใน where เดียวกับ update กันกรณี admin ตรวจประกาศพร้อมกับที่ผู้ขายกดปิด
+    const { count } = await tx.listing.updateMany({
+      where: { id, sellerId, status: { in: ['PENDING_REVIEW', 'ACTIVE'] } },
+      data: { status: 'CLOSED' },
+    })
+    if (count === 0) {
+      const exists = await tx.listing.count({ where: { id, sellerId } })
+      if (!exists) throw notFound()
+      throw new AppError(409, 'LISTING_NOT_CLOSABLE', 'Listing is already closed or rejected')
+    }
+    await cancelPendingOffers(tx, [id])
+    return tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: publicOmit })
   })
-  if (count === 0) {
-    const exists = await prisma.listing.count({ where: { id, sellerId } })
-    if (!exists) throw notFound()
-    throw new AppError(409, 'LISTING_NOT_CLOSABLE', 'Listing is already closed or rejected')
-  }
-  // TODO: ยกเลิก offer ที่ยังค้างอยู่เมื่อทำ module offers
-  return prisma.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: publicOmit })
-}
 
 // admin ต้องเห็นอีเมลผู้ขายไว้ติดต่อ และเห็นว่าใครเป็นคนตรวจ
 const adminInclude = {
