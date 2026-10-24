@@ -64,7 +64,8 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 | ที่ | คำสั่ง | ทำอะไร |
 |---|---|---|
 | `server/` | `npm run dev` | รัน API ที่ :4000 (tsx watch) |
-| `server/` | `npm run typecheck` | ตรวจ type |
+| `server/` | `npm run typecheck` | ตรวจ type ทั้ง `src/` และ `test/` |
+| `server/` | `npm test` | รัน test (Vitest + Supertest) กับ DB `<ชื่อ DB>_test` ที่สร้างและ migrate ให้อัตโนมัติ |
 | `server/` | `npm run build` | compile ไป `dist/` |
 | `server/` | `npm run db:migrate` | สร้าง migration และอัปเดตตารางตาม `schema.prisma` |
 | `server/` | `npm run db:generate` | สร้าง Prisma Client ใหม่ (ไปที่ `src/generated/prisma`, ไม่ commit) |
@@ -78,7 +79,12 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 | root | `npm install` | ติดตั้ง dependency ของ client, admin, shared |
 | root | `npm run build`, `npm run lint` | build/lint ทุก workspace |
 
-ยังไม่มี test framework และฝั่ง server ยังไม่มี lint ถ้าจะเพิ่มให้เสนอในแผนก่อน
+### Test (server)
+
+- `server/test/*.test.ts` ยิง `app` ผ่าน supertest ไม่ต้องเปิด server ใช้ DB แยก (`vitest.config.ts` เปลี่ยนชื่อ DB เป็น `_test` และหยุดถ้าชี้ไป DB dev)
+- ทุกตารางถูกล้างก่อนแต่ละเคส (`test/setup.ts`) ใช้ helper ใน `test/helpers.ts` (`signedInUser`, `signedInAdmin`, `createListing`, `eventsOf` ฯลฯ) สร้างข้อมูลเอง
+- rate limit ปิดตอน `NODE_ENV=test` และ event log เขียนแบบไม่รอ ให้ใช้ `eventsOf` / `waitForEventWrites` ก่อนนับ
+- ฟีเจอร์ใหม่ฝั่ง server ต้องมี test ด้วย ฝั่ง client ยังไม่มี test และ server ยังไม่มี lint ถ้าจะเพิ่มให้เสนอในแผนก่อน
 
 ## โครงสร้างไฟล์
 
@@ -144,6 +150,6 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 2. **อธิบายโครงสร้าง**: สรุปสั้น ๆ ว่าส่วนที่จะแตะอยู่ตรงไหน ทำงานอย่างไร
 3. **วางแผนก่อนแก้**: บอกไฟล์ที่จะสร้าง/แก้, schema/migration ที่จะเปลี่ยน, package ที่จะติดตั้ง แล้ว**รอผู้ใช้ยืนยันก่อนลงมือ**
 4. **แก้ทีละส่วน**: แบ่งงานเป็นชิ้นเล็ก ทำให้แต่ละชิ้นเสร็จและรันได้ก่อนไปชิ้นถัดไป
-5. **รัน build/test/lint**: อย่างน้อย `server: npm run typecheck`, และที่ root `npm run build` กับ `npm run lint` (ครอบ client, admin, shared) ถ้ามี test ให้รันด้วย ถ้าแก้ schema ให้รัน `db:migrate` ถ้าไม่ผ่านให้แก้หรือรายงานผลตามจริง
+5. **รัน build/test/lint**: อย่างน้อย `server: npm run typecheck` และ `npm test`, และที่ root `npm run build` กับ `npm run lint` (ครอบ client, admin, shared) ถ้ามี test ให้รันด้วย ถ้าแก้ schema ให้รัน `db:migrate` ถ้าไม่ผ่านให้แก้หรือรายงานผลตามจริง
 6. **สรุป diff**: บอกว่าแก้ไฟล์อะไร เปลี่ยนอะไร เพราะอะไร และสิ่งที่ยังไม่ได้ทำหรือยังไม่ได้ทดสอบ
 7. **ช่วย commit**: เสนอ commit message (ภาษาอังกฤษ, รูปแบบ `type: summary` เช่น `feat: add listing model`) แล้ว**ถามก่อน commit** ห้าม push ถ้าไม่ได้สั่ง เช็กว่าไม่มี `.env` หรือ `src/generated` ติดไปด้วย

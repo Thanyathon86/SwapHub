@@ -14,9 +14,16 @@ type EventInput = {
 // ตัดความยาวกัน user agent หรือ path ยาวผิดปกติทำให้ DB บวม
 const clip = (value: string | undefined, max: number) => value?.slice(0, max)
 
+// เก็บ promise ที่ยังเขียนไม่เสร็จ ให้ test รอได้ก่อนตรวจผลหรือล้างตาราง
+const pending = new Set<Promise<unknown>>()
+
+export const waitForEventWrites = async () => {
+  await Promise.allSettled([...pending])
+}
+
 // ไม่ await และกลืน error เอง: ถ้าบันทึก log พลาด request ของผู้ใช้ต้องไม่ล้มตาม
 export const logEvent = (req: Request, input: EventInput) => {
-  prisma.eventLog
+  const write = prisma.eventLog
     .create({
       data: {
         ...input,
@@ -31,6 +38,8 @@ export const logEvent = (req: Request, input: EventInput) => {
       },
     })
     .catch((err: unknown) => console.error('Failed to write event log:', err))
+    .finally(() => pending.delete(write))
+  pending.add(write)
 }
 
 // กันคนยิง request รัว ๆ แล้วทุก request ที่โดนบล็อกกลายเป็น log หนึ่งแถว
