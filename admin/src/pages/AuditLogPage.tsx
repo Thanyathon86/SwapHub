@@ -18,7 +18,7 @@ export default function AuditLogPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">ประวัติการจัดการ</h1>
-        <p className="mt-1 text-sm text-slate-500">บันทึกทุกครั้งที่ admin เปลี่ยนบทบาทหรือสถานะของผู้ใช้ แก้ไขหรือลบไม่ได้</p>
+        <p className="mt-1 text-sm text-slate-500">บันทึกทุกครั้งที่ admin เปลี่ยนบทบาทหรือสถานะของผู้ใช้ หรือซ่อนรีวิว แก้ไขหรือลบไม่ได้</p>
       </div>
 
       <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
@@ -50,6 +50,7 @@ export default function AuditLogPage() {
                     </td>
                     <td className="px-3 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs ${action.className}`}>{action.text}</span>
+                      {log.detail && <div className="mt-1 text-xs text-slate-500">{log.detail}</div>}
                     </td>
                     <td className="px-6 py-2">
                       <div className="font-medium text-slate-800">{log.targetUser.displayName}</div>

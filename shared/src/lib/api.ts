@@ -98,6 +98,9 @@ const messages: Record<string, string> = {
   OFFER_NOT_PENDING: 'ข้อเสนอนี้ถูกตอบหรือยกเลิกไปแล้ว ลองรีเฟรชหน้า',
   OFFER_NOT_ACCEPTED: 'ให้คะแนนได้เฉพาะดีลที่ตอบรับแล้ว',
   REVIEW_WINDOW_CLOSED: 'เลยกำหนด 30 วันหลังตกลงดีลแล้ว ให้หรือแก้คะแนนไม่ได้',
+  REVIEW_REMOVED: 'รีวิวนี้ถูกทีมงานซ่อนแล้ว แก้หรือเขียนใหม่ไม่ได้',
+  REVIEW_NOT_FOUND: 'ไม่พบรีวิวนี้',
+  REVIEW_ALREADY_REMOVED: 'รีวิวนี้ถูกซ่อนไปแล้ว ลองรีเฟรชหน้า',
   OFFER_NO_LONGER_VALID: 'การ์ดในข้อเสนอนี้ถูกปิดหรือจำนวนไม่พอแล้ว',
 }
 

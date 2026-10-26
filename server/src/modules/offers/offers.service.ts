@@ -15,7 +15,7 @@ const offerInclude = {
   listing: { include: { ...listingInclude, seller: contactUser }, omit: publicOmit },
   buyer: contactUser,
   items: { include: { listing: { include: listingInclude, omit: publicOmit } } },
-  reviews: { select: { reviewerId: true, rating: true, comment: true, updatedAt: true } },
+  reviews: { select: { reviewerId: true, rating: true, comment: true, updatedAt: true, removedAt: true } },
 } satisfies Prisma.OfferInclude
 
 type OfferRow = Prisma.OfferGetPayload<{ include: typeof offerInclude }>
@@ -37,6 +37,8 @@ const toView = (offer: OfferRow, ratings: Map<string, RatingSummary>) => {
         rating: ratings.get(offer.listing.seller.id) ?? noRating,
       },
     },
+    // รีวิวที่ทีมงานซ่อนส่งไปแค่ว่าถูกซ่อน ไม่ส่งคะแนนและข้อความเดิม
+    reviews: offer.reviews.map((r) => (r.removedAt ? { ...r, rating: null, comment: null } : r)),
     // หน้าเว็บใช้ซ่อนปุ่มให้คะแนนเมื่อเลยกำหนด (server ตรวจซ้ำอีกที)
     reviewDeadline: accepted && offer.respondedAt ? new Date(offer.respondedAt.getTime() + REVIEW_WINDOW_MS) : null,
   }

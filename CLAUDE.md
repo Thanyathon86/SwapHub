@@ -23,9 +23,9 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 | `Listing` | ประกาศ มี `type`: `SALE` / `TRADE` / `BOTH`, `itemKind`: `SINGLE` / `GRADED` / `SEALED` และ `status`: `PENDING_REVIEW` → `ACTIVE` / `REJECTED` → `CLOSED` |
 | `Offer` | คำขอซื้อหรือขอแลกต่อประกาศ (ใส่เงินเพิ่มได้) มี `status`: `PENDING` / `ACCEPTED` / `DECLINED` / `CANCELLED` |
 | `ListingImage` | รูปของประกาศ (สูงสุด 6) เก็บแค่ `key` ไฟล์จริงอยู่ใน storage |
-| `Review` | คะแนน 1–5 + ความเห็นที่คู่ดีลให้กันหลัง offer `ACCEPTED` ฝ่ายละหนึ่งรีวิวต่อดีล (unique `offerId + reviewerId`) แก้ได้ภายใน 30 วันหลังตอบรับ |
+| `Review` | คะแนน 1–5 + ความเห็นที่คู่ดีลให้กันหลัง offer `ACCEPTED` ฝ่ายละหนึ่งรีวิวต่อดีล (unique `offerId + reviewerId`) แก้ได้ภายใน 30 วันหลังตอบรับ admin ซ่อนได้ (`removedAt`, ไม่ลบแถวจริง) |
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
-| `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร (`AuditAction`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
+| `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร หรือซ่อนรีวิวของใคร (`AuditAction`, เหตุผลอยู่ใน `detail`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
 | `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
 | `PasswordResetToken` | ลิงก์ลืมรหัสผ่าน เก็บแค่ sha256, หมดอายุ 30 นาที, ใช้ได้ครั้งเดียว ขอใหม่แล้วอันเก่าใช้ไม่ได้ |
 | `SupportTicket` | เรื่องที่ user แจ้ง admin มี `status`: `OPEN` (รอทีมงาน) ⇄ `ANSWERED` (รอผู้ใช้) → `CLOSED` และ `assigneeId` (admin ที่รับเรื่อง) |
@@ -57,7 +57,9 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 รีวิว: `PUT /api/offers/:id/review` (สร้างหรือแก้ของเดิม) ผู้รับรีวิวคืออีกฝ่ายของดีลเสมอ คะแนนเฉลี่ยคิดสดจากตาราง (`ratingSummaries` คิดหลายคนในคิวรีเดียว) แนบใน offer (ทั้งผู้ซื้อและผู้ขาย), หน้ารายละเอียดประกาศ (ผู้ขาย) และโปรไฟล์ หน้ารวมประกาศไม่แนบ รายการรีวิว: `GET /api/users/:username/reviews`
 
-ยังไม่ทำ: admin ลบรีวิวที่ไม่เหมาะสม, แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
+ซ่อนรีวิว: `GET /api/admin/reviews` (`status=VISIBLE|REMOVED`, `q`=username), `POST /api/admin/reviews/:id/remove` (ต้องมี `reason`, ลง audit `REVIEW_REMOVED` โดย target คือคนเขียน) รีวิวที่ซ่อนไม่แสดงในโปรไฟล์ ไม่นับในค่าเฉลี่ย คนเขียนแก้หรือเขียนใหม่ในดีลเดิมไม่ได้ ใน offer ส่งแค่ `removedAt` (rating/comment เป็น null)
+
+ยังไม่ทำ: แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
 
 ## Stack
 
@@ -125,7 +127,7 @@ client/src/                 เว็บ user
   features/<feature>/       auth (RegisterForm), listings (ListingCard), offers, support
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
   router.tsx, layouts/AdminLayout.tsx, components/RequireAdmin.tsx
-  pages/                    Login, ForgotPassword, ResetPassword, Dashboard, ListingReview, Users, Catalog, Support, TicketDetail, AuditLog, Events, Account
+  pages/                    Login, ForgotPassword, ResetPassword, Dashboard, ListingReview, Users, Catalog, Reviews, Support, TicketDetail, AuditLog, Events, Account
   features/                 adminApi, labels, CatalogSection, dashboard/ (ColumnChart, BarList วาดเองไม่ใช้ library)
   lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)

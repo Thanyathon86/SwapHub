@@ -8,6 +8,7 @@ export const auditActionLabels: Record<AuditAction, Badge> = {
   USER_DEMOTED: { text: 'ถอดสิทธิ์ admin', className: 'bg-amber-100 text-amber-700' },
   USER_SUSPENDED: { text: 'ระงับบัญชี', className: 'bg-red-100 text-red-700' },
   USER_REACTIVATED: { text: 'ปลดระงับ', className: 'bg-green-100 text-green-700' },
+  REVIEW_REMOVED: { text: 'ซ่อนรีวิว', className: 'bg-rose-100 text-rose-700' },
 }
 
 // สีแดง/เหลืองสงวนไว้ให้เหตุการณ์ที่อาจเป็นปัญหา เหตุการณ์ปกติใช้สีเทา

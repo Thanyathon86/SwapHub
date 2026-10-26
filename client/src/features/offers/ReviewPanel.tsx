@@ -8,7 +8,8 @@ const formatDay = (iso: string) => new Date(iso).toLocaleDateString('th-TH', { d
 // ส่วนให้คะแนนใต้ดีลที่ตอบรับแล้ว เห็นทั้งคะแนนที่เราให้และที่อีกฝ่ายให้เรา
 export function ReviewPanel({ offer, me, other, onSaved }: { offer: Offer; me: string; other: Party; onSaved: () => void }) {
   const mine = offer.reviews.find((r) => r.reviewerId === me)
-  const theirs = offer.reviews.find((r) => r.reviewerId !== me)
+  // รีวิวที่อีกฝ่ายเขียนแล้วถูกทีมงานซ่อน ไม่ต้องแสดงอะไร เหมือนยังไม่ได้รีวิว
+  const theirs = offer.reviews.find((r) => r.reviewerId !== me && r.rating !== null)
   // จับเวลาครั้งเดียวตอนเปิดหน้า ไม่ต้องแม่นระดับวินาที server ตรวจกำหนดเวลาซ้ำอีกทีอยู่แล้ว
   const [now] = useState(() => Date.now())
   const open = offer.reviewDeadline !== null && new Date(offer.reviewDeadline).getTime() > now
@@ -37,7 +38,7 @@ export function ReviewPanel({ offer, me, other, onSaved }: { offer: Offer; me: s
     <div className="space-y-2 rounded-xl bg-zinc-50 px-3 py-3 text-sm">
       {theirs && (
         <div>
-          <span className="text-zinc-500">{other.displayName} ให้คุณ</span> <Stars value={theirs.rating} />
+          <span className="text-zinc-500">{other.displayName} ให้คุณ</span> <Stars value={theirs.rating ?? 0} />
           {theirs.comment && <p className="mt-0.5 text-zinc-700">“{theirs.comment}”</p>}
         </div>
       )}
@@ -65,7 +66,9 @@ export function ReviewPanel({ offer, me, other, onSaved }: { offer: Offer; me: s
             {offer.reviewDeadline && <span className="text-xs text-zinc-500">แก้ได้ถึง {formatDay(offer.reviewDeadline)}</span>}
           </div>
         </form>
-      ) : mine ? (
+      ) : mine?.removedAt ? (
+        <p className="text-zinc-500">รีวิวของคุณถูกทีมงานซ่อนเพราะไม่เป็นไปตามแนวทางของ SwapHub</p>
+      ) : mine?.rating ? (
         <div>
           <span className="text-zinc-500">คุณให้ {other.displayName}</span> <Stars value={mine.rating} />
           {mine.comment && <p className="mt-0.5 text-zinc-700">“{mine.comment}”</p>}

@@ -13,6 +13,7 @@ const menu: { label: string; to: string; count?: keyof AdminCounts; countLabel?:
   { label: 'ประกาศ', to: '/listings', count: 'pendingListings', countLabel: 'ประกาศรอตรวจ' },
   { label: 'ผู้ใช้', to: '/users' },
   { label: 'เกมและเกรด', to: '/catalog' },
+  { label: 'รีวิว', to: '/reviews' },
   { label: 'ประวัติการจัดการ', to: '/audit' },
   { label: 'เรื่องที่แจ้ง', to: '/support', count: 'openTickets', countLabel: 'เรื่องที่รอตอบ' },
   { label: 'Log ระบบ', to: '/events' },

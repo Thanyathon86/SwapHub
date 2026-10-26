@@ -14,7 +14,14 @@ export type Party = {
   rating: RatingSummary
 }
 
-export type OfferReview = { reviewerId: string; rating: number; comment: string | null; updatedAt: string }
+// รีวิวที่ทีมงานซ่อน server ส่งมาแค่ removedAt ส่วน rating กับ comment เป็น null
+export type OfferReview = {
+  reviewerId: string
+  rating: number | null
+  comment: string | null
+  updatedAt: string
+  removedAt: string | null
+}
 
 export type Offer = {
   id: string

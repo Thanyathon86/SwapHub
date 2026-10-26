@@ -1,6 +1,8 @@
+import type { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
-import type { ReviewInput, ReviewsQuery } from './reviews.schema.js'
+import { recordAudit } from '../audit/audit.service.js'
+import type { AdminReviewsQuery, RemoveReviewInput, ReviewInput, ReviewsQuery } from './reviews.schema.js'
 
 // เขียนหรือแก้รีวิวได้ภายในช่วงนี้หลังตอบรับ ให้เวลาส่งของและตรวจของก่อน แล้วล็อกไว้ไม่ให้แก้ย้อนหลังไปเรื่อย ๆ
 export const REVIEW_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
@@ -16,7 +18,7 @@ export const ratingSummaries = async (userIds: string[]) => {
       ? []
       : await prisma.review.groupBy({
           by: ['revieweeId'],
-          where: { revieweeId: { in: ids } },
+          where: { revieweeId: { in: ids }, removedAt: null },
           _avg: { rating: true },
           _count: { _all: true },
         })
@@ -51,6 +53,12 @@ export const upsertReview = async (reviewerId: string, offerId: string, input: R
 
   // ผู้รับรีวิวคืออีกฝั่งของดีลเสมอ ไม่รับจาก client
   const revieweeId = offer.buyerId === reviewerId ? sellerId! : offer.buyerId
+  const existing = await prisma.review.findUnique({
+    where: { offerId_reviewerId: { offerId, reviewerId } },
+    select: { removedAt: true },
+  })
+  // ถ้าให้แก้ได้ คนเขียนจะเอาข้อความเดิมกลับมาลงใหม่หลังทีมงานซ่อน
+  if (existing?.removedAt) throw new AppError(409, 'REVIEW_REMOVED', 'This review was removed by staff')
   return prisma.review.upsert({
     where: { offerId_reviewerId: { offerId, reviewerId } },
     create: { offerId, reviewerId, revieweeId, ...input },
@@ -60,7 +68,7 @@ export const upsertReview = async (reviewerId: string, offerId: string, input: R
 }
 
 export const listReviewsFor = async (revieweeId: string, { page }: ReviewsQuery) => {
-  const where = { revieweeId }
+  const where = { revieweeId, removedAt: null }
   const [reviews, total] = await prisma.$transaction([
     prisma.review.findMany({
       where,
@@ -93,3 +101,47 @@ export const listReviewsFor = async (revieweeId: string, { page }: ReviewsQuery)
     pageSize: PAGE_SIZE,
   }
 }
+
+const adminParty = { select: { id: true, username: true, displayName: true, email: true } } satisfies Prisma.UserDefaultArgs
+
+export const listReviewsForAdmin = async ({ q, status, page }: AdminReviewsQuery) => {
+  const username = q?.toLowerCase()
+  const where: Prisma.ReviewWhereInput = {
+    removedAt: status === 'REMOVED' ? { not: null } : null,
+    ...(username && { OR: [{ reviewer: { username } }, { reviewee: { username } }] }),
+  }
+  const [reviews, total] = await prisma.$transaction([
+    prisma.review.findMany({
+      where,
+      include: {
+        reviewer: adminParty,
+        reviewee: adminParty,
+        removedBy: { select: { id: true, displayName: true } },
+        offer: { select: { id: true, listing: { select: { id: true, title: true } } } },
+      },
+      // รายการที่ซ่อนแล้วเรียงตามเวลาที่ซ่อน ใช้ตรวจย้อนหลัง
+      orderBy: status === 'REMOVED' ? { removedAt: 'desc' } : { createdAt: 'desc' },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.review.count({ where }),
+  ])
+  return { reviews, total, page, pageSize: PAGE_SIZE }
+}
+
+export const removeReview = (actorId: string, id: string, { reason }: RemoveReviewInput) =>
+  prisma.$transaction(async (tx) => {
+    // updateMany พร้อมเงื่อนไข removedAt: null กัน admin สองคนกดพร้อมกันแล้วได้ audit log ซ้ำ
+    const { count } = await tx.review.updateMany({
+      where: { id, removedAt: null },
+      data: { removedAt: new Date(), removedById: actorId, removeReason: reason },
+    })
+    if (count === 0) {
+      const exists = await tx.review.count({ where: { id } })
+      if (!exists) throw new AppError(404, 'REVIEW_NOT_FOUND', 'Review not found')
+      throw new AppError(409, 'REVIEW_ALREADY_REMOVED', 'Review has already been removed')
+    }
+    const review = await tx.review.findUniqueOrThrow({ where: { id } })
+    await recordAudit(tx, { actorId, action: 'REVIEW_REMOVED', targetUserId: review.reviewerId, detail: reason })
+    return review
+  })

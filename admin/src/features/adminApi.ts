@@ -43,19 +43,38 @@ export type AdminUser = {
 export type UsersQuery = { q?: string; status?: UserStatus; role?: Role; page: number }
 export type UsersPage = { users: AdminUser[]; total: number; page: number; pageSize: number }
 
-export type AuditAction = 'USER_PROMOTED' | 'USER_DEMOTED' | 'USER_SUSPENDED' | 'USER_REACTIVATED'
+export type AuditAction = 'USER_PROMOTED' | 'USER_DEMOTED' | 'USER_SUSPENDED' | 'USER_REACTIVATED' | 'REVIEW_REMOVED'
 
 type AuditParty = { id: string; displayName: string; email: string }
 
 export type AuditLog = {
   id: string
   action: AuditAction
+  detail: string | null
   createdAt: string
   actor: AuditParty
   targetUser: AuditParty
 }
 
 export type AuditLogsPage = { logs: AuditLog[]; total: number; page: number; pageSize: number }
+
+type ReviewParty = { id: string; username: string; displayName: string; email: string }
+
+export type AdminReview = {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  removedAt: string | null
+  removeReason: string | null
+  removedBy: { id: string; displayName: string } | null
+  reviewer: ReviewParty
+  reviewee: ReviewParty
+  offer: { id: string; listing: { id: string; title: string } }
+}
+export type ReviewStatus = 'VISIBLE' | 'REMOVED'
+export type ReviewsQuery = { q?: string; status: ReviewStatus; page: number }
+export type ReviewsPage = { reviews: AdminReview[]; total: number; page: number; pageSize: number }
 
 export type AdminCounts = { pendingListings: number; openTickets: number }
 
@@ -157,6 +176,11 @@ export const adminApi = {
   setUserRole: (id: string, role: Role) =>
     api<{ user: AdminUser }>(`/admin/users/${id}/role`, { method: 'PATCH', body: { role } }),
   listAuditLogs: (page: number) => api<AuditLogsPage>(`/admin/audit-logs?page=${page}`),
+
+  listReviews: ({ q, status, page }: ReviewsQuery) =>
+    api<ReviewsPage>(`/admin/reviews?${new URLSearchParams({ status, page: String(page), ...(q && { q }) })}`),
+  removeReview: (id: string, reason: string) =>
+    api<{ review: AdminReview }>(`/admin/reviews/${id}/remove`, { method: 'POST', body: { reason } }),
 
   listListings: ({ status, page }: AdminListingsQuery) =>
     api<AdminListingsPage>(`/admin/listings?${new URLSearchParams({ status, page: String(page) }).toString()}`),

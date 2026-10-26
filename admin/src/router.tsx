@@ -13,6 +13,7 @@ import EventsPage from './pages/EventsPage'
 import ListingReviewPage from './pages/ListingReviewPage'
 import LoginPage from './pages/LoginPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import ReviewsPage from './pages/ReviewsPage'
 import SupportPage from './pages/SupportPage'
 import TicketDetailPage from './pages/TicketDetailPage'
 import UsersPage from './pages/UsersPage'
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
               { path: 'listings', element: <ListingReviewPage /> },
               { path: 'users', element: <UsersPage /> },
               { path: 'catalog', element: <CatalogPage /> },
+              { path: 'reviews', element: <ReviewsPage /> },
               { path: 'audit', element: <AuditLogPage /> },
               { path: 'events', element: <EventsPage /> },
               { path: 'support', element: <SupportPage /> },

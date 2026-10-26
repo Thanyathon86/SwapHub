@@ -104,7 +104,7 @@ describe('แสดงคะแนน', () => {
     const offerId = await acceptedDeal()
     await review(buyer.agent, offerId, { rating: 5 })
     const { body } = await buyer.agent.get('/api/offers/outgoing')
-    expect(body.offers[0].reviews).toEqual([{ reviewerId: buyer.id, rating: 5, comment: null, updatedAt: expect.any(String) }])
+    expect(body.offers[0].reviews).toEqual([{ reviewerId: buyer.id, rating: 5, comment: null, updatedAt: expect.any(String), removedAt: null }])
     expect(new Date(body.offers[0].reviewDeadline).getTime()).toBeGreaterThan(Date.now() + 29 * 24 * 60 * 60 * 1000)
   })
 

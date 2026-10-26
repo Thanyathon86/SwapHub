@@ -49,6 +49,7 @@ model User {
   resetTokens      PasswordResetToken[]
   reviewsGiven     Review[]           @relation("ReviewAuthor")
   reviewsReceived  Review[]           @relation("ReviewSubject")
+  reviewsRemoved   Review[]           @relation("ReviewRemover")
 }
 
 model Session {
@@ -211,6 +212,7 @@ enum AuditAction {
   USER_DEMOTED
   USER_SUSPENDED
   USER_REACTIVATED
+  REVIEW_REMOVED
 }
 
 // บันทึกว่า admin คนไหนทำอะไรกับใคร ไว้ตรวจย้อนหลังเมื่อมีการใช้สิทธิ์ผิด
@@ -222,6 +224,8 @@ model AuditLog {
   action       AuditAction
   targetUserId String      @db.Uuid
   targetUser   User        @relation("AuditTarget", fields: [targetUserId], references: [id])
+  // เหตุผลที่ admin กรอก (เช่นตอนซ่อนรีวิว) ไว้ให้ตรวจย้อนหลังว่าใช้สิทธิ์สมเหตุสมผลไหม
+  detail       String?
   createdAt    DateTime    @default(now())
 
   @@index([createdAt])
@@ -357,6 +361,11 @@ model Review {
   // 1-5 ดาว ตรวจช่วงค่าด้วย zod
   rating     Int
   comment    String?
+  // admin ซ่อนรีวิวที่ไม่เหมาะสม ไม่ลบแถวจริงเพื่อเก็บเป็นหลักฐาน และกันคนเขียนสร้างรีวิวใหม่ในดีลเดิม
+  removedAt    DateTime?
+  removedById  String?   @db.Uuid
+  removedBy    User?     @relation("ReviewRemover", fields: [removedById], references: [id])
+  removeReason String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
