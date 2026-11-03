@@ -3,7 +3,14 @@ import { getAuthUser, requireAuth } from '../../middleware/requireAuth.js'
 import { validate } from '../../middleware/validate.js'
 import { reviewSchema, type ReviewInput } from '../reviews/reviews.schema.js'
 import * as reviewsService from '../reviews/reviews.service.js'
-import { createOfferSchema, offerIdParams, type CreateOfferInput, type OfferIdParams } from './offers.schema.js'
+import {
+  createOfferSchema,
+  offerIdParams,
+  offerMessageSchema,
+  type CreateOfferInput,
+  type OfferIdParams,
+  type OfferMessageInput,
+} from './offers.schema.js'
 import * as offersService from './offers.service.js'
 
 export const offersRouter = Router()
@@ -43,4 +50,15 @@ offersRouter.post('/:id/cancel', validate({ params: offerIdParams }), async (req
 offersRouter.put('/:id/review', validate({ params: offerIdParams, body: reviewSchema }), async (req, res) => {
   const { id } = req.params as OfferIdParams
   res.json({ review: await reviewsService.upsertReview(getAuthUser(req).id, id, req.body as ReviewInput) })
+})
+
+offersRouter.get('/:id/messages', validate({ params: offerIdParams }), async (req, res) => {
+  const { id } = req.params as OfferIdParams
+  res.json(await offersService.listMessages(getAuthUser(req).id, id))
+})
+
+offersRouter.post('/:id/messages', validate({ params: offerIdParams, body: offerMessageSchema }), async (req, res) => {
+  const { id } = req.params as OfferIdParams
+  const message = await offersService.sendMessage(getAuthUser(req).id, id, req.body as OfferMessageInput)
+  res.status(201).json({ message })
 })

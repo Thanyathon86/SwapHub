@@ -6,6 +6,7 @@ import { Spinner } from '@shared/components/Spinner'
 import { RatingBadge } from '@shared/reviews/StarRating'
 import { formatDate, formatPrice } from '@shared/listings/labels'
 import { offerStatusClass, offerStatusLabel } from '../../features/offers/labels'
+import { OfferChat } from '../../features/offers/OfferChat'
 import { offersApi, type Offer } from '../../features/offers/offersApi'
 import { ReviewPanel } from '../../features/offers/ReviewPanel'
 import { errorMessage } from '@shared/lib/api'
@@ -26,6 +27,8 @@ export default function OffersPage() {
   const { data: offers, error, reload } = useResource(offersApi[tab], tab)
   const [rowError, setRowError] = useState<{ id: string; error: unknown } | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  // เปิดแชทได้ทีละรายการ แชทที่เปิดอยู่ดึงข้อความใหม่เป็นระยะ ถ้าเปิดหลายอันจะยิง request ทวีคูณ
+  const [chatId, setChatId] = useState<string | null>(null)
 
   const act = async (offer: Offer, action: 'accept' | 'decline' | 'cancel', confirmText: string) => {
     if (!window.confirm(confirmText)) return
@@ -45,7 +48,7 @@ export default function OffersPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold">ข้อเสนอ</h1>
-        <p className="mt-2 text-sm text-zinc-500">หลังตอบรับแล้ว ทั้งสองฝ่ายจะเห็นอีเมลของกันและกันไว้นัดส่งของ</p>
+        <p className="mt-2 text-sm text-zinc-500">คุยรายละเอียดกับอีกฝ่ายผ่านแชทในแต่ละข้อเสนอ หลังตอบรับแล้วจะเห็นอีเมลของกันและกันด้วย</p>
       </div>
 
       <div className="flex gap-2">
@@ -124,6 +127,18 @@ export default function OffersPage() {
                       ติดต่อ {counterpart.displayName}: {counterpart.email}
                     </p>
                   )}
+                  {user && (
+                    <button
+                      type="button"
+                      onClick={() => setChatId(chatId === offer.id ? null : offer.id)}
+                      aria-expanded={chatId === offer.id}
+                      className="text-sm font-medium text-zinc-700 underline-offset-2 hover:underline"
+                    >
+                      {chatId === offer.id ? 'ซ่อนแชท' : 'แชท'}
+                      {offer._count.messages > 0 && <span className="text-zinc-500"> ({offer._count.messages})</span>}
+                    </button>
+                  )}
+                  {chatId === offer.id && user && <OfferChat offerId={offer.id} me={user.id} other={counterpart} />}
                   {offer.status === 'ACCEPTED' && user && (
                     <ReviewPanel offer={offer} me={user.id} other={counterpart} onSaved={reload} />
                   )}

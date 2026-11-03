@@ -50,6 +50,7 @@ model User {
   reviewsGiven     Review[]           @relation("ReviewAuthor")
   reviewsReceived  Review[]           @relation("ReviewSubject")
   reviewsRemoved   Review[]           @relation("ReviewRemover")
+  offerMessages    OfferMessage[]
 }
 
 model Session {
@@ -187,8 +188,9 @@ model Offer {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  items   OfferItem[]
-  reviews Review[]
+  items    OfferItem[]
+  reviews  Review[]
+  messages OfferMessage[]
 
   @@index([listingId, status])
   @@index([buyerId])
@@ -372,4 +374,17 @@ model Review {
   @@unique([offerId, reviewerId])
   // หน้าโปรไฟล์ดึงรีวิวที่คนนี้ได้รับเรียงล่าสุดก่อน และคิดค่าเฉลี่ย
   @@index([revieweeId, createdAt])
+}
+
+// แชทระหว่างผู้ขอกับเจ้าของประกาศในแต่ละข้อเสนอ แก้หรือลบไม่ได้ เก็บไว้เป็นหลักฐานเวลามีเรื่องร้องเรียน
+model OfferMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  offerId   String   @db.Uuid
+  offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  authorId  String   @db.Uuid
+  author    User     @relation(fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([offerId, createdAt])
 }

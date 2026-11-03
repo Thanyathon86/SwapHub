@@ -1,7 +1,8 @@
-import type { TicketMessage } from './types'
+// ใช้ทั้งเรื่องที่แจ้งทีมงานและแชทในข้อเสนอ จึงขอแค่ฟิลด์ที่ต้องแสดง
+type ThreadMessage = { id: string; body: string; createdAt: string }
 
-// generic เพื่อให้ฝั่ง admin ที่ทุกข้อความมี author ได้ type นั้นกลับมาใน callback
-type Props<M extends TicketMessage> = {
+// generic เพื่อให้แต่ละที่ได้ type ข้อความของตัวเองกลับมาใน callback เช่น ฝั่ง admin ที่ทุกข้อความมี author
+type Props<M extends ThreadMessage> = {
   messages: M[]
   // แต่ละแอปตั้งชื่อผู้เขียนเอง: ฝั่งผู้ใช้เห็นทีมงานเป็นชื่อกลาง ฝั่ง admin เห็นชื่อจริง
   nameOf: (message: M) => string
@@ -12,7 +13,7 @@ type Props<M extends TicketMessage> = {
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-export function MessageThread<M extends TicketMessage>({ messages, nameOf, mine }: Props<M>) {
+export function MessageThread<M extends ThreadMessage>({ messages, nameOf, mine }: Props<M>) {
   return (
     <ol className="space-y-4">
       {messages.map((m) => {

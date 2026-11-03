@@ -4,7 +4,7 @@ import { prisma } from '../../lib/prisma.js'
 import { listingInclude, publicOmit, publicWhere } from '../listings/listings.service.js'
 import { ratingSummaries, REVIEW_WINDOW_MS, type RatingSummary } from '../reviews/reviews.service.js'
 import { cancelPendingOffers } from './cancelPendingOffers.js'
-import type { CreateOfferInput } from './offers.schema.js'
+import type { CreateOfferInput, OfferMessageInput } from './offers.schema.js'
 
 // ดึงอีเมลมาด้วยแต่จะส่งออกไปเฉพาะ offer ที่ตอบรับแล้ว (ดู toView)
 const contactUser = {
@@ -16,11 +16,13 @@ const offerInclude = {
   buyer: contactUser,
   items: { include: { listing: { include: listingInclude, omit: publicOmit } } },
   reviews: { select: { reviewerId: true, rating: true, comment: true, updatedAt: true, removedAt: true } },
+  // หน้ารายการแสดงแค่จำนวน ข้อความจริงดึงตอนเปิดแชท
+  _count: { select: { messages: true } },
 } satisfies Prisma.OfferInclude
 
 type OfferRow = Prisma.OfferGetPayload<{ include: typeof offerInclude }>
 
-// ยังไม่มีแชท ให้ทั้งสองฝ่ายเห็นอีเมลกันหลังตกลงแล้วเท่านั้น ก่อนหน้านั้นใครก็ส่ง offer มาเพื่อเก็บอีเมลไม่ได้
+// ให้ทั้งสองฝ่ายเห็นอีเมลกันหลังตกลงแล้วเท่านั้น ก่อนหน้านั้นใครก็ส่ง offer มาเพื่อเก็บอีเมลไม่ได้ (ก่อนตกลงคุยผ่านแชทในระบบ)
 // แนบคะแนนของทั้งสองฝ่าย ผู้ขายใช้ดูก่อนตัดสินใจตอบรับว่าคนที่ขอมาเชื่อถือได้ไหม
 const noRating: RatingSummary = { average: null, count: 0 }
 
@@ -198,3 +200,39 @@ export const acceptOffer = (sellerId: string, id: string) =>
 
     return tx.offer.findUniqueOrThrow({ where: { id }, include: offerInclude })
   }).then(toViewOne)
+
+// ข้อความเก่ากว่านี้ไม่ส่งไป แชทต่อหนึ่งดีลไม่น่ายาวเกินนี้ และกัน response ใหญ่จน polling ช้า
+const MESSAGE_LIMIT = 200
+// คุยต่อได้เฉพาะดีลที่ยังไม่จบหรือตกลงกันแล้ว (ต้องนัดส่งของ) ดีลที่ปฏิเสธหรือยกเลิกเหลือไว้อ่านอย่างเดียว
+const CHAT_OPEN = new Set(['PENDING', 'ACCEPTED'])
+
+const partyOf = (userId: string) =>
+  ({ OR: [{ buyerId: userId }, { listing: { sellerId: userId } }] }) satisfies Prisma.OfferWhereInput
+
+// คนนอกดีลได้ 404 เหมือนไม่มีข้อเสนอนี้
+const findAsParty = async (userId: string, id: string) => {
+  const offer = await prisma.offer.findFirst({ where: { id, ...partyOf(userId) }, select: { id: true, status: true } })
+  if (!offer) throw notFound()
+  return offer
+}
+
+const messageSelect = { id: true, authorId: true, body: true, createdAt: true } satisfies Prisma.OfferMessageSelect
+
+export const listMessages = async (userId: string, id: string) => {
+  const offer = await findAsParty(userId, id)
+  const latest = await prisma.offerMessage.findMany({
+    where: { offerId: id },
+    select: messageSelect,
+    orderBy: { createdAt: 'desc' },
+    take: MESSAGE_LIMIT,
+  })
+  return { messages: latest.reverse(), canSend: CHAT_OPEN.has(offer.status) }
+}
+
+export const sendMessage = async (userId: string, id: string, { body }: OfferMessageInput) => {
+  const offer = await findAsParty(userId, id)
+  if (!CHAT_OPEN.has(offer.status)) {
+    throw new AppError(409, 'OFFER_CHAT_CLOSED', 'This offer was declined or cancelled, chat is read-only')
+  }
+  return prisma.offerMessage.create({ data: { offerId: id, authorId: userId, body }, select: messageSelect })
+}

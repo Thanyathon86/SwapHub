@@ -37,6 +37,7 @@ export type Offer = {
   listing: Omit<Listing, 'seller'> & { seller: Party }
   buyer: Party
   items: { id: string; listingId: string; quantity: number; listing: Listing }[]
+  _count: { messages: number }
   // รีวิวของดีลนี้ (สูงสุดฝ่ายละหนึ่ง) และวันสุดท้ายที่ยังให้/แก้คะแนนได้ (null ถ้ายังไม่ตอบรับ)
   reviews: OfferReview[]
   reviewDeadline: string | null
@@ -49,6 +50,10 @@ export type CreateOfferInput = {
   message?: string
   items: { listingId: string; quantity: number }[]
 }
+
+export type OfferMessage = { id: string; authorId: string; body: string; createdAt: string }
+// canSend = false เมื่อดีลถูกปฏิเสธหรือยกเลิก เหลือไว้อ่านอย่างเดียว
+export type OfferChat = { messages: OfferMessage[]; canSend: boolean }
 
 type OfferResponse = { offer: Offer }
 type OffersResponse = { offers: Offer[] }
@@ -64,6 +69,9 @@ export const offersApi = {
   accept: (id: string) => respond(id, 'accept'),
   decline: (id: string) => respond(id, 'decline'),
   cancel: (id: string) => respond(id, 'cancel'),
+  messages: (id: string) => api<OfferChat>(`/offers/${id}/messages`),
+  sendMessage: (id: string, body: string) =>
+    api<{ message: OfferMessage }>(`/offers/${id}/messages`, { method: 'POST', body: { body } }).then((r) => r.message),
   review: (id: string, input: { rating: number; comment: string }) =>
     api<{ review: OfferReview }>(`/offers/${id}/review`, { method: 'PUT', body: input }).then((r) => r.review),
 }

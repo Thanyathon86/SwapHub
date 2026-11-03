@@ -25,6 +25,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 | `ListingImage` | รูปของประกาศ (สูงสุด 6) เก็บแค่ `key` ไฟล์จริงอยู่ใน storage |
 | `Review` | คะแนน 1–5 + ความเห็นที่คู่ดีลให้กันหลัง offer `ACCEPTED` ฝ่ายละหนึ่งรีวิวต่อดีล (unique `offerId + reviewerId`) แก้ได้ภายใน 30 วันหลังตอบรับ admin ซ่อนได้ (`removedAt`, ไม่ลบแถวจริง) |
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
+| `OfferMessage` | แชทระหว่างสองฝ่ายใน `Offer` แก้/ลบไม่ได้ |
 | `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร หรือซ่อนรีวิวของใคร (`AuditAction`, เหตุผลอยู่ใน `detail`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
 | `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
 | `PasswordResetToken` | ลิงก์ลืมรหัสผ่าน เก็บแค่ sha256, หมดอายุ 30 นาที, ใช้ได้ครั้งเดียว ขอใหม่แล้วอันเก่าใช้ไม่ได้ |
@@ -59,7 +60,9 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 ซ่อนรีวิว: `GET /api/admin/reviews` (`status=VISIBLE|REMOVED`, `q`=username), `POST /api/admin/reviews/:id/remove` (ต้องมี `reason`, ลง audit `REVIEW_REMOVED` โดย target คือคนเขียน) รีวิวที่ซ่อนไม่แสดงในโปรไฟล์ ไม่นับในค่าเฉลี่ย คนเขียนแก้หรือเขียนใหม่ในดีลเดิมไม่ได้ ใน offer ส่งแค่ `removedAt` (rating/comment เป็น null)
 
-ยังไม่ทำ: แจ้งเตือนทางอีเมล, แชทระหว่างผู้ซื้อกับผู้ขาย
+แชท: `GET|POST /api/offers/:id/messages` เฉพาะสองฝ่ายในดีล (คนอื่น 404) ส่งได้ตอน `PENDING`/`ACCEPTED` ดีลที่ `DECLINED`/`CANCELLED` อ่านได้อย่างเดียว (`canSend`, `OFFER_CHAT_CLOSED`) ส่งกลับล่าสุด 200 ข้อความ หน้าเว็บเปิดแชทได้ทีละข้อเสนอและ poll ทุก 15 วินาที (`OfferChat`)
+
+ยังไม่ทำ: แจ้งเตือนทางอีเมล
 
 ## Stack
 
@@ -107,7 +110,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 ```
 server/
-  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, AuditLog, EventLog, SupportTicket, SupportMessage
+  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, OfferMessage, Review, AuditLog, EventLog, SupportTicket, SupportMessage
   prisma.config.ts          ตั้งค่า Prisma 7 (URL อ่านจาก env)
   src/
     index.ts, app.ts        เปิด server + graceful shutdown, Express app + middleware
@@ -135,7 +138,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
   auth/                     authApi, AuthProvider, useAuth, LoginForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm
   components/               Spinner, Pagination, FormField, Avatar, CountBadge, RequireAuth, ErrorPage, NotFoundPage
   listings/                 listingsApi (types, imageUrl), labels, ListingArt, ListingCover (รูปปกหรือภาพวาด)
-  support/                  types + label หมวด, MessageThread
+  support/                  types + label หมวด, MessageThread (ใช้กับแชทใน offer ด้วย)
   reviews/                  StarRating (RatingBadge, Stars, StarInput)
   styles.css                theme + .btn/.input ฯลฯ ทั้งสองแอป import หลัง tailwindcss
 ```
@@ -150,7 +153,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - การกระทำของ admin ที่กระทบผู้ใช้ ให้บันทึกด้วย `recordAudit(tx, ...)` ใน transaction เดียวกับการเปลี่ยนแปลง
 - เหตุการณ์ด้านความปลอดภัยให้บันทึกด้วย `logEvent(req, ...)` จาก `lib/events.ts` (ไม่ await, พลาดแล้ว request ไม่ล้ม) ห้ามใส่รหัสผ่าน, token, body หรือ error message เต็มลง log เหตุการณ์ที่อาจถูกยิงรัว ๆ ใช้ `logEventThrottled`
 - งานกวาดข้อมูลเก่า (session หมดอายุ, EventLog เกินกำหนด) อยู่ใน `index.ts` รันทุกชั่วโมง
-- อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อกันเพราะยังไม่มีแชท)
+- อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อนอกระบบหลังตกลงกัน)
 - ตอบรับ offer จะตัด `quantity` ทั้งประกาศปลายทางและของที่แลก ประกาศที่เหลือ 0 จะกลายเป็น `CLOSED` และ offer ที่ค้างกับประกาศที่ปิดจะถูก `CANCELLED`
 
 ## Conventions

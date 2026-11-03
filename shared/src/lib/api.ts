@@ -102,6 +102,7 @@ const messages: Record<string, string> = {
   REVIEW_NOT_FOUND: 'ไม่พบรีวิวนี้',
   REVIEW_ALREADY_REMOVED: 'รีวิวนี้ถูกซ่อนไปแล้ว ลองรีเฟรชหน้า',
   OFFER_NO_LONGER_VALID: 'การ์ดในข้อเสนอนี้ถูกปิดหรือจำนวนไม่พอแล้ว',
+  OFFER_CHAT_CLOSED: 'ข้อเสนอนี้ถูกปฏิเสธหรือยกเลิกแล้ว ส่งข้อความต่อไม่ได้',
 }
 
 export const errorMessage = (err: unknown) =>
