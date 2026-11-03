@@ -54,7 +54,7 @@ describe('แก้โปรไฟล์', () => {
     for (const username of ['ab', 'has space', '.dot', 'dot.', 'a..b', 'ไทย', 'x'.repeat(21)]) {
       expect((await update(agent, profileBody({ username }))).body.error.code).toBe('VALIDATION_ERROR')
     }
-    for (const username of ['admin', 'real_admin', 'swaphub.th', 'support_team', 'root']) {
+    for (const username of ['admin', 'real_admin', 'tcgnexus.th', 'swaphub.th', 'support_team', 'root']) {
       expect((await update(agent, profileBody({ username }))).body.error.code).toBe('USERNAME_RESERVED')
     }
   })

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
+import { LogoMark } from '@shared/brand/Logo'
 import { CountBadge } from '@shared/components/CountBadge'
 import { usePolling } from '@shared/lib/usePolling'
 import { adminApi, type AdminCounts } from '../features/adminApi'
@@ -35,7 +36,10 @@ export function AdminLayout() {
     <div className="min-h-screen bg-slate-100 lg:flex">
       <aside className="flex flex-col bg-slate-900 text-slate-200 lg:w-60 lg:shrink-0">
         <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-5 lg:py-4">
-          <div className="text-lg font-bold text-white">SwapHub Admin</div>
+          <div className="flex min-w-0 items-center gap-2 text-lg font-bold text-white">
+            <LogoMark className="size-8" />
+            <span className="truncate">TCGNexus Admin</span>
+          </div>
           {/* จอเล็กพับเมนูไว้ แถบข้างกว้างตายตัวจะกินพื้นที่จนตารางแทบไม่เหลือที่ */}
           <button
             type="button"

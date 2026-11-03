@@ -116,7 +116,7 @@ export const requestPasswordReset = async ({ email }: ForgotPasswordInput) => {
   // ไม่รอส่งเสร็จ ให้เวลาตอบใกล้เคียงกับกรณีที่ไม่มีบัญชี เดาจากเวลาไม่ได้ว่าอีเมลนี้มีอยู่
   sendMail({
     to: user.email,
-    subject: 'ตั้งรหัสผ่านใหม่ SwapHub',
+    subject: 'ตั้งรหัสผ่านใหม่ TCGNexus',
     text: [
       'มีคำขอตั้งรหัสผ่านใหม่สำหรับบัญชีนี้',
       '',

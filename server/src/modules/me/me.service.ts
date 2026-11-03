@@ -17,7 +17,8 @@ export const getCounts = async (userId: string) => {
 }
 
 // ชื่อที่อาจทำให้คนเข้าใจผิดว่าเป็นทีมงาน กันทั้งชื่อตรง ๆ และชื่อที่มีคำเหล่านี้อยู่ข้างใน
-const RESERVED_WORDS = ['admin', 'swaphub', 'support', 'staff', 'moderator', 'official']
+// swaphub คือชื่อเดิมของเว็บ ยังกันไว้ไม่ให้ใครตั้งชื่อแอบอ้างแบรนด์เก่า
+const RESERVED_WORDS = ['admin', 'tcgnexus', 'swaphub', 'support', 'staff', 'moderator', 'official']
 const RESERVED_EXACT = new Set(['api', 'root', 'system', 'help', 'me', 'settings', 'profile', 'null', 'undefined'])
 
 const isReserved = (username: string) =>

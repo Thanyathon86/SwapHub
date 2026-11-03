@@ -23,4 +23,4 @@ export const ticketStatusLabel: Record<TicketStatus, { text: string; className: 
 }
 
 // ชื่อกลางของทีมงาน ไม่เปิดเผยว่า admin คนไหนตอบ
-export const STAFF_NAME = 'ทีมงาน SwapHub'
+export const STAFF_NAME = 'ทีมงาน TCGNexus'

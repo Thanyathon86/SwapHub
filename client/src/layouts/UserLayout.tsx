@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, ScrollRestoration, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
+import { LogoMark } from '@shared/brand/Logo'
 import { Avatar } from '@shared/components/Avatar'
 import { CountBadge } from '@shared/components/CountBadge'
 import { usePolling } from '@shared/lib/usePolling'
@@ -33,11 +34,14 @@ export function UserLayout() {
         <div className="flex h-14 items-stretch lg:h-16">
           <Link
             to="/"
-            aria-label="SwapHub หน้าแรก"
-            className="flex shrink-0 items-center bg-brand-600 px-4 text-lg font-bold tracking-tight text-white focus-visible:outline-white focus-visible:-outline-offset-4 sm:px-5 lg:px-6 lg:text-xl"
+            aria-label="TCGNexus หน้าแรก"
+            className="flex shrink-0 items-center gap-2 pl-3 text-lg font-bold tracking-tight text-zinc-900 sm:pl-4 lg:pl-6 lg:text-xl"
           >
-            <span className="sm:hidden">S</span>
-            <span className="hidden sm:inline">SwapHub</span>
+            <LogoMark className="size-9 lg:size-10" />
+            {/* จอเล็กเหลือแค่โลโก้ ช่องค้นหาจะได้กว้างพอพิมพ์ */}
+            <span className="hidden sm:inline">
+              TCG<span className="text-brand-600">Nexus</span>
+            </span>
           </Link>
           <div className="flex min-w-0 flex-1 items-center gap-6 px-3 sm:px-4 lg:px-6">
             <HeaderSearch />

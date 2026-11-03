@@ -4,7 +4,7 @@
 
 ## โปรเจกต์นี้คืออะไร
 
-Web app ซื้อขายและแลกเปลี่ยน**การ์ดเกม** (TCG marketplace)
+**TCGNexus** (ชื่อเดิม SwapHub, repo บน GitHub ยังใช้ชื่อเดิม) web app ซื้อขายและแลกเปลี่ยน**การ์ดเกม** (TCG marketplace)
 
 - รองรับหลายเกม (Pokémon, Yu-Gi-Oh!, MTG, One Piece ฯลฯ) เก็บเป็นตาราง `Game` ให้ admin เพิ่มเอง ห้าม hardcode ชื่อเกมเป็น enum
 - ขายได้ 3 แบบ (`itemKind`): การ์ดใบเดี่ยว `SINGLE`, การ์ดเกรด `GRADED` (PSA/BGS/CGC ฯลฯ), สินค้าซีล `SEALED` (booster, box, deck)
@@ -46,7 +46,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 กฎของ offer ที่ตรวจใน service: ของที่เอามาแลกต้องเป็นประกาศของผู้ขอเอง, `ACTIVE`, และประกาศปลายทางต้องเป็น `TRADE`/`BOTH`
 
-กฎของ support ที่ตรวจใน service: ผู้ใช้เห็นเฉพาะเรื่องของตัวเอง (ของคนอื่นตอบ 404), เปิดค้างได้ไม่เกิน 5 เรื่อง, เรื่องที่ปิดแล้วตอบต่อไม่ได้, API ฝั่งผู้ใช้ห้ามส่งชื่อหรือ id ของ admin ที่ตอบ (หน้าเว็บแสดงเป็น "ทีมงาน SwapHub")
+กฎของ support ที่ตรวจใน service: ผู้ใช้เห็นเฉพาะเรื่องของตัวเอง (ของคนอื่นตอบ 404), เปิดค้างได้ไม่เกิน 5 เรื่อง, เรื่องที่ปิดแล้วตอบต่อไม่ได้, API ฝั่งผู้ใช้ห้ามส่งชื่อหรือ id ของ admin ที่ตอบ (หน้าเว็บแสดงเป็น "ทีมงาน TCGNexus")
 
 ตัวเลขแจ้งเตือนบนเมนู: `GET /api/me/counts` และ `GET /api/admin/counts` นับเฉพาะสิ่งที่ต้องทำต่อ (ยังไม่มีระบบ "อ่านแล้ว") หน้าเว็บดึงด้วย `usePolling` ทุก 60 วินาทีและทุกครั้งที่เปลี่ยนหน้า ฝั่ง client ส่งต่อให้หน้าลูกผ่าน `<Outlet context>` (`useCounts`)
 
@@ -56,7 +56,7 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 รูปเกม: `POST|DELETE /api/admin/games/:id/image` (field `image`, ≤ 5MB) server บังคับเป็น WebP 960×600 ทุกครั้ง หน้าหลังบ้านเลือกรูปแล้วครอปในเครื่องก่อนส่ง (`GameImageCropper` กรอบ 16:10, ลาก, ซูม, หมุน 90° วาดเองไม่ใช้ library) เปลี่ยนหรือลบรูปแล้วลบไฟล์เก่าทิ้ง
 
-โปรไฟล์: `PATCH /api/me/profile`, `POST|DELETE /api/me/avatar` (ครอป 400×400 WebP), `GET /api/users/:username` ดูได้โดยไม่ล็อกอิน แต่บัญชีที่ถูกระงับและบัญชี admin ตอบ 404 username ห้ามมีคำสงวน (admin, swaphub, support ฯลฯ ใน `me.service`) หน้าเว็บ: `/u/:username`, `/profile/edit`
+โปรไฟล์: `PATCH /api/me/profile`, `POST|DELETE /api/me/avatar` (ครอป 400×400 WebP), `GET /api/users/:username` ดูได้โดยไม่ล็อกอิน แต่บัญชีที่ถูกระงับและบัญชี admin ตอบ 404 username ห้ามมีคำสงวน (admin, tcgnexus, swaphub, support ฯลฯ ใน `me.service`) หน้าเว็บ: `/u/:username`, `/profile/edit`
 
 รีวิว: `PUT /api/offers/:id/review` (สร้างหรือแก้ของเดิม) ผู้รับรีวิวคืออีกฝ่ายของดีลเสมอ คะแนนเฉลี่ยคิดสดจากตาราง (`ratingSummaries` คิดหลายคนในคิวรีเดียว) แนบใน offer (ทั้งผู้ซื้อและผู้ขาย), หน้ารายละเอียดประกาศ (ผู้ขาย) และโปรไฟล์ หน้ารวมประกาศไม่แนบ รายการรีวิว: `GET /api/users/:username/reviews`
 
@@ -144,6 +144,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
   components/               Spinner, Pagination, FormField, Avatar, CountBadge, RequireAuth, ErrorPage, NotFoundPage
   listings/                 listingsApi (types, imageUrl), labels, gradient (สีประจำเกมตาม slug), ListingArt, ListingCover (รูปปกหรือภาพวาด)
   support/                  types + label หมวด, MessageThread (ใช้กับแชทใน offer ด้วย)
+  brand/                    Logo (LogoMark, LogoFull) และไฟล์โลโก้
   reviews/                  StarRating (RatingBadge, Stars, StarInput)
   styles.css                theme (สี brand-*) + .btn/.input/.page-title ฯลฯ ทั้งสองแอป import หลัง tailwindcss
 ```
@@ -165,6 +166,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 
 - สีหลักใช้ `brand-*` ใน `shared/src/styles.css` (แดง `#E60012`) พื้นขาวกับเทาอ่อน ห้ามใส่ hex ซ้ำในหน้า ปุ่มหลัก `.btn-primary`, ปุ่มอันตราย `.btn-danger` เป็นสีกลางและแดงเฉพาะตอน hover เพราะปุ่มหลักแดงอยู่แล้ว
 - ไม่ใช้โลโก้ รูป หรือฟอนต์ของแบรนด์อื่น
+- โลโก้: จุดเล็กกว่าประมาณ 56px (header, เมนูหลังบ้าน, ไอคอนแท็บ) ใช้ `LogoMark` ซึ่งครอปเฉพาะการ์ดกับลูกศร ตั้งแต่ 96px ขึ้นไปใช้ `LogoFull` เพราะแบบเต็มย่อแล้วอ่านไม่ออก รูปมีพื้นขาวจึงอยู่ในกรอบขาวมุมมนเสมอ
 - ต้องใช้งานได้ตั้งแต่จอกว้าง 320px โดยหน้าไม่ล้นแนวนอน ถ้าแก้หน้าให้ลองทั้งมือถือและจอใหญ่
 - เว็บ user: ต่ำกว่า `lg` เมนูอยู่ที่ `BottomNav` ด้านล่าง และ header เหลือแค่โลโก้กับช่องค้นหา ตั้งแต่ `lg` เมนูอยู่บน header และแท็บหมวดติดบนสุดตอนเลื่อน
 - หลังบ้าน: ต่ำกว่า `lg` เมนูข้างพับเป็นปุ่ม "เมนู" ตารางต้องอยู่ในกรอบ `overflow-x-auto`

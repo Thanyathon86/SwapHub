@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
+import { LogoFull } from '@shared/brand/Logo'
 import { marketLinks } from './marketLinks'
 
 type FooterLink = { label: string; to: string }
@@ -43,17 +44,22 @@ export function SiteFooter() {
     <footer className="border-t-4 border-brand-600 bg-zinc-100">
       <div className="page-container py-8 lg:py-12">
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-[2fr_1fr_1fr_1fr]">
-          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
-            <Link to="/" className="text-xl font-bold tracking-tight text-brand-600">
-              SwapHub
+          <div className="col-span-2 flex items-center gap-4 sm:col-span-3 lg:col-span-1 lg:items-start">
+            <Link to="/" aria-label="TCGNexus หน้าแรก" className="shrink-0 rounded-2xl">
+              <LogoFull />
             </Link>
-            <p className="mt-2 max-w-xs text-sm text-zinc-600">ตลาดซื้อขายแลกเปลี่ยนการ์ดเกม ทีมงานตรวจทุกประกาศก่อนขึ้นตลาด</p>
+            <div>
+              <p className="text-xl font-bold tracking-tight text-zinc-900">
+                TCG<span className="text-brand-600">Nexus</span>
+              </p>
+              <p className="mt-1 max-w-xs text-sm text-zinc-600">ตลาดซื้อขายแลกเปลี่ยนการ์ดเกม ทีมงานตรวจทุกประกาศก่อนขึ้นตลาด</p>
+            </div>
           </div>
           <FooterColumn title="ตลาด" links={marketLinks} />
           <FooterColumn title="บัญชี" links={account} />
           <FooterColumn title="ช่วยเหลือ" links={[{ label: 'ติดต่อทีมงาน', to: '/support' }]} />
         </div>
-        <p className="mt-8 border-t border-zinc-300 pt-5 text-xs text-zinc-500 lg:mt-10">© {YEAR} SwapHub</p>
+        <p className="mt-8 border-t border-zinc-300 pt-5 text-xs text-zinc-500 lg:mt-10">© {YEAR} TCGNexus</p>
       </div>
     </footer>
   )

@@ -21,7 +21,7 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().min(1).default('uploads'),
   // ไม่ตั้ง = ไม่ส่งอีเมลจริง พิมพ์ลง console แทน (ใช้ตอน dev) รูปแบบ smtp(s)://user:pass@host:port
   SMTP_URL: z.string().regex(/^smtps?:\/\//, 'Must start with smtp:// or smtps://').optional(),
-  MAIL_FROM: z.string().min(3).default('SwapHub <no-reply@swaphub.local>'),
+  MAIL_FROM: z.string().min(3).default('TCGNexus <no-reply@tcgnexus.local>'),
   // ใช้เฉพาะตอน seed admin คนแรก แอปปกติไม่ต้องมี
   ADMIN_EMAIL: z.email().optional(),
   ADMIN_PASSWORD: z.string().min(12).optional(),

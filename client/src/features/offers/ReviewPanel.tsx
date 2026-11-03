@@ -67,7 +67,7 @@ export function ReviewPanel({ offer, me, other, onSaved }: { offer: Offer; me: s
           </div>
         </form>
       ) : mine?.removedAt ? (
-        <p className="text-zinc-500">รีวิวของคุณถูกทีมงานซ่อนเพราะไม่เป็นไปตามแนวทางของ SwapHub</p>
+        <p className="text-zinc-500">รีวิวของคุณถูกทีมงานซ่อนเพราะไม่เป็นไปตามแนวทางของ TCGNexus</p>
       ) : mine?.rating ? (
         <div>
           <span className="text-zinc-500">คุณให้ {other.displayName}</span> <Stars value={mine.rating} />
