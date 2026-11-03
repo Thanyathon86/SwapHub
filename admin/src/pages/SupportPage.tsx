@@ -41,7 +41,7 @@ export default function SupportPage() {
               type="button"
               onClick={() => update({ status: s, page: 1 })}
               className={`rounded-md px-3 py-1.5 text-sm ${
-                status === s ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                status === s ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               {ticketStatusLabels[s].text}
@@ -72,7 +72,7 @@ export default function SupportPage() {
           <p className="px-6 py-4 text-sm text-slate-500">ไม่มีเรื่องในสถานะนี้</p>
         ) : (
           <table className={`w-full text-left text-sm ${loading ? 'opacity-60' : ''}`}>
-            <thead className="text-slate-500">
+            <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-6 py-2 font-medium">เรื่อง</th>
                 <th className="px-3 py-2 font-medium">ผู้แจ้ง</th>
@@ -84,7 +84,7 @@ export default function SupportPage() {
               {data.tickets.map((t) => (
                 <tr key={t.id} className="hover:bg-slate-50">
                   <td className="px-6 py-2">
-                    <Link to={`/support/${t.id}`} className="font-medium text-slate-800 hover:text-indigo-700 hover:underline">
+                    <Link to={`/support/${t.id}`} className="font-medium text-slate-800 hover:text-brand-700 hover:underline">
                       {t.subject}
                     </Link>
                     <div className="text-xs text-slate-500">

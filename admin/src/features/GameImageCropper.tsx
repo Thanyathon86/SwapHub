@@ -212,7 +212,7 @@ export function GameImageCropper({ file, gameName, onCancel, onSave }: Props) {
               value={view.zoom}
               disabled={!image}
               onChange={(e) => update({ zoom: Number(e.target.value) })}
-              className="min-w-0 flex-1 accent-indigo-600"
+              className="min-w-0 flex-1 accent-brand-600"
             />
             <button
               type="button"
@@ -241,7 +241,7 @@ export function GameImageCropper({ file, gameName, onCancel, onSave }: Props) {
           type="button"
           onClick={onSubmit}
           disabled={busy || !image}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
         >
           {busy ? 'กำลังบันทึก...' : 'บันทึกรูป'}
         </button>

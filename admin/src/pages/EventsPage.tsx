@@ -57,7 +57,7 @@ export default function EventsPage() {
           <p className="px-6 py-4 text-sm text-slate-500">ไม่มีเหตุการณ์</p>
         ) : (
           <table className={`w-full text-left text-sm ${loading ? 'opacity-60' : ''}`}>
-            <thead className="text-slate-500">
+            <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-6 py-2 font-medium">เวลา</th>
                 <th className="px-3 py-2 font-medium">ประเภท</th>

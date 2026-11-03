@@ -76,7 +76,7 @@ export default function ReviewsPage() {
             key={s}
             type="button"
             onClick={() => go({ status: s, page: 1 })}
-            className={`rounded-full px-4 py-1.5 text-sm ${s === query.status ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:text-slate-900'}`}
+            className={`rounded-full px-4 py-1.5 text-sm ${s === query.status ? 'bg-brand-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:text-slate-900'}`}
           >
             {statusLabel[s]}
           </button>
@@ -88,9 +88,9 @@ export default function ReviewsPage() {
             defaultValue={query.q}
             placeholder="username คนเขียนหรือคนถูกรีวิว"
             aria-label="ค้นหาด้วย username"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-slate-500 sm:w-72 sm:flex-none"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 sm:w-72 sm:flex-none"
           />
-          <button type="submit" className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm text-white">
+          <button type="submit" className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-700">
             ค้นหา
           </button>
         </form>

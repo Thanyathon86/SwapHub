@@ -92,13 +92,13 @@ export default function TicketDetailPage() {
                 required
                 placeholder="ตอบผู้ใช้ (ผู้ใช้จะเห็นชื่อผู้ตอบเป็น 'ทีมงาน TCGNexus')"
                 aria-label="ข้อความตอบกลับ"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               />
               <div className="flex justify-end">
                 <button
                   type="submit"
                   disabled={busy || reply.trim() === ''}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
                 >
                   ส่งคำตอบ
                 </button>
@@ -117,7 +117,7 @@ export default function TicketDetailPage() {
             )}
             <Link
               to={`/users?q=${encodeURIComponent(ticket.user.email)}`}
-              className="mt-3 inline-block text-xs text-indigo-600 hover:underline"
+              className="mt-3 inline-block text-xs text-brand-600 hover:underline"
             >
               ดูในหน้าผู้ใช้
             </Link>

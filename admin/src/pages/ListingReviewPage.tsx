@@ -77,7 +77,7 @@ export default function ListingReviewPage() {
             key={s}
             type="button"
             onClick={() => go({ status: s })}
-            className={`rounded-full px-4 py-1.5 text-sm ${s === status ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:text-slate-900'}`}
+            className={`rounded-full px-4 py-1.5 text-sm ${s === status ? 'bg-brand-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:text-slate-900'}`}
           >
             {statusLabel[s]}
           </button>
@@ -108,7 +108,7 @@ export default function ListingReviewPage() {
                         href={imageUrl(img.key)}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-indigo-600 hover:underline"
+                        className="text-brand-600 hover:underline"
                       >
                         รูป {i + 1}
                       </a>

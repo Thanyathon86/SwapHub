@@ -34,7 +34,7 @@ type Props<T extends Item> = {
 }
 
 const inputClass =
-  'w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+  'w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100'
 
 export function CatalogSection<T extends Item>({ title, withSlug, load, create, update, image }: Props<T>) {
   const { data: items, error: loadError, reload } = useResource(load)
@@ -135,7 +135,7 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
         <button
           type="submit"
           disabled={creating}
-          className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+          className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
         >
           {creating ? 'กำลังเพิ่ม...' : 'เพิ่ม'}
         </button>
@@ -150,7 +150,7 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
         <p className="px-6 py-4 text-sm text-slate-500">ยังไม่มีรายการ</p>
       ) : (
         <table className="w-full text-left text-sm">
-          <thead className="text-slate-500">
+          <thead className="bg-slate-50 text-slate-500">
             <tr>
               {image && <th className="py-2 pl-6 font-medium">รูป</th>}
               <th className="px-6 py-2 font-medium">ชื่อ</th>
@@ -177,7 +177,7 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
                         )}
                         <div className="flex flex-col items-start gap-0.5 text-xs">
                           <label
-                            className={`text-indigo-600 focus-within:underline hover:underline ${busy ? 'opacity-60' : 'cursor-pointer'}`}
+                            className={`text-brand-600 focus-within:underline hover:underline ${busy ? 'opacity-60' : 'cursor-pointer'}`}
                           >
                             {item.imageKey ? 'เปลี่ยนรูป' : 'เพิ่มรูป'}
                             <input
@@ -243,7 +243,7 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
                   <td className="space-x-3 whitespace-nowrap px-6 py-2 text-right">
                     {isEditing ? (
                       <>
-                        <button type="button" onClick={onSaveEdit} disabled={busy} className="text-indigo-600 hover:underline">
+                        <button type="button" onClick={onSaveEdit} disabled={busy} className="text-brand-600 hover:underline">
                           บันทึก
                         </button>
                         <button type="button" onClick={() => setEditing(null)} className="text-slate-500 hover:underline">
@@ -258,7 +258,7 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
                             setRowError(null)
                             setEditing({ id: item.id, name: item.name, slug: item.slug ?? '' })
                           }}
-                          className="text-indigo-600 hover:underline"
+                          className="text-brand-600 hover:underline"
                         >
                           แก้ไข
                         </button>

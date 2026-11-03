@@ -4,7 +4,7 @@ import type { AuditAction, EventType } from './adminApi'
 type Badge = { text: string; className: string }
 
 export const auditActionLabels: Record<AuditAction, Badge> = {
-  USER_PROMOTED: { text: 'ตั้งเป็น admin', className: 'bg-indigo-100 text-indigo-700' },
+  USER_PROMOTED: { text: 'ตั้งเป็น admin', className: 'bg-blue-100 text-blue-700' },
   USER_DEMOTED: { text: 'ถอดสิทธิ์ admin', className: 'bg-amber-100 text-amber-700' },
   USER_SUSPENDED: { text: 'ระงับบัญชี', className: 'bg-red-100 text-red-700' },
   USER_REACTIVATED: { text: 'ปลดระงับ', className: 'bg-green-100 text-green-700' },
@@ -28,7 +28,7 @@ export const eventTypeLabels: Record<EventType, Badge> = {
 // คำจากมุมทีมงาน OPEN คืองานที่ต้องทำ จึงเด่นกว่าสถานะอื่น
 export const ticketStatusLabels: Record<TicketStatus, Badge> = {
   OPEN: { text: 'รอตอบ', className: 'bg-amber-100 text-amber-800' },
-  ANSWERED: { text: 'ตอบแล้ว รอผู้ใช้', className: 'bg-indigo-100 text-indigo-700' },
+  ANSWERED: { text: 'ตอบแล้ว รอผู้ใช้', className: 'bg-blue-100 text-blue-700' },
   CLOSED: { text: 'ปิดแล้ว', className: 'bg-slate-100 text-slate-500' },
 }
 

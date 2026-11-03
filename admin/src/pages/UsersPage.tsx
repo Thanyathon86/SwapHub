@@ -105,7 +105,7 @@ export default function UsersPage() {
           defaultValue={query.q}
           placeholder="ค้นหาอีเมลหรือชื่อ"
           aria-label="ค้นหา"
-          className="min-w-60 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+          className="min-w-60 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
         />
         <select
           name="status"
@@ -127,7 +127,7 @@ export default function UsersPage() {
           <option value="USER">User</option>
           <option value="ADMIN">Admin</option>
         </select>
-        <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+        <button type="submit" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
           ค้นหา
         </button>
       </form>
@@ -143,7 +143,7 @@ export default function UsersPage() {
           <p className="px-6 py-4 text-sm text-slate-500">ไม่พบผู้ใช้</p>
         ) : (
           <table className={`w-full text-left text-sm ${loading ? 'opacity-60' : ''}`}>
-            <thead className="text-slate-500">
+            <thead className="bg-slate-50 text-slate-500">
               <tr>
                 <th className="px-6 py-2 font-medium">ผู้ใช้</th>
                 <th className="px-3 py-2 font-medium">บทบาท</th>
@@ -164,7 +164,7 @@ export default function UsersPage() {
                   </td>
                   <td className="px-3 py-2">
                     {u.role === 'ADMIN' ? (
-                      <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">Admin</span>
+                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">Admin</span>
                     ) : (
                       'User'
                     )}
@@ -202,7 +202,7 @@ export default function UsersPage() {
                             onClick={() => onToggleStatus(u)}
                             disabled={busyId === u.id}
                             className={`hover:underline disabled:opacity-60 ${
-                              u.status === 'ACTIVE' ? 'text-red-600' : 'text-indigo-600'
+                              u.status === 'ACTIVE' ? 'text-red-600' : 'text-green-700'
                             }`}
                           >
                             {u.status === 'ACTIVE' ? 'ระงับ' : 'ปลดระงับ'}

@@ -134,9 +134,9 @@ client/src/                 เว็บ user
   components/icons.tsx      ไอคอน SVG ที่วาดเอง ไม่ใช้ library
   features/<feature>/       auth (RegisterForm), home (HomeHero, GameTiles, SellBanner), listings (ListingCard, ListingRow, BrowseRow), offers, support
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
-  router.tsx, layouts/AdminLayout.tsx, components/RequireAdmin.tsx
+  router.tsx, layouts/AdminLayout.tsx, components/ (RequireAdmin, AdminTopBar, AuthShell, icons ไอคอนที่วาดเอง)
   pages/                    Login, ForgotPassword, ResetPassword, Dashboard, ListingReview, Users, Catalog, Reviews, Support, TicketDetail, AuditLog, Events, Account
-  features/                 adminApi, labels, CatalogSection, GameImageCropper, dashboard/ (ColumnChart, BarList วาดเองไม่ใช้ library)
+  features/                 adminApi, labels, CatalogSection, GameImageCropper, dashboard/ (ColumnChart, DonutChart วาดเองไม่ใช้ library)
   lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
   lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource, usePolling
@@ -169,7 +169,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - โลโก้: จุดเล็กกว่าประมาณ 56px (header, เมนูหลังบ้าน, ไอคอนแท็บ) ใช้ `LogoMark` ซึ่งครอปเฉพาะการ์ดกับลูกศร ตั้งแต่ 96px ขึ้นไปใช้ `LogoFull` เพราะแบบเต็มย่อแล้วอ่านไม่ออก รูปมีพื้นขาวจึงอยู่ในกรอบขาวมุมมนเสมอ
 - ต้องใช้งานได้ตั้งแต่จอกว้าง 320px โดยหน้าไม่ล้นแนวนอน ถ้าแก้หน้าให้ลองทั้งมือถือและจอใหญ่
 - เว็บ user: ต่ำกว่า `lg` เมนูอยู่ที่ `BottomNav` ด้านล่าง และ header เหลือแค่โลโก้กับช่องค้นหา ตั้งแต่ `lg` เมนูอยู่บน header และแท็บหมวดติดบนสุดตอนเลื่อน
-- หลังบ้าน: ต่ำกว่า `lg` เมนูข้างพับเป็นปุ่ม "เมนู" ตารางต้องอยู่ในกรอบ `overflow-x-auto`
+- หลังบ้าน: ต่ำกว่า `lg` เมนูข้างพับเป็นปุ่ม "เมนู" ตารางต้องอยู่ในกรอบ `overflow-x-auto` ใช้สี `brand-*` ชุดเดียวกับหน้าร้าน งานค้างและคำเตือนจึงใช้สีเหลือง (`amber`) พร้อมไอคอน ไม่ใช้แดงอย่างเดียว ส่วนป้ายสถานะปกติใช้สีน้ำเงินหรือเทา
 - หน้าที่มีแถบเต็มจอหรือใช้ความกว้างหน้าร้าน (`/`, `/browse`, `/listings/:id`) จัดกรอบเองด้วย `.page-container` หน้าอื่นอยู่ใต้ `ContainedLayout`
 - layout ชั้นกลางต้องส่ง `<Outlet context>` ต่อ (ดู `RequireAuth`) ไม่งั้น `useCounts` ในหน้าลูกจะได้ `undefined`
 - `.input` ใช้ตัวหนังสือ 16px บนจอเล็กเพราะ iOS ซูมหน้าเมื่อโฟกัสช่องที่เล็กกว่านั้น ข้อความยาวติดกันตัดบรรทัดด้วยกฎที่ `body` แต่ flex/grid item ที่มีข้อความจากผู้ใช้ยังต้องใส่ `min-w-0` หรือ `grid-cols-1` ไม่งั้นจะขยายตามคำยาวสุด
