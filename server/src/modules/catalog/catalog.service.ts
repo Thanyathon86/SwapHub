@@ -4,12 +4,16 @@ import { AppError } from '../../lib/errors.js'
 import { processGameImage } from '../../lib/images.js'
 import { prisma } from '../../lib/prisma.js'
 import { removeFile, saveFile } from '../../lib/storage.js'
+import { publicWhere } from '../listings/listings.service.js'
 import type {
   CreateGameInput,
   CreateGradingCompanyInput,
   UpdateGameInput,
   UpdateGradingCompanyInput,
 } from './catalog.schema.js'
+
+// จำนวนเกมในแถวบนหน้าแรก เกมที่เหลือยังหาได้จากหน้าเรียกดู
+const POPULAR_GAMES_LIMIT = 5
 
 // แนบจำนวนประกาศให้ admin รู้ว่าปิดรายการนี้แล้วกระทบประกาศกี่อัน
 const withListingCount = { _count: { select: { listings: true } } } as const
@@ -88,6 +92,26 @@ export const listActiveGames = () =>
     select: { id: true, name: true, slug: true, imageKey: true },
     orderBy: { name: 'asc' },
   })
+
+// นับเฉพาะประกาศที่คนทั่วไปเห็นได้ ของที่รอตรวจหรือปิดแล้วไม่ควรดันอันดับ เกมที่มีประกาศไม่พอจะถูกเติมด้วยเกมอื่นโดยอัตโนมัติ
+export const listPopularGames = async () => {
+  const games = await prisma.game.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      imageKey: true,
+      _count: { select: { listings: { where: publicWhere } } },
+    },
+    orderBy: { name: 'asc' },
+  })
+  // sort ของ JS คงลำดับเดิมเมื่อค่าเท่ากัน เกมที่จำนวนประกาศเท่ากันจึงยังเรียงตามชื่อ
+  return games
+    .sort((a, b) => b._count.listings - a._count.listings)
+    .slice(0, POPULAR_GAMES_LIMIT)
+    .map(({ _count, ...game }) => game)
+}
 
 export const listActiveGradingCompanies = () =>
   prisma.gradingCompany.findMany({

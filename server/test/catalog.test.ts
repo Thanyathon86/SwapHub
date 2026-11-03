@@ -4,7 +4,7 @@ import sharp from 'sharp'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { prisma } from '../src/lib/prisma.js'
 import { uploadRoot } from '../src/lib/storage.js'
-import { createGame, signedInAdmin, signedInUser, userAgent, type Agent } from './helpers.js'
+import { createGame, createListing, createUser, signedInAdmin, signedInUser, userAgent, type Agent } from './helpers.js'
 
 let admin: Agent
 
@@ -61,6 +61,62 @@ describe('admin games', () => {
     expect(res.status).toBe(200)
     const pub = await userAgent().get('/api/catalog/games')
     expect(pub.body.games.map((g: { slug: string }) => g.slug)).not.toContain('old-game')
+  })
+})
+
+describe('popular games', () => {
+  const popular = async () => {
+    const res = await userAgent().get('/api/catalog/games/popular')
+    expect(res.status).toBe(200)
+    return res.body.games as { id: string; slug: string; imageKey: string | null }[]
+  }
+  const addListings = async (sellerId: string, gameId: string, count: number) => {
+    for (let i = 0; i < count; i++) await createListing(sellerId, { gameId })
+  }
+
+  it('ranks games by listings people can see, then by name', async () => {
+    const seller = await createUser()
+    const few = await createGame({ name: 'Few', slug: 'few' })
+    const many = await createGame({ name: 'Many', slug: 'many' })
+    await createGame({ name: 'Zero B', slug: 'zero-b' })
+    await createGame({ name: 'Zero A', slug: 'zero-a' })
+    await addListings(seller.id, few.id, 1)
+    await addListings(seller.id, many.id, 3)
+
+    expect((await popular()).map((g) => g.slug)).toEqual(['many', 'few', 'zero-a', 'zero-b'])
+  })
+
+  it('ignores listings the public cannot see', async () => {
+    const seller = await createUser()
+    const suspended = await createUser({ status: 'SUSPENDED' })
+    const visible = await createGame({ name: 'Visible', slug: 'visible' })
+    const hidden = await createGame({ name: 'Hidden', slug: 'hidden' })
+    await createListing(seller.id, { gameId: visible.id })
+    await createListing(seller.id, { gameId: hidden.id, status: 'PENDING_REVIEW' })
+    await createListing(seller.id, { gameId: hidden.id, status: 'CLOSED' })
+    await createListing(seller.id, { gameId: hidden.id, status: 'REJECTED' })
+    await createListing(suspended.id, { gameId: hidden.id })
+
+    expect((await popular()).map((g) => g.slug)).toEqual(['visible', 'hidden'])
+  })
+
+  it('returns at most 5 games', async () => {
+    for (const slug of ['a', 'b', 'c', 'd', 'e', 'f', 'g']) await createGame({ name: slug, slug })
+    expect((await popular()).map((g) => g.slug)).toEqual(['a', 'b', 'c', 'd', 'e'])
+  })
+
+  it('leaves out deactivated games even when they have the most listings', async () => {
+    const seller = await createUser()
+    const closed = await createGame({ name: 'Closed', slug: 'closed', isActive: false })
+    await createGame({ name: 'Open', slug: 'open' })
+    await addListings(seller.id, closed.id, 2)
+    expect((await popular()).map((g) => g.slug)).toEqual(['open'])
+  })
+
+  it('sends only the fields the tile needs', async () => {
+    const game = await createGame({ name: 'Digimon', slug: 'digimon' })
+    const key = (await uploadImage(admin, game.id)).body.game.imageKey as string
+    expect(await popular()).toEqual([{ id: game.id, name: 'Digimon', slug: 'digimon', imageKey: key }])
   })
 })
 

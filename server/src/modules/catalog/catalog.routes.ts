@@ -69,6 +69,10 @@ catalogPublicRouter.get('/games', async (_req, res) => {
   res.json({ games: await catalogService.listActiveGames() })
 })
 
+catalogPublicRouter.get('/games/popular', async (_req, res) => {
+  res.json({ games: await catalogService.listPopularGames() })
+})
+
 catalogPublicRouter.get('/grading-companies', async (_req, res) => {
   res.json({ gradingCompanies: await catalogService.listActiveGradingCompanies() })
 })

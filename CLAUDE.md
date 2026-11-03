@@ -64,7 +64,7 @@
 
 แชท: `GET|POST /api/offers/:id/messages` เฉพาะสองฝ่ายในดีล (คนอื่น 404) ส่งได้ตอน `PENDING`/`ACCEPTED` ดีลที่ `DECLINED`/`CANCELLED` อ่านได้อย่างเดียว (`canSend`, `OFFER_CHAT_CLOSED`) ส่งกลับล่าสุด 200 ข้อความ หน้าเว็บเปิดแชทได้ทีละข้อเสนอและ poll ทุก 15 วินาที (`OfferChat`)
 
-หน้าเว็บ user: `/` เป็นหน้าร้าน (hero, tile เกม, แถวการ์ด) ส่วนการค้นหาและตัวกรองอยู่ที่ `/browse` (query `q`, `game`, `itemKind`, `type`, `sort`, `page`) ช่องค้นหาอยู่บน header ทุกหน้า หน้าแรกยิง `GET /api/listings` 4 ครั้ง + เกม 1 ครั้งต่อการเปิด (ตอน dev StrictMode ยิงซ้ำเป็นเท่าตัว ถ้าเจอ 429 ให้ restart server)
+หน้าเว็บ user: `/` เป็นหน้าร้าน (hero, tile เกม, แถวการ์ด) ส่วนการค้นหาและตัวกรองอยู่ที่ `/browse` (query `q`, `game`, `itemKind`, `type`, `sort`, `page`) ช่องค้นหาอยู่บน header ทุกหน้า แถวเกมบนหน้าแรกแสดง 5 เกมที่มีประกาศเปิดอยู่มากที่สุด (`GET /api/catalog/games/popular`, เท่ากันเรียงตามชื่อ) เลื่อนด้วยปุ่มหรือตุ่มด้านล่าง เกมอื่นหาได้จากหน้าเรียกดู หน้าแรกยิง `GET /api/listings` 4 ครั้ง + เกม 1 ครั้งต่อการเปิด (ตอน dev StrictMode ยิงซ้ำเป็นเท่าตัว ถ้าเจอ 429 ให้ restart server)
 
 ยังไม่ทำ: แจ้งเตือนทางอีเมล
 

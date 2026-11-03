@@ -15,7 +15,7 @@ export default function HomePage() {
   const { user } = useAuth()
   // ทั้ง hero และแถวแรกใช้ประกาศล่าสุด ดึงครั้งเดียวแล้วแบ่งกันใช้
   const { data: latest, error } = useResource(() => listingsApi.browse({}))
-  const { data: games } = useResource(listingsApi.games)
+  const { data: games } = useResource(listingsApi.popularGames)
   const hasListings = latest !== undefined && latest.listings.length > 0
 
   return (

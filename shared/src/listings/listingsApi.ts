@@ -98,6 +98,7 @@ const browseQueryString = (query: BrowseQuery) => {
 
 export const listingsApi = {
   games: () => api<{ games: CatalogGame[] }>('/catalog/games').then((r) => r.games),
+  popularGames: () => api<{ games: CatalogGame[] }>('/catalog/games/popular').then((r) => r.games),
   gradingCompanies: () =>
     api<{ gradingCompanies: CatalogGradingCompany[] }>('/catalog/grading-companies').then((r) => r.gradingCompanies),
 
