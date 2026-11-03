@@ -11,6 +11,7 @@
   --color-brand-100: #ffe0e2;
   --color-brand-600: #e60012;
   --color-brand-700: #c20010;
+  --color-brand-800: #a1000d;
 
   /* กว้างกว่าหน้าฟอร์มทั่วไป ให้แถวการ์ดวางได้ 6 ใบบนจอใหญ่ */
   --container-store: 84rem;

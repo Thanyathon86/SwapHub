@@ -13,14 +13,14 @@ import { ListingRow } from '../../features/listings/ListingRow'
 // หน้าร้าน: ดูภาพรวมของตลาดเป็นแถว ๆ ส่วนการค้นหาและตัวกรองละเอียดอยู่ที่หน้าเรียกดู
 export default function HomePage() {
   const { user } = useAuth()
-  // ทั้ง hero และแถวแรกใช้ประกาศล่าสุด ดึงครั้งเดียวแล้วแบ่งกันใช้
+  // จำนวนประกาศใน hero มาจากผลเดียวกับแถวแรก ไม่ต้องยิงซ้ำ
   const { data: latest, error } = useResource(() => listingsApi.browse({}))
   const { data: games } = useResource(listingsApi.popularGames)
   const hasListings = latest !== undefined && latest.listings.length > 0
 
   return (
     <>
-      <HomeHero listings={latest?.listings} total={latest?.total} />
+      <HomeHero total={latest?.total} />
       <div className="page-container space-y-10 py-8 sm:py-10 lg:space-y-16 lg:py-14">
         <GameTiles games={games} />
         {error !== undefined && !latest ? (

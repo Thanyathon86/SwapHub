@@ -67,6 +67,15 @@ export function SwapIcon({ className }: IconProps) {
   )
 }
 
+export function ShieldCheckIcon({ className }: IconProps) {
+  return (
+    <svg {...svgProps} className={className}>
+      <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  )
+}
+
 export function UserIcon({ className }: IconProps) {
   return (
     <svg {...svgProps} className={className}>
