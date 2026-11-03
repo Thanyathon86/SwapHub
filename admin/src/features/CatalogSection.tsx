@@ -1,9 +1,22 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Spinner } from '@shared/components/Spinner'
 import { errorMessage, fieldErrors } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
+import { gradientFor } from '@shared/listings/gradient'
+import { imageUrl } from '@shared/listings/listingsApi'
+import { GameImageCropper } from './GameImageCropper'
 
-type Item = { id: string; name: string; slug?: string; isActive: boolean; _count: { listings: number } }
+// ครอปในเครื่องแล้วส่งเฉพาะส่วนที่เลือก จึงรับต้นฉบับใหญ่กว่าเพดาน 5MB ของ server ได้
+const MAX_SOURCE_BYTES = 20 * 1024 * 1024
+
+type Item = {
+  id: string
+  name: string
+  slug?: string
+  imageKey?: string | null
+  isActive: boolean
+  _count: { listings: number }
+}
 type Values = { name?: string; slug?: string; isActive?: boolean }
 
 type Props<T extends Item> = {
@@ -13,18 +26,26 @@ type Props<T extends Item> = {
   load: () => Promise<T[]>
   create: (values: { name: string; slug: string }) => Promise<unknown>
   update: (id: string, values: Values) => Promise<unknown>
+  // มีเฉพาะเกม บริษัทเกรดไม่มีรูป
+  image?: {
+    upload: (id: string, image: Blob) => Promise<unknown>
+    remove: (id: string) => Promise<unknown>
+  }
 }
 
 const inputClass =
   'w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
 
-export function CatalogSection<T extends Item>({ title, withSlug, load, create, update }: Props<T>) {
+export function CatalogSection<T extends Item>({ title, withSlug, load, create, update, image }: Props<T>) {
   const { data: items, error: loadError, reload } = useResource(load)
   const [createError, setCreateError] = useState<unknown>(null)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<{ id: string; name: string; slug: string } | null>(null)
   const [rowError, setRowError] = useState<{ id: string; error: unknown } | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [cropping, setCropping] = useState<{ item: T; file: File } | null>(null)
+  // แยกจาก rowError เพราะเป็นข้อความของเราเอง errorMessage แปลเฉพาะ error code จาก server
+  const [pickProblem, setPickProblem] = useState<{ id: string; message: string } | null>(null)
 
   const onCreate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -43,11 +64,11 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
     }
   }
 
-  const runRowUpdate = async (id: string, values: Values) => {
+  const runRowAction = async (id: string, action: () => Promise<unknown>) => {
     setBusyId(id)
     setRowError(null)
     try {
-      await update(id, values)
+      await action()
       setEditing(null)
       reload()
     } catch (error) {
@@ -55,6 +76,29 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
     } finally {
       setBusyId(null)
     }
+  }
+
+  const runRowUpdate = (id: string, values: Values) => runRowAction(id, () => update(id, values))
+
+  const onPickImage = (item: T, e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    // ล้างค่า input ไม่งั้นเลือกไฟล์เดิมซ้ำหลังกดยกเลิกแล้วจะไม่เกิด change
+    e.target.value = ''
+    if (!file) return
+    setRowError(null)
+    setPickProblem(null)
+    if (!file.type.startsWith('image/')) {
+      setPickProblem({ id: item.id, message: 'ไฟล์นี้ไม่ใช่รูป' })
+    } else if (file.size > MAX_SOURCE_BYTES) {
+      setPickProblem({ id: item.id, message: 'รูปใหญ่เกิน 20MB' })
+    } else {
+      setCropping({ item, file })
+    }
+  }
+
+  const onRemoveImage = (item: T) => {
+    if (!image || !window.confirm(`ลบรูปของ "${item.name}"? หน้าแรกจะกลับไปใช้สีแทนรูป`)) return
+    void runRowAction(item.id, () => image.remove(item.id))
   }
 
   const onToggle = (item: T) => {
@@ -108,6 +152,7 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
         <table className="w-full text-left text-sm">
           <thead className="text-slate-500">
             <tr>
+              {image && <th className="py-2 pl-6 font-medium">รูป</th>}
               <th className="px-6 py-2 font-medium">ชื่อ</th>
               {withSlug && <th className="px-3 py-2 font-medium">slug</th>}
               <th className="px-3 py-2 font-medium">ประกาศ</th>
@@ -121,6 +166,44 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
               const busy = busyId === item.id
               return (
                 <tr key={item.id} className={item.isActive ? '' : 'text-slate-400'}>
+                  {image && (
+                    <td className="py-2 pl-6">
+                      <div className="flex items-center gap-3 whitespace-nowrap">
+                        {item.imageKey ? (
+                          <img src={imageUrl(item.imageKey)} alt="" className="aspect-[16/10] w-20 rounded-md object-cover" />
+                        ) : (
+                          // สีเดียวกับที่หน้าแรกใช้ตอนยังไม่มีรูป
+                          <div className={`aspect-[16/10] w-20 rounded-md bg-linear-to-br ${gradientFor(item.slug ?? '')}`} />
+                        )}
+                        <div className="flex flex-col items-start gap-0.5 text-xs">
+                          <label
+                            className={`text-indigo-600 focus-within:underline hover:underline ${busy ? 'opacity-60' : 'cursor-pointer'}`}
+                          >
+                            {item.imageKey ? 'เปลี่ยนรูป' : 'เพิ่มรูป'}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={busy}
+                              onChange={(e) => onPickImage(item, e)}
+                              aria-label={`เลือกรูปของ ${item.name}`}
+                              className="sr-only"
+                            />
+                          </label>
+                          {item.imageKey && (
+                            <button
+                              type="button"
+                              onClick={() => onRemoveImage(item)}
+                              disabled={busy}
+                              className="text-slate-500 hover:underline disabled:opacity-60"
+                            >
+                              ลบรูป
+                            </button>
+                          )}
+                          {pickProblem?.id === item.id && <p className="text-red-600">{pickProblem.message}</p>}
+                        </div>
+                      </div>
+                    </td>
+                  )}
                   <td className="px-6 py-2">
                     {isEditing ? (
                       <input
@@ -198,6 +281,19 @@ export function CatalogSection<T extends Item>({ title, withSlug, load, create, 
             })}
           </tbody>
         </table>
+      )}
+
+      {cropping && image && (
+        <GameImageCropper
+          file={cropping.file}
+          gameName={cropping.item.name}
+          onCancel={() => setCropping(null)}
+          onSave={async (blob) => {
+            await image.upload(cropping.item.id, blob)
+            setCropping(null)
+            reload()
+          }}
+        />
       )}
     </section>
   )

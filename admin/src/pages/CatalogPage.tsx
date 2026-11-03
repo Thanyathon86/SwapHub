@@ -16,6 +16,7 @@ export default function CatalogPage() {
         load={adminApi.listGames}
         create={adminApi.createGame}
         update={adminApi.updateGame}
+        image={{ upload: adminApi.uploadGameImage, remove: adminApi.removeGameImage }}
       />
       <CatalogSection
         title="บริษัทเกรด"

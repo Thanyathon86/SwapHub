@@ -21,7 +21,7 @@ type CatalogItem = {
   _count: { listings: number }
 }
 
-export type Game = CatalogItem & { slug: string }
+export type Game = CatalogItem & { slug: string; imageKey: string | null }
 export type GradingCompany = CatalogItem
 
 export type GameInput = { name: string; slug: string; isActive?: boolean }
@@ -162,6 +162,12 @@ export const adminApi = {
   createGame: (input: GameInput) => api<{ game: Game }>('/admin/games', { method: 'POST', body: input }),
   updateGame: (id: string, input: Partial<GameInput>) =>
     api<{ game: Game }>(`/admin/games/${id}`, { method: 'PATCH', body: input }),
+  uploadGameImage: (id: string, image: Blob) => {
+    const form = new FormData()
+    form.append('image', image, 'game.jpg')
+    return api<{ game: Game }>(`/admin/games/${id}/image`, { method: 'POST', body: form })
+  },
+  removeGameImage: (id: string) => api<{ game: Game }>(`/admin/games/${id}/image`, { method: 'DELETE' }),
 
   listGradingCompanies: () =>
     api<{ gradingCompanies: GradingCompany[] }>('/admin/grading-companies').then((r) => r.gradingCompanies),

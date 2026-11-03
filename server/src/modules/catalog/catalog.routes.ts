@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { uploadImage } from '../../middleware/uploadImage.js'
 import { validate } from '../../middleware/validate.js'
 import {
   createGameSchema,
@@ -29,6 +30,17 @@ catalogAdminRouter.post('/games', validate({ body: createGameSchema }), async (r
 catalogAdminRouter.patch('/games/:id', validate({ params: idParams, body: updateGameSchema }), async (req, res) => {
   const { id } = req.params as IdParams
   res.json({ game: await catalogService.updateGame(id, req.body as UpdateGameInput) })
+})
+
+catalogAdminRouter.post('/games/:id/image', validate({ params: idParams }), uploadImage, async (req, res) => {
+  const { id } = req.params as IdParams
+  // uploadImage รับประกันว่ามี req.file แล้ว
+  res.json({ game: await catalogService.setGameImage(id, req.file!.buffer) })
+})
+
+catalogAdminRouter.delete('/games/:id/image', validate({ params: idParams }), async (req, res) => {
+  const { id } = req.params as IdParams
+  res.json({ game: await catalogService.removeGameImage(id) })
 })
 
 catalogAdminRouter.get('/grading-companies', async (_req, res) => {

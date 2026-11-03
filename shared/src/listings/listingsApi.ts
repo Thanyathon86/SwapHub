@@ -6,7 +6,7 @@ export type ItemKind = 'SINGLE' | 'GRADED' | 'SEALED'
 export type ListingStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'REJECTED' | 'CLOSED'
 export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG'
 
-export type CatalogGame = { id: string; name: string; slug: string }
+export type CatalogGame = { id: string; name: string; slug: string; imageKey: string | null }
 export type CatalogGradingCompany = { id: string; name: string }
 
 export type ListingImage = { id: string; key: string; width: number; height: number }
@@ -38,7 +38,8 @@ export type Listing = {
   reviewedAt: string | null
   createdAt: string
   updatedAt: string
-  game: CatalogGame
+  // ประกาศไม่ได้แนบรูปเกมมาด้วย ใช้เฉพาะ tile หน้าแรก
+  game: Omit<CatalogGame, 'imageKey'>
   gradingCompany: CatalogGradingCompany | null
   // rating มีเฉพาะหน้ารายละเอียดประกาศ หน้ารวมไม่ได้แนบมา
   seller: { id: string; displayName: string; username: string; avatarKey: string | null; rating?: RatingSummary }
