@@ -11,7 +11,7 @@ export default function NewListingPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold">ลงประกาศ</h1>
+        <h1 className="page-title">ลงประกาศ</h1>
         <p className="mt-2 text-sm text-zinc-500">ประกาศจะแสดงในตลาดหลังจากทีมงานตรวจแล้ว</p>
       </div>
       <ListingForm

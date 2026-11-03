@@ -52,10 +52,10 @@ export default function EditListingPage() {
   return (
     <div className="space-y-8">
       <div>
-        <Link to="/my-listings" className="text-sm text-zinc-500 hover:text-zinc-900">
+        <Link to="/my-listings" className="link-back">
           ← ประกาศของฉัน
         </Link>
-        <h1 className="mt-2 text-3xl font-semibold">แก้ไขประกาศ</h1>
+        <h1 className="page-title mt-2">แก้ไขประกาศ</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-500">{notices[listing.status]}</p>
         {listing.status === 'REJECTED' && listing.rejectReason && (
           <p className="mt-3 max-w-2xl rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">เหตุผลที่ไม่ผ่าน: {listing.rejectReason}</p>

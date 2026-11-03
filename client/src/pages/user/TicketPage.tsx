@@ -62,11 +62,11 @@ export default function TicketPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div>
-        <Link to="/support" className="text-sm text-zinc-500 hover:text-zinc-900">
+        <Link to="/support" className="link-back">
           ← ติดต่อทีมงาน
         </Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-          <h1 className="text-2xl font-semibold">{ticket.subject}</h1>
+          <h1 className="min-w-0 text-xl font-medium text-zinc-800 sm:text-2xl">{ticket.subject}</h1>
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${status.className}`}>{status.text}</span>
         </div>
         <p className="mt-1 text-sm text-zinc-500">{ticketCategoryLabel[ticket.category]}</p>
@@ -99,7 +99,7 @@ export default function TicketPage() {
             aria-label="ข้อความตอบกลับ"
             className="input"
           />
-          <div className="flex flex-wrap justify-between gap-3">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
             <button type="button" onClick={onClose} disabled={busy} className="btn btn-secondary">
               ปัญหาได้รับการแก้แล้ว ปิดเรื่อง
             </button>

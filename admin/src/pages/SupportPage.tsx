@@ -34,7 +34,7 @@ export default function SupportPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex rounded-lg bg-white p-1 shadow-sm ring-1 ring-slate-200">
+        <div className="flex flex-wrap rounded-lg bg-white p-1 shadow-sm ring-1 ring-slate-200">
           {statuses.map((s) => (
             <button
               key={s}
@@ -63,7 +63,7 @@ export default function SupportPage() {
         </select>
       </div>
 
-      <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
         {error !== undefined && !data ? (
           <p className="px-6 py-4 text-sm text-red-600">{errorMessage(error)}</p>
         ) : !data ? (

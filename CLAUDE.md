@@ -62,6 +62,8 @@ Web app ซื้อขายและแลกเปลี่ยน**การ�
 
 แชท: `GET|POST /api/offers/:id/messages` เฉพาะสองฝ่ายในดีล (คนอื่น 404) ส่งได้ตอน `PENDING`/`ACCEPTED` ดีลที่ `DECLINED`/`CANCELLED` อ่านได้อย่างเดียว (`canSend`, `OFFER_CHAT_CLOSED`) ส่งกลับล่าสุด 200 ข้อความ หน้าเว็บเปิดแชทได้ทีละข้อเสนอและ poll ทุก 15 วินาที (`OfferChat`)
 
+หน้าเว็บ user: `/` เป็นหน้าร้าน (hero, tile เกม, แถวการ์ด) ส่วนการค้นหาและตัวกรองอยู่ที่ `/browse` (query `q`, `game`, `itemKind`, `type`, `sort`, `page`) ช่องค้นหาอยู่บน header ทุกหน้า หน้าแรกยิง `GET /api/listings` 4 ครั้ง + เกม 1 ครั้งต่อการเปิด (ตอน dev StrictMode ยิงซ้ำเป็นเท่าตัว ถ้าเจอ 429 ให้ restart server)
+
 ยังไม่ทำ: แจ้งเตือนทางอีเมล
 
 ## Stack
@@ -126,8 +128,9 @@ server/
 client/src/                 เว็บ user
   router.tsx                react-router
   pages/                    public/, user/
-  layouts/UserLayout.tsx
-  features/<feature>/       auth (RegisterForm), listings (ListingCard), offers, support
+  layouts/                  UserLayout, ContainedLayout (กรอบหน้าฟอร์ม/บัญชี), StoreTabs, BottomNav (เมนูจอเล็ก), HeaderSearch, SiteFooter
+  components/icons.tsx      ไอคอน SVG ที่วาดเอง ไม่ใช้ library
+  features/<feature>/       auth (RegisterForm), home (HomeHero, GameTiles, SellBanner), listings (ListingCard, ListingRow, BrowseRow), offers, support
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
   router.tsx, layouts/AdminLayout.tsx, components/RequireAdmin.tsx
   pages/                    Login, ForgotPassword, ResetPassword, Dashboard, ListingReview, Users, Catalog, Reviews, Support, TicketDetail, AuditLog, Events, Account
@@ -137,10 +140,10 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
   lib/                      api.ts (fetch wrapper + แปล error code เป็นข้อความไทย), useResource, usePolling
   auth/                     authApi, AuthProvider, useAuth, LoginForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm
   components/               Spinner, Pagination, FormField, Avatar, CountBadge, RequireAuth, ErrorPage, NotFoundPage
-  listings/                 listingsApi (types, imageUrl), labels, ListingArt, ListingCover (รูปปกหรือภาพวาด)
+  listings/                 listingsApi (types, imageUrl), labels, gradient (สีประจำเกมตาม slug), ListingArt, ListingCover (รูปปกหรือภาพวาด)
   support/                  types + label หมวด, MessageThread (ใช้กับแชทใน offer ด้วย)
   reviews/                  StarRating (RatingBadge, Stars, StarInput)
-  styles.css                theme + .btn/.input ฯลฯ ทั้งสองแอป import หลัง tailwindcss
+  styles.css                theme (สี brand-*) + .btn/.input/.page-title ฯลฯ ทั้งสองแอป import หลัง tailwindcss
 ```
 
 - route ของ admin อยู่ใต้ `/api/admin/*` และต้องผ่าน `requireRole('ADMIN')` ทุกเส้น ตรวจสิทธิ์ที่ server เสมอ การซ่อนเมนูฝั่ง client ไม่นับเป็นการป้องกัน
@@ -155,6 +158,17 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - งานกวาดข้อมูลเก่า (session หมดอายุ, EventLog เกินกำหนด) อยู่ใน `index.ts` รันทุกชั่วโมง
 - อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อนอกระบบหลังตกลงกัน)
 - ตอบรับ offer จะตัด `quantity` ทั้งประกาศปลายทางและของที่แลก ประกาศที่เหลือ 0 จะกลายเป็น `CLOSED` และ offer ที่ค้างกับประกาศที่ปิดจะถูก `CANCELLED`
+
+## หน้าตาและ responsive
+
+- สีหลักใช้ `brand-*` ใน `shared/src/styles.css` (แดง `#E60012`) พื้นขาวกับเทาอ่อน ห้ามใส่ hex ซ้ำในหน้า ปุ่มหลัก `.btn-primary`, ปุ่มอันตราย `.btn-danger` เป็นสีกลางและแดงเฉพาะตอน hover เพราะปุ่มหลักแดงอยู่แล้ว
+- ไม่ใช้โลโก้ รูป หรือฟอนต์ของแบรนด์อื่น
+- ต้องใช้งานได้ตั้งแต่จอกว้าง 320px โดยหน้าไม่ล้นแนวนอน ถ้าแก้หน้าให้ลองทั้งมือถือและจอใหญ่
+- เว็บ user: ต่ำกว่า `lg` เมนูอยู่ที่ `BottomNav` ด้านล่าง และ header เหลือแค่โลโก้กับช่องค้นหา ตั้งแต่ `lg` เมนูอยู่บน header และแท็บหมวดติดบนสุดตอนเลื่อน
+- หลังบ้าน: ต่ำกว่า `lg` เมนูข้างพับเป็นปุ่ม "เมนู" ตารางต้องอยู่ในกรอบ `overflow-x-auto`
+- หน้าที่มีแถบเต็มจอหรือใช้ความกว้างหน้าร้าน (`/`, `/browse`, `/listings/:id`) จัดกรอบเองด้วย `.page-container` หน้าอื่นอยู่ใต้ `ContainedLayout`
+- layout ชั้นกลางต้องส่ง `<Outlet context>` ต่อ (ดู `RequireAuth`) ไม่งั้น `useCounts` ในหน้าลูกจะได้ `undefined`
+- `.input` ใช้ตัวหนังสือ 16px บนจอเล็กเพราะ iOS ซูมหน้าเมื่อโฟกัสช่องที่เล็กกว่านั้น ข้อความยาวติดกันตัดบรรทัดด้วยกฎที่ `body` แต่ flex/grid item ที่มีข้อความจากผู้ใช้ยังต้องใส่ `min-w-0` หรือ `grid-cols-1` ไม่งั้นจะขยายตามคำยาวสุด
 
 ## Conventions
 

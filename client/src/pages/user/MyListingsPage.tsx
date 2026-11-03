@@ -32,10 +32,10 @@ export default function MyListingsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold">ประกาศของฉัน</h1>
+          <h1 className="page-title">ประกาศของฉัน</h1>
           <p className="mt-2 text-sm text-zinc-500">ประกาศใหม่จะขึ้นในตลาดหลังจากผ่านการตรวจ</p>
         </div>
         <Link to="/sell" className="btn btn-primary">
@@ -57,7 +57,7 @@ export default function MyListingsPage() {
       ) : !listings ? (
         <Spinner />
       ) : listings.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-zinc-200 px-6 py-20 text-center">
+        <div className="rounded-2xl border border-dashed border-zinc-200 px-6 py-16 text-center sm:py-20">
           <p className="font-medium">ยังไม่มีประกาศ</p>
           <p className="mt-1 text-sm text-zinc-500">ลงการ์ดใบแรกของคุณได้เลย</p>
         </div>
@@ -66,18 +66,18 @@ export default function MyListingsPage() {
           {listings.map((listing) => {
             const closable = listing.status === 'PENDING_REVIEW' || listing.status === 'ACTIVE'
             return (
-              <li key={listing.id} className="flex gap-4 py-5 sm:gap-6">
-                <div className="w-20 shrink-0 sm:w-24">
+              <li key={listing.id} className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 gap-y-3 py-5 sm:grid-cols-[6rem_minmax(0,1fr)_auto] sm:gap-x-6">
+                <div>
                   <ListingCover listing={listing} />
                 </div>
-                <div className="min-w-0 flex-1 space-y-2">
+                <div className="min-w-0 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge status={listing.status} />
                     <span className="text-xs text-zinc-500">
                       {kindLabel[listing.itemKind]} · {typeLabel[listing.type]} · {formatDate(listing.createdAt)}
                     </span>
                   </div>
-                  <div className="truncate font-medium">{listing.title}</div>
+                  <div className="line-clamp-2 font-medium">{listing.title}</div>
                   <div className="text-sm text-zinc-500">
                     {listing.game.name} · {listing.setName}
                   </div>
@@ -87,7 +87,8 @@ export default function MyListingsPage() {
                   )}
                   {rowError?.id === listing.id && <p className="text-sm text-red-600">{errorMessage(rowError.error)}</p>}
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
+                {/* จอเล็กย้ายปุ่มลงแถวล่างเต็มความกว้าง ไม่งั้นปุ่มเบียดจนชื่อการ์ดเหลือที่นิดเดียว */}
+                <div className="col-span-2 flex gap-2 *:flex-1 empty:hidden sm:col-span-1 sm:flex-col sm:items-end sm:*:flex-none lg:flex-row lg:items-start">
                   {listing.status === 'ACTIVE' && (
                     <Link to={`/listings/${listing.id}`} className="btn btn-secondary">
                       ดูประกาศ

@@ -113,10 +113,10 @@ export function ListingForm({ initial = emptyDraft, lockKind = false, submitLabe
                 aria-pressed={itemKind === k.value}
                 disabled={lockKind && itemKind !== k.value}
                 onClick={() => set('itemKind', k.value)}
-                className={`rounded-2xl p-4 text-left ring-1 transition disabled:cursor-not-allowed disabled:opacity-40 ${itemKind === k.value ? 'bg-zinc-900 text-white ring-zinc-900' : 'bg-white ring-zinc-200 hover:ring-zinc-400'}`}
+                className={`rounded-2xl p-4 text-left ring-1 transition disabled:cursor-not-allowed disabled:opacity-40 ${itemKind === k.value ? 'bg-brand-600 text-white ring-brand-600' : 'bg-white ring-zinc-300 hover:ring-zinc-400'}`}
               >
                 <div className="font-medium">{kindLabel[k.value]}</div>
-                <div className={`mt-1 text-xs ${itemKind === k.value ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                <div className={`mt-1 text-xs ${itemKind === k.value ? 'text-white/90' : 'text-zinc-500'}`}>
                   {k.hint}
                 </div>
               </button>
@@ -296,7 +296,7 @@ export function ListingForm({ initial = emptyDraft, lockKind = false, submitLabe
       </form>
 
       <aside className="order-first lg:order-last">
-        <div className="mx-auto max-w-56 lg:sticky lg:top-24 lg:max-w-none">
+        <div className="mx-auto max-w-36 sm:max-w-48 lg:sticky lg:top-20 lg:max-w-none">
           <p className="mb-3 text-xs font-medium tracking-wider text-zinc-400 uppercase">ตัวอย่าง</p>
           <ListingArt
             gameSlug={game?.slug ?? 'preview'}

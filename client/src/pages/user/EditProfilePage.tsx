@@ -80,18 +80,18 @@ export default function EditProfilePage() {
   return (
     <section className="mx-auto max-w-lg space-y-8">
       <div>
-        <Link to="/profile" className="text-sm text-zinc-500 hover:text-zinc-900">
+        <Link to="/profile" className="link-back">
           ← โปรไฟล์
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">แก้ไขโปรไฟล์</h1>
+        <h1 className="page-title mt-2">แก้ไขโปรไฟล์</h1>
       </div>
 
-      <div className="flex items-center gap-4 rounded-3xl bg-zinc-50 p-4">
+      <div className="flex items-center gap-4 rounded-2xl bg-zinc-50 p-4">
         <Avatar user={user} size="md" />
         <div className="min-w-0 flex-1">
           <div className="truncate font-medium">@{user.username}</div>
           <div className="mt-1 flex flex-wrap gap-3 text-sm">
-            <label className={`font-medium text-blue-600 ${busy ? 'opacity-50' : 'cursor-pointer hover:underline'}`}>
+            <label className={`font-medium text-brand-600 ${busy ? 'opacity-50' : 'cursor-pointer hover:underline'}`}>
               เปลี่ยนรูปโปรไฟล์
               <input type="file" accept="image/*" disabled={busy} onChange={onAvatar} className="sr-only" />
             </label>

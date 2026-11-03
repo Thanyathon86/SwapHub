@@ -81,14 +81,14 @@ export default function ReviewsPage() {
             {statusLabel[s]}
           </button>
         ))}
-        <form onSubmit={onSearch} className="ml-auto flex gap-2">
+        <form onSubmit={onSearch} className="flex w-full gap-2 sm:ml-auto sm:w-auto">
           <input
             key={query.q}
             name="q"
             defaultValue={query.q}
             placeholder="username คนเขียนหรือคนถูกรีวิว"
             aria-label="ค้นหาด้วย username"
-            className="w-72 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-slate-500"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-slate-500 sm:w-72 sm:flex-none"
           />
           <button type="submit" className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm text-white">
             ค้นหา

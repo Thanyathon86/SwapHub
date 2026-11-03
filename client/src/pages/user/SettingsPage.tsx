@@ -25,15 +25,15 @@ export default function SettingsPage() {
   return (
     <section className="mx-auto max-w-lg space-y-8">
       <div>
-        <Link to="/profile" className="text-sm text-zinc-500 hover:text-zinc-900">
+        <Link to="/profile" className="link-back">
           ← โปรไฟล์
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">ตั้งค่าบัญชี</h1>
+        <h1 className="page-title mt-2">ตั้งค่าบัญชี</h1>
       </div>
 
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-zinc-500">ข้อมูลบัญชี</h2>
-        <dl className="divide-y divide-zinc-100 rounded-3xl text-sm ring-1 ring-zinc-200">
+        <dl className="divide-y divide-zinc-100 rounded-2xl text-sm ring-1 ring-zinc-200">
           <div className="flex justify-between gap-4 px-5 py-4">
             <dt className="text-zinc-500">ชื่อที่แสดง</dt>
             <dd className="font-medium">{user.displayName}</dd>
@@ -47,14 +47,14 @@ export default function SettingsPage() {
 
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-zinc-500">เปลี่ยนรหัสผ่าน</h2>
-        <div className="rounded-3xl px-5 py-5 ring-1 ring-zinc-200">
+        <div className="rounded-2xl p-4 ring-1 ring-zinc-200 sm:p-5">
           <ChangePasswordForm />
         </div>
       </div>
 
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-zinc-500">ความปลอดภัย</h2>
-        <div className="flex items-center justify-between gap-4 rounded-3xl px-5 py-4 ring-1 ring-zinc-200">
+        <div className="flex flex-col gap-3 rounded-2xl p-4 ring-1 ring-zinc-200 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5">
           <p className="text-sm text-zinc-600">ใช้เมื่อสงสัยว่ามีคนอื่นเข้าบัญชีจากเครื่องอื่น</p>
           <button type="button" onClick={onLogoutAll} className="btn btn-danger shrink-0">
             ออกจากระบบทุกอุปกรณ์

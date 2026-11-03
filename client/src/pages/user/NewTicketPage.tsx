@@ -32,10 +32,10 @@ export default function NewTicketPage() {
   return (
     <div className="mx-auto max-w-lg space-y-8">
       <div>
-        <Link to="/support" className="text-sm text-zinc-500 hover:text-zinc-900">
+        <Link to="/support" className="link-back">
           ← ติดต่อทีมงาน
         </Link>
-        <h1 className="mt-2 text-3xl font-semibold">แจ้งเรื่องใหม่</h1>
+        <h1 className="page-title mt-2">แจ้งเรื่องใหม่</h1>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-5">

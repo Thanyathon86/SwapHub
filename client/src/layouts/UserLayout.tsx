@@ -1,14 +1,19 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, ScrollRestoration, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
 import { Avatar } from '@shared/components/Avatar'
 import { CountBadge } from '@shared/components/CountBadge'
 import { usePolling } from '@shared/lib/usePolling'
+import { PlusIcon } from '../components/icons'
 import { fetchCounts } from '../features/counts/counts'
+import { BottomNav } from './BottomNav'
+import { HeaderSearch } from './HeaderSearch'
+import { SiteFooter } from './SiteFooter'
+import { StoreTabs } from './StoreTabs'
 
 const COUNTS_INTERVAL_MS = 60_000
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `hidden text-sm transition sm:inline ${isActive ? 'font-medium text-zinc-900' : 'text-zinc-500 hover:text-zinc-900'}`
+  `text-sm whitespace-nowrap transition ${isActive ? 'font-medium text-brand-600' : 'text-zinc-600 hover:text-zinc-900'}`
 
 // ใช้ร่วมกันทั้งหน้า public และหน้าของ user เพราะ header เหมือนกัน ต่างกันแค่เมนูตามสถานะ login
 export function UserLayout() {
@@ -22,65 +27,70 @@ export function UserLayout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/80 backdrop-blur-lg">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-          <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="grid size-7 place-items-center rounded-lg bg-zinc-900 text-xs font-bold text-white">S</span>
-            SwapHub
+    // เว้นด้านล่างเท่าแถบเมนูมือถือ ไม่งั้น footer กับปุ่มท้ายหน้าจะโดนแถบบังจนกดไม่ได้
+    <div className="flex min-h-screen flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+      <header className="bg-white">
+        <div className="flex h-14 items-stretch lg:h-16">
+          <Link
+            to="/"
+            aria-label="SwapHub หน้าแรก"
+            className="flex shrink-0 items-center bg-brand-600 px-4 text-lg font-bold tracking-tight text-white focus-visible:outline-white focus-visible:-outline-offset-4 sm:px-5 lg:px-6 lg:text-xl"
+          >
+            <span className="sm:hidden">S</span>
+            <span className="hidden sm:inline">SwapHub</span>
           </Link>
-          {status === 'ready' && (
-            <nav className="flex items-center gap-5">
-              {user ? (
-                <>
-                  <NavLink to="/my-listings" className={navClass}>
-                    ประกาศของฉัน
-                  </NavLink>
-                  <NavLink to="/offers" className={navClass}>
-                    ข้อเสนอ
-                    <CountBadge count={counts?.incomingOffers} label="ข้อเสนอที่รอตอบ" />
-                  </NavLink>
-                  <button type="button" onClick={onLogout} className={navClass({ isActive: false })}>
-                    ออกจากระบบ
-                  </button>
-                  <Link to="/sell" className="btn btn-primary">
-                    ลงประกาศ
-                  </Link>
-                  <Link
-                    to="/profile"
-                    title={user.displayName}
-                    className="relative rounded-full hover:opacity-80"
-                  >
-                    <Avatar user={user} />
-                    {/* ทีมงานตอบเรื่องที่แจ้งแล้ว ลิงก์ไปหน้านั้นอยู่ในโปรไฟล์ */}
-                    <span className="absolute -top-1.5 -right-2.5">
-                      <CountBadge count={counts?.answeredTickets} label="เรื่องที่ทีมงานตอบแล้ว" />
-                    </span>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link to="/login" className="text-sm text-zinc-600 hover:text-zinc-900">
-                    เข้าสู่ระบบ
-                  </Link>
-                  <Link to="/register" className="btn btn-primary">
-                    สมัครสมาชิก
-                  </Link>
-                </>
-              )}
-            </nav>
-          )}
+          <div className="flex min-w-0 flex-1 items-center gap-6 px-3 sm:px-4 lg:px-6">
+            <HeaderSearch />
+            {/* จอเล็กใช้ BottomNav แทน */}
+            {status === 'ready' && (
+              <nav aria-label="บัญชี" className="ml-auto hidden shrink-0 items-center gap-5 lg:flex">
+                {user ? (
+                  <>
+                    <NavLink to="/my-listings" className={navClass}>
+                      ประกาศของฉัน
+                    </NavLink>
+                    <NavLink to="/offers" className={navClass}>
+                      ข้อเสนอ
+                      <CountBadge count={counts?.incomingOffers} label="ข้อเสนอที่รอตอบ" />
+                    </NavLink>
+                    <button type="button" onClick={onLogout} className={navClass({ isActive: false })}>
+                      ออกจากระบบ
+                    </button>
+                    <Link to="/sell" className="btn btn-primary">
+                      <PlusIcon className="size-4" />
+                      ลงประกาศ
+                    </Link>
+                    <Link to="/profile" title={user.displayName} className="relative rounded-full hover:opacity-80">
+                      <Avatar user={user} />
+                      {/* ทีมงานตอบเรื่องที่แจ้งแล้ว ลิงก์ไปหน้านั้นอยู่ในโปรไฟล์ */}
+                      <span className="absolute -top-1.5 -right-2.5">
+                        <CountBadge count={counts?.answeredTickets} label="เรื่องที่ทีมงานตอบแล้ว" />
+                      </span>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" className="btn btn-primary">
+                      เข้าสู่ระบบ
+                    </Link>
+                    <Link to="/register" className="btn btn-secondary">
+                      สมัครสมาชิก
+                    </Link>
+                  </>
+                )}
+              </nav>
+            )}
+          </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      <StoreTabs />
+      <main className="flex-1">
         <Outlet context={counts} />
       </main>
-      <footer className="border-t border-zinc-100 py-8 text-center text-xs text-zinc-400">
-        SwapHub · ตลาดซื้อขายแลกเปลี่ยนการ์ดเกม ·{' '}
-        <Link to="/support" className="hover:text-zinc-700 hover:underline">
-          ติดต่อทีมงาน
-        </Link>
-      </footer>
+      <SiteFooter />
+      <BottomNav counts={counts} />
+      {/* หน้าแรกยาวขึ้นมาก ถ้าไม่มีตัวนี้ กดการ์ดแถวล่าง ๆ แล้วหน้าถัดไปจะเปิดค้างที่ตำแหน่งเลื่อนเดิม */}
+      <ScrollRestoration />
     </div>
   )
 }

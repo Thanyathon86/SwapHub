@@ -44,7 +44,7 @@ export function LoginForm({ admin = false }: { admin?: boolean }) {
       />
       {/* ทั้งสองแอปมีหน้า /forgot-password ของตัวเอง */}
       <div className="-mt-2 text-right">
-        <Link to="/forgot-password" className="text-sm text-zinc-500 hover:text-zinc-900 hover:underline">
+        <Link to="/forgot-password" className="inline-block py-1 text-sm text-zinc-500 hover:text-zinc-900 hover:underline">
           ลืมรหัสผ่าน?
         </Link>
       </div>

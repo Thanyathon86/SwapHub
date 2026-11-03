@@ -23,7 +23,7 @@ export default function ProfilePage() {
       <div className="flex items-center gap-4">
         <Avatar user={user} size="md" />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-semibold">{user.displayName}</h1>
+          <h1 className="truncate text-xl font-semibold text-zinc-800 sm:text-2xl">{user.displayName}</h1>
           <div className="text-sm text-zinc-500">@{user.username}</div>
         </div>
       </div>
@@ -35,7 +35,7 @@ export default function ProfilePage() {
           แก้ไขโปรไฟล์
         </Link>
       </div>
-      <div className="divide-y divide-zinc-100 rounded-3xl ring-1 ring-zinc-200">
+      <div className="divide-y divide-zinc-100 overflow-hidden rounded-2xl ring-1 ring-zinc-200">
         <Link to="/my-listings" className={menuClass}>
           ประกาศของฉัน <span className="text-zinc-400">→</span>
         </Link>

@@ -55,7 +55,7 @@ export function ListingPhotos({ listing, onChange }: Props) {
   }
 
   return (
-    <section className="rounded-3xl p-5 ring-1 ring-zinc-200">
+    <section className="rounded-2xl p-4 ring-1 ring-zinc-200 sm:p-5">
       <h2 className="text-sm font-medium text-zinc-700">รูปการ์ด</h2>
       <p className="mt-1 mb-4 text-xs text-zinc-500">
         สูงสุด {MAX_PHOTOS} รูป ไม่เกิน 5MB ต่อรูป รูปแรกเป็นปก เพิ่มหรือลบแล้วมีผลทันที

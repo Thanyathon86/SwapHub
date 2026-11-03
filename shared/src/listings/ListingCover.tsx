@@ -15,7 +15,7 @@ export function ListingCover({ listing, size = 'sm' }: Props) {
       loading="lazy"
       width={cover.width}
       height={cover.height}
-      className="aspect-[63/88] w-full rounded-2xl bg-zinc-100 object-cover"
+      className="aspect-[63/88] w-full rounded-xl bg-zinc-100 object-cover"
     />
   )
 }

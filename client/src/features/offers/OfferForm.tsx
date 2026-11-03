@@ -114,7 +114,7 @@ export function OfferForm({ listing, onCancel }: { listing: Listing; onCancel: (
                       checked={qty !== undefined}
                       onChange={() => toggle(own.id)}
                       aria-label={own.title}
-                      className="size-4 accent-zinc-900"
+                      className="size-4 accent-brand-600"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{own.title}</div>

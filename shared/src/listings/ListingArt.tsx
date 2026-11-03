@@ -1,22 +1,5 @@
+import { gradientFor } from './gradient'
 import type { CardCondition, ItemKind } from './listingsApi'
-
-// ยังไม่มีระบบรูป เลยใช้ gradient ตามเกมแทนภาพการ์ด ให้แต่ละเกมจำสีได้
-const gradients = [
-  'from-amber-300 via-orange-400 to-rose-500',
-  'from-sky-300 via-indigo-400 to-violet-600',
-  'from-emerald-300 via-teal-400 to-cyan-600',
-  'from-rose-300 via-fuchsia-400 to-purple-600',
-  'from-yellow-200 via-amber-400 to-orange-600',
-  'from-cyan-200 via-sky-400 to-blue-700',
-  'from-lime-200 via-emerald-400 to-teal-700',
-  'from-zinc-300 via-zinc-500 to-zinc-800',
-]
-
-const gradientFor = (seed: string) => {
-  let hash = 0
-  for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) | 0
-  return gradients[Math.abs(hash) % gradients.length]
-}
 
 export type ArtProps = {
   gameSlug: string
@@ -38,21 +21,25 @@ export function ListingArt(props: ArtProps) {
 
   return (
     <div
-      className={`relative aspect-[63/88] w-full overflow-hidden rounded-2xl bg-linear-to-br ${gradientFor(gameSlug)} ${lg ? 'p-5' : 'p-3'}`}
+      className={`@container relative aspect-[63/88] w-full overflow-hidden rounded-xl bg-linear-to-br ${gradientFor(gameSlug)} ${lg ? 'p-5' : 'p-3'}`}
     >
       {/* แสงสะท้อนแบบการ์ดฟอยล์ */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_15%,rgba(255,255,255,0.55),transparent_55%)]" />
-      <div className={`pointer-events-none absolute rounded-xl ring-1 ring-white/40 ${lg ? 'inset-3' : 'inset-1.5'}`} />
+      <div className={`pointer-events-none absolute rounded-lg ring-1 ring-white/40 ${lg ? 'inset-3' : 'inset-1.5'}`} />
       {itemKind === 'SEALED' && <div className="pointer-events-none absolute inset-x-0 top-1/3 h-1/5 bg-white/15" />}
+      {/* สีพื้นบางเกมสว่างมาก ต้องมีเงารองไว้ ชื่อการ์ดสีขาวถึงจะอ่านออก */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-black/50 to-transparent" />
 
       <div className="relative flex h-full flex-col text-white">
         {itemKind === 'GRADED' ? (
           <GradeLabel name={props.gradingCompanyName} grade={props.grade} lg={lg} />
         ) : (
           <div className="flex items-start justify-between gap-2">
-            <span className={`font-medium tracking-wider text-white/85 uppercase ${tiny}`}>{gameName}</span>
+            <span className={`min-w-0 truncate font-medium tracking-wider text-white uppercase [text-shadow:0_1px_4px_rgb(0_0_0/0.45)] @max-[8rem]:hidden ${tiny}`}>
+              {gameName}
+            </span>
             {(itemKind === 'SEALED' || condition) && (
-              <span className={`rounded-full bg-black/20 font-semibold ${lg ? 'px-2.5 py-1 text-xs' : 'px-2 py-0.5 text-[10px]'}`}>
+              <span className={`ml-auto shrink-0 rounded-full bg-black/20 font-semibold ${lg ? 'px-2.5 py-1 text-xs' : 'px-2 py-0.5 text-[10px]'}`}>
                 {itemKind === 'SEALED' ? 'SEALED' : condition}
               </span>
             )}
@@ -64,11 +51,11 @@ export function ListingArt(props: ArtProps) {
             <div className={`font-medium tracking-wider text-white/80 uppercase ${tiny}`}>{gameName}</div>
           )}
           <div
-            className={`leading-tight font-semibold [text-shadow:0_1px_8px_rgb(0_0_0/0.25)] ${lg ? 'line-clamp-4 text-3xl' : 'line-clamp-3 text-base'}`}
+            className={`leading-tight font-semibold [text-shadow:0_1px_8px_rgb(0_0_0/0.25)] @max-[8rem]:text-xs ${lg ? 'line-clamp-4 text-3xl' : 'line-clamp-3 text-base'}`}
           >
             {title || 'ชื่อการ์ด'}
           </div>
-          <div className={`mt-1 truncate text-white/80 ${lg ? 'text-sm' : 'text-[11px]'}`}>
+          <div className={`mt-1 truncate text-white/80 @max-[8rem]:hidden ${lg ? 'text-sm' : 'text-[11px]'}`}>
             {setName || 'ชุด'}
             {cardNumber ? ` · ${cardNumber}` : ''}
           </div>

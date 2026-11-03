@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from 'react-router'
+import { Navigate, Outlet, useLocation, useOutletContext } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { Spinner } from './Spinner'
 
@@ -6,8 +6,10 @@ import { Spinner } from './Spinner'
 export function RequireAuth({ loginPath = '/login' }: { loginPath?: string }) {
   const { user, status } = useAuth()
   const location = useLocation()
+  // Outlet ที่ไม่ส่ง context จะทับของ layout ชั้นนอกเป็น undefined หน้าลูกจะอ่านไม่ได้ (เช่น useCounts)
+  const context = useOutletContext()
 
   if (status === 'loading') return <Spinner />
   if (!user) return <Navigate to={loginPath} replace state={{ from: location.pathname + location.search }} />
-  return <Outlet />
+  return <Outlet context={context} />
 }

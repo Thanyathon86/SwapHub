@@ -43,8 +43,8 @@ export default function PublicProfilePage() {
   const isMe = user?.id === profile.id
 
   return (
-    <div className="mx-auto max-w-4xl space-y-10">
-      <header className="flex items-start gap-6 sm:gap-10">
+    <div className="mx-auto max-w-4xl space-y-8 sm:space-y-10">
+      <header className="flex items-start gap-4 sm:gap-10">
         <Avatar user={profile} size="lg" />
         <div className="min-w-0 flex-1 space-y-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -84,7 +84,7 @@ export default function PublicProfilePage() {
               role="tab"
               aria-selected={tab === key}
               onClick={() => setTab(key)}
-              className={`-mt-px border-t py-3 font-medium ${tab === key ? 'border-zinc-900 text-zinc-900' : 'border-transparent text-zinc-400 hover:text-zinc-700'}`}
+              className={`-mt-px border-t py-3 font-medium ${tab === key ? 'border-brand-600 text-brand-600' : 'border-transparent text-zinc-400 hover:text-zinc-700'}`}
             >
               {label}
             </button>

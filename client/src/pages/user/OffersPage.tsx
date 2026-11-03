@@ -45,9 +45,9 @@ export default function OffersPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold">ข้อเสนอ</h1>
+        <h1 className="page-title">ข้อเสนอ</h1>
         <p className="mt-2 text-sm text-zinc-500">คุยรายละเอียดกับอีกฝ่ายผ่านแชทในแต่ละข้อเสนอ หลังตอบรับแล้วจะเห็นอีเมลของกันและกันด้วย</p>
       </div>
 
@@ -69,7 +69,7 @@ export default function OffersPage() {
       ) : !offers ? (
         <Spinner />
       ) : offers.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-zinc-200 px-6 py-20 text-center">
+        <div className="rounded-2xl border border-dashed border-zinc-200 px-6 py-16 sm:py-20 text-center">
           <p className="font-medium">{tab === 'incoming' ? 'ยังไม่มีข้อเสนอเข้ามา' : 'ยังไม่ได้ส่งข้อเสนอ'}</p>
         </div>
       ) : (
@@ -90,7 +90,7 @@ export default function OffersPage() {
                     <span className="text-xs text-zinc-500">{formatDate(offer.createdAt)}</span>
                   </div>
                   {/* คะแนนของอีกฝ่ายอยู่ตรงนี้ ผู้ขายดูก่อนตัดสินใจตอบรับได้ว่าคนที่ขอมาเชื่อถือได้แค่ไหน */}
-                  <Link to={`/u/${counterpart.username}`} className="flex w-fit items-center gap-2 text-sm hover:opacity-80">
+                  <Link to={`/u/${counterpart.username}`} className="flex w-fit max-w-full flex-wrap items-center gap-2 text-sm hover:opacity-80">
                     <Avatar user={counterpart} />
                     <span>
                       <span className="text-zinc-500">{tab === 'incoming' ? 'จาก' : 'ถึง'}</span>{' '}
@@ -98,7 +98,7 @@ export default function OffersPage() {
                     </span>
                     <RatingBadge rating={counterpart.rating} />
                   </Link>
-                  <Link to={`/listings/${offer.listing.id}`} className="block truncate font-medium hover:underline">
+                  <Link to={`/listings/${offer.listing.id}`} className="block font-medium hover:underline">
                     {offer.listing.title}
                     {offer.quantity > 1 && <span className="text-zinc-500"> × {offer.quantity}</span>}
                   </Link>
@@ -132,7 +132,7 @@ export default function OffersPage() {
                       type="button"
                       onClick={() => setChatId(chatId === offer.id ? null : offer.id)}
                       aria-expanded={chatId === offer.id}
-                      className="text-sm font-medium text-zinc-700 underline-offset-2 hover:underline"
+                      className="btn btn-secondary"
                     >
                       {chatId === offer.id ? 'ซ่อนแชท' : 'แชท'}
                       {offer._count.messages > 0 && <span className="text-zinc-500"> ({offer._count.messages})</span>}
@@ -145,7 +145,7 @@ export default function OffersPage() {
                   {rowError?.id === offer.id && <p className="text-sm text-red-600">{errorMessage(rowError.error)}</p>}
                 </div>
                 {pending && (
-                  <div className="flex shrink-0 gap-2 sm:flex-col sm:items-end">
+                  <div className="flex shrink-0 gap-2 *:flex-1 sm:flex-col sm:items-end sm:*:flex-none">
                     {tab === 'incoming' ? (
                       <>
                         <button

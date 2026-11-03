@@ -2,7 +2,9 @@ import { createBrowserRouter } from 'react-router'
 import ErrorPage from '@shared/components/ErrorPage'
 import NotFoundPage from '@shared/components/NotFoundPage'
 import { RequireAuth } from '@shared/components/RequireAuth'
+import { ContainedLayout } from './layouts/ContainedLayout'
 import { UserLayout } from './layouts/UserLayout'
+import BrowsePage from './pages/public/BrowsePage'
 import ForgotPasswordPage from './pages/public/ForgotPasswordPage'
 import HomePage from './pages/public/HomePage'
 import ListingDetailPage from './pages/public/ListingDetailPage'
@@ -28,28 +30,34 @@ export const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> },
-      { path: 'forgot-password', element: <ForgotPasswordPage /> },
-      { path: 'reset-password', element: <ResetPasswordPage /> },
+      { path: 'browse', element: <BrowsePage /> },
       { path: 'listings/:id', element: <ListingDetailPage /> },
-      { path: 'u/:username', element: <PublicProfilePage /> },
       {
-        element: <RequireAuth />,
+        element: <ContainedLayout />,
         children: [
-          { path: 'profile', element: <ProfilePage /> },
-          { path: 'profile/edit', element: <EditProfilePage /> },
-          { path: 'settings', element: <SettingsPage /> },
-          { path: 'sell', element: <NewListingPage /> },
-          { path: 'my-listings', element: <MyListingsPage /> },
-          { path: 'my-listings/:id/edit', element: <EditListingPage /> },
-          { path: 'offers', element: <OffersPage /> },
-          { path: 'support', element: <SupportListPage /> },
-          { path: 'support/new', element: <NewTicketPage /> },
-          { path: 'support/:id', element: <TicketPage /> },
+          { path: 'login', element: <LoginPage /> },
+          { path: 'register', element: <RegisterPage /> },
+          { path: 'forgot-password', element: <ForgotPasswordPage /> },
+          { path: 'reset-password', element: <ResetPasswordPage /> },
+          { path: 'u/:username', element: <PublicProfilePage /> },
+          {
+            element: <RequireAuth />,
+            children: [
+              { path: 'profile', element: <ProfilePage /> },
+              { path: 'profile/edit', element: <EditProfilePage /> },
+              { path: 'settings', element: <SettingsPage /> },
+              { path: 'sell', element: <NewListingPage /> },
+              { path: 'my-listings', element: <MyListingsPage /> },
+              { path: 'my-listings/:id/edit', element: <EditListingPage /> },
+              { path: 'offers', element: <OffersPage /> },
+              { path: 'support', element: <SupportListPage /> },
+              { path: 'support/new', element: <NewTicketPage /> },
+              { path: 'support/:id', element: <TicketPage /> },
+            ],
+          },
+          { path: '*', element: <NotFoundPage /> },
         ],
       },
-      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ])

@@ -56,7 +56,7 @@ export function ReviewPanel({ offer, me, other, onSaved }: { offer: Offer; me: s
             className="input"
           />
           {error !== null && <p className="text-red-600">{errorMessage(error)}</p>}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button type="submit" disabled={busy || rating === 0} className="btn btn-primary">
               บันทึก
             </button>
@@ -73,7 +73,7 @@ export function ReviewPanel({ offer, me, other, onSaved }: { offer: Offer; me: s
           <span className="text-zinc-500">คุณให้ {other.displayName}</span> <Stars value={mine.rating} />
           {mine.comment && <p className="mt-0.5 text-zinc-700">“{mine.comment}”</p>}
           {open && (
-            <button type="button" onClick={() => setEditing(true)} className="mt-1 text-xs text-zinc-500 underline">
+            <button type="button" onClick={() => setEditing(true)} className="mt-1 inline-block py-1 text-xs text-zinc-500 underline">
               แก้คะแนน
             </button>
           )}

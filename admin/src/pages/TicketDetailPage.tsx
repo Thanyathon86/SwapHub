@@ -57,10 +57,10 @@ export default function TicketDetailPage() {
         ← เรื่องที่แจ้ง
       </Link>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold text-slate-800">{ticket.subject}</h1>
               <p className="mt-1 text-sm text-slate-500">{ticketCategoryLabel[ticket.category]}</p>
             </div>
