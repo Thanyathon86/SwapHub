@@ -33,11 +33,6 @@ const detailsOf = (l: Listing): [string, string | number | null][] => [
   ['จำนวน', l.itemKind === 'GRADED' ? null : l.quantity],
 ]
 
-// แถบแดงอยู่แถวแรกของ grid ความสูงเลยตามชื่อการ์ดเสมอ ชื่อยาวแค่ไหนตัวหนังสือสีขาวก็ไม่ล้นออกมาบนพื้นขาว
-// รูปการ์ดกินสองแถวเพื่อวางทับขอบล่างของแถบ และเลื่อนตามได้ตลอดความยาวของรายละเอียด
-const layoutClass =
-  'grid grid-cols-[1rem_minmax(0,1fr)_1rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] md:grid-cols-[minmax(1.5rem,1fr)_minmax(0,18rem)_minmax(0,48rem)_minmax(1.5rem,1fr)] lg:grid-cols-[minmax(2rem,1fr)_minmax(0,24rem)_minmax(0,56rem)_minmax(2rem,1fr)]'
-
 export default function ListingDetailPage() {
   const { id = '' } = useParams()
   const { data: listing, error } = useResource(() => listingsApi.get(id), id)
@@ -58,92 +53,87 @@ export default function ListingDetailPage() {
   if (!listing) return <Spinner />
 
   const price = formatPrice(listing.price)
-  const badge = listingBadge(listing)
+  // สินค้าซีลมีป้ายประเภทบอกอยู่แล้ว ไม่ต้องขึ้น SEALED ซ้ำ
+  const badge = listing.itemKind === 'SEALED' ? null : listingBadge(listing)
   const actionLabel = listing.type === 'TRADE' ? 'ขอแลก' : listing.type === 'BOTH' ? 'ส่งข้อเสนอซื้อหรือแลก' : 'ส่งคำขอซื้อ'
-  const tags = [kindLabel[listing.itemKind], typeLabel[listing.type], badge].filter((tag) => tag !== null && tag !== '')
 
   return (
-    <article className={layoutClass}>
-      <div aria-hidden="true" className="col-span-full row-start-1 row-end-4 bg-brand-600 md:row-end-3" />
+    <article className="page-container pt-3 pb-12 md:pb-16 lg:pt-4">
+      <Link to="/browse" className="link-back">
+        ← การ์ดทั้งหมด
+      </Link>
 
-      <div className="relative col-start-2 row-start-1 pt-3 md:col-end-4 lg:pt-4">
-        <Link to="/browse" className="inline-block py-1 text-sm font-medium text-white hover:underline focus-visible:outline-white">
-          ← การ์ดทั้งหมด
-        </Link>
-      </div>
-
-      {/* จอเล็กย่อรูปลง ให้ราคากับปุ่มอยู่ในหน้าจอแรกโดยไม่ต้องเลื่อนไกล */}
-      <div className="relative col-start-2 row-start-2 mx-auto w-full max-w-60 pt-2 sm:max-w-72 md:sticky md:top-4 md:row-end-4 md:max-w-none md:self-start md:pb-12 lg:top-20 lg:pt-3">
+      {/* รูปเลื่อนไปกับหน้าตามปกติ ถ้าติด sticky รูปจะค้างอยู่ขณะที่ชื่อการ์ดเลื่อนผ่าน แล้วดูเหมือนลอยอยู่เหนือหน้า */}
+      <div className="mt-2 grid grid-cols-1 items-start gap-5 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-10 lg:mt-3 lg:gap-14">
         <ListingGallery listing={listing} />
-      </div>
 
-      <header className="relative col-start-2 row-start-3 pt-5 pb-10 text-white md:col-start-3 md:row-start-2 md:min-h-56 md:pt-2 md:pb-14 md:pl-10 lg:min-h-64 lg:pt-3 lg:pl-14">
-        <p className="text-sm font-medium sm:text-base">
-          {listing.game.name} · {listing.setName}
-        </p>
-        <h1 className="mt-1.5 text-3xl/tight font-bold sm:text-4xl/tight lg:text-5xl/tight">{listing.title}</h1>
-        <ul className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
-          {tags.map((tag) => (
-            <li key={tag} className="rounded-full border border-white/80 px-3 py-1">
-              {tag}
-            </li>
-          ))}
-        </ul>
-      </header>
+        <div className="min-w-0 space-y-5 md:space-y-6">
+          <header>
+            <p className="text-sm font-semibold text-brand-600 sm:text-base">
+              {listing.game.name} · {listing.setName}
+            </p>
+            <h1 className="mt-1 text-2xl/tight font-bold text-zinc-900 sm:text-3xl/tight lg:text-4xl/tight">{listing.title}</h1>
+            <ul className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
+              <li className="rounded-full bg-zinc-100 px-3 py-1 text-zinc-700">{kindLabel[listing.itemKind]}</li>
+              <li className="rounded-full bg-zinc-100 px-3 py-1 text-zinc-700">{typeLabel[listing.type]}</li>
+              {/* สภาพหรือเกรดคือข้อมูลแรกที่นักสะสมมองหา จึงเน้นกว่าป้ายอื่น */}
+              {badge && <li className="rounded-full bg-brand-50 px-3 py-1 text-brand-700">{badge}</li>}
+            </ul>
+          </header>
 
-      <div className="relative col-start-2 row-start-4 -mt-5 space-y-6 pb-12 md:col-start-3 md:row-start-3 md:-mt-8 md:space-y-8 md:pb-16 md:pl-10 lg:pl-14">
-        <section aria-label="ราคา" className="rounded-2xl bg-white p-5 shadow-lg ring-1 ring-black/5 sm:p-6">
-          <div className="text-sm text-zinc-500">{price ? 'ราคา' : 'ประกาศนี้'}</div>
-          <div className="mt-1 text-3xl font-bold text-zinc-900 tabular-nums">{price ?? 'รับแลกเท่านั้น'}</div>
-          {listing.type === 'BOTH' && <p className="mt-1 text-sm text-zinc-500">หรือเสนอแลกด้วยการ์ดของคุณ</p>}
-          {user?.id === listing.seller.id ? (
-            <p className="mt-5 text-sm text-zinc-500">นี่คือประกาศของคุณ ดูข้อเสนอที่เข้ามาได้ที่หน้าข้อเสนอ</p>
-          ) : offering ? (
-            <OfferForm listing={listing} onCancel={() => setOffering(false)} />
-          ) : user ? (
-            <button type="button" onClick={() => setOffering(true)} className="btn btn-primary mt-5 w-full py-3 text-base">
-              {actionLabel}
-            </button>
-          ) : (
-            <Link to="/login" state={{ from: location.pathname }} className="btn btn-primary mt-5 w-full py-3 text-base">
-              เข้าสู่ระบบเพื่อ{actionLabel}
-            </Link>
-          )}
-        </section>
+          <section aria-label="ราคา" className="rounded-2xl bg-white p-5 ring-1 ring-zinc-200 sm:p-6">
+            <div className="text-sm text-zinc-500">{price ? 'ราคา' : 'ประกาศนี้'}</div>
+            <div className="mt-1 text-3xl font-bold text-zinc-900 tabular-nums">{price ?? 'รับแลกเท่านั้น'}</div>
+            {listing.type === 'BOTH' && <p className="mt-1 text-sm text-zinc-500">หรือเสนอแลกด้วยการ์ดของคุณ</p>}
+            {user?.id === listing.seller.id ? (
+              <p className="mt-5 text-sm text-zinc-500">นี่คือประกาศของคุณ ดูข้อเสนอที่เข้ามาได้ที่หน้าข้อเสนอ</p>
+            ) : offering ? (
+              <OfferForm listing={listing} onCancel={() => setOffering(false)} />
+            ) : user ? (
+              <button type="button" onClick={() => setOffering(true)} className="btn btn-primary mt-5 w-full py-3 text-base">
+                {actionLabel}
+              </button>
+            ) : (
+              <Link to="/login" state={{ from: location.pathname }} className="btn btn-primary mt-5 w-full py-3 text-base">
+                เข้าสู่ระบบเพื่อ{actionLabel}
+              </Link>
+            )}
+          </section>
 
-        <Link
-          to={`/u/${listing.seller.username}`}
-          className="flex items-center gap-3 rounded-2xl p-4 ring-1 ring-zinc-200 transition hover:bg-zinc-50"
-        >
-          <Avatar user={listing.seller} />
-          <div className="min-w-0 text-sm">
-            <div className="font-medium">
-              {listing.seller.displayName} <span className="font-normal text-zinc-500">@{listing.seller.username}</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-2 text-zinc-500">
-              {listing.seller.rating && <RatingBadge rating={listing.seller.rating} />}
-              <span>ลงประกาศ {formatDate(listing.createdAt)}</span>
-            </div>
-          </div>
-        </Link>
-
-        <dl className="grid grid-cols-1 gap-x-10 text-sm xl:grid-cols-2">
-          {detailsOf(listing)
-            .filter(([, value]) => value !== null && value !== '')
-            .map(([label, value]) => (
-              <div key={label} className="flex justify-between gap-4 border-b border-zinc-100 py-3">
-                <dt className="shrink-0 text-zinc-500">{label}</dt>
-                <dd className="min-w-0 text-right font-medium">{value}</dd>
+          <Link
+            to={`/u/${listing.seller.username}`}
+            className="flex items-center gap-3 rounded-2xl p-4 ring-1 ring-zinc-200 transition hover:bg-zinc-50"
+          >
+            <Avatar user={listing.seller} />
+            <div className="min-w-0 text-sm">
+              <div className="font-medium">
+                {listing.seller.displayName} <span className="font-normal text-zinc-500">@{listing.seller.username}</span>
               </div>
-            ))}
-        </dl>
+              <div className="flex flex-wrap items-center gap-x-2 text-zinc-500">
+                {listing.seller.rating && <RatingBadge rating={listing.seller.rating} />}
+                <span>ลงประกาศ {formatDate(listing.createdAt)}</span>
+              </div>
+            </div>
+          </Link>
 
-        {listing.description && (
-          <div>
-            <h2 className="text-sm font-semibold text-zinc-800">รายละเอียดจากผู้ขาย</h2>
-            <p className="mt-2 text-sm leading-relaxed whitespace-pre-line text-zinc-600">{listing.description}</p>
-          </div>
-        )}
+          <dl className="grid grid-cols-1 gap-x-10 text-sm xl:grid-cols-2">
+            {detailsOf(listing)
+              .filter(([, value]) => value !== null && value !== '')
+              .map(([label, value]) => (
+                <div key={label} className="flex justify-between gap-4 border-b border-zinc-100 py-3">
+                  <dt className="shrink-0 text-zinc-500">{label}</dt>
+                  <dd className="min-w-0 text-right font-medium">{value}</dd>
+                </div>
+              ))}
+          </dl>
+
+          {listing.description && (
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-800">รายละเอียดจากผู้ขาย</h2>
+              <p className="mt-2 text-sm leading-relaxed whitespace-pre-line text-zinc-600">{listing.description}</p>
+            </div>
+          )}
+        </div>
       </div>
     </article>
   )
