@@ -5,7 +5,7 @@ import { Avatar } from '@shared/components/Avatar'
 import { CountBadge } from '@shared/components/CountBadge'
 import { usePolling } from '@shared/lib/usePolling'
 import { PlusIcon } from '../components/icons'
-import { fetchCounts } from '../features/counts/counts'
+import { fetchCounts, OFFER_TASKS_LABEL, offerTasks } from '../features/counts/counts'
 import { BottomNav } from './BottomNav'
 import { HeaderSearch } from './HeaderSearch'
 import { SiteFooter } from './SiteFooter'
@@ -55,7 +55,7 @@ export function UserLayout() {
                     </NavLink>
                     <NavLink to="/offers" className={navClass}>
                       ข้อเสนอ
-                      <CountBadge count={counts?.incomingOffers} label="ข้อเสนอที่รอตอบ" />
+                      <CountBadge count={offerTasks(counts) ?? undefined} label={OFFER_TASKS_LABEL} />
                     </NavLink>
                     <button type="button" onClick={onLogout} className={navClass({ isActive: false })}>
                       ออกจากระบบ

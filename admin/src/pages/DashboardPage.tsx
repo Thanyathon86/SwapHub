@@ -69,6 +69,8 @@ const auditIcons: Record<AuditAction, IconName> = {
   LISTING_REJECTED: 'tag',
   CATALOG_CHANGED: 'cards',
   TICKET_CLOSED: 'message',
+  ESCROW_RELEASED: 'shield',
+  ESCROW_REFUNDED: 'shield',
 }
 
 const securityRows: { key: keyof Dashboard['security24h']; type: EventType; label: string }[] = [
@@ -112,7 +114,7 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5 *:last:col-span-2 xl:*:last:col-span-1">
         <Tile icon="users" label="ผู้ใช้ทั้งหมด" value={totals.users} note={`ใหม่ใน 7 วัน +${number(totals.newUsers7d)}`} to="/users" />
         <Tile icon="tag" label="ประกาศที่เปิดอยู่" value={totals.activeListings} to="/listings?status=ACTIVE" />
         <Tile
@@ -132,6 +134,14 @@ export default function DashboardPage() {
           }
         />
         <Tile icon="message" label="เรื่องที่แจ้งรอตอบ" value={attention.openTickets} to="/support" urgent={attention.openTickets > 0} />
+        <Tile
+          icon="shield"
+          label="ข้อพิพาทรอตัดสิน"
+          value={attention.openDisputes}
+          to="/escrows"
+          urgent={attention.openDisputes > 0}
+          note={`ถือเงินอยู่ ${formatPrice(totals.escrowHolding)}`}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">

@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
 import { Avatar } from '@shared/components/Avatar'
 import { CountBadge } from '@shared/components/CountBadge'
-import { useCounts } from '../../features/counts/counts'
+import { OFFER_TASKS_LABEL, offerTasks, useCounts } from '../../features/counts/counts'
 
 const menuClass = 'flex justify-between px-5 py-4 text-sm hover:bg-zinc-50'
 
@@ -42,7 +42,7 @@ export default function ProfilePage() {
         <Link to="/offers" className={menuClass}>
           <span>
             ข้อเสนอ
-            <CountBadge count={counts?.incomingOffers} label="ข้อเสนอที่รอตอบ" />
+            <CountBadge count={offerTasks(counts) ?? undefined} label={OFFER_TASKS_LABEL} />
           </span>
           <span className="text-zinc-400">→</span>
         </Link>

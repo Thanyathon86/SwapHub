@@ -31,6 +31,8 @@ export const envSchema = z.object({
   // ไม่ตั้ง = ไม่ส่งอีเมลจริง พิมพ์ลง console แทน (ใช้ตอน dev) รูปแบบ smtp(s)://user:pass@host:port
   SMTP_URL: z.string().regex(/^smtps?:\/\//, 'Must start with smtp:// or smtps://').optional(),
   MAIL_FROM: z.string().min(3).default('TCGNexus <no-reply@tcgnexus.local>'),
+  // production ต้องตั้งเป็น true เอง กันการเปิดเว็บจริงที่รับเงินจำลองโดยไม่รู้ตัว (ตอนนี้ lib/payments.ts มีแค่แบบจำลอง)
+  MOCK_PAYMENTS_ENABLED: z.stringbool().default(false),
   // ใช้เฉพาะตอน seed admin คนแรก แอปปกติไม่ต้องมี
   ADMIN_EMAIL: z.email().optional(),
   ADMIN_PASSWORD: z.string().min(12).optional(),
@@ -58,6 +60,9 @@ export const envSchema = z.object({
     if (!e[key]) {
       ctx.addIssue({ code: 'custom', path: [key], message: 'Required in production, the web apps need the security headers set by this server' })
     }
+  }
+  if (!e.MOCK_PAYMENTS_ENABLED) {
+    ctx.addIssue({ code: 'custom', path: ['MOCK_PAYMENTS_ENABLED'], message: 'Must be true in production, escrow payments are simulated and no real money moves' })
   }
   if (!e.SMTP_URL) {
     ctx.addIssue({ code: 'custom', path: ['SMTP_URL'], message: 'Required in production, password reset emails cannot be sent without it' })

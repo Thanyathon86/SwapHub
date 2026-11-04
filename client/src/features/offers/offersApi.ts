@@ -4,7 +4,7 @@ import type { RatingSummary } from '@shared/reviews/StarRating'
 
 export type OfferStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED'
 
-// server ส่งอีเมลมาเฉพาะ offer ที่ ACCEPTED แล้ว นอกนั้นเป็น null
+// server ส่งอีเมลมาเฉพาะ offer ที่ตอบรับแล้ว และถ้าเป็นดีลมีเงินต้องจ่ายแล้วด้วย นอกนั้นเป็น null
 export type Party = {
   id: string
   displayName: string
@@ -21,6 +21,47 @@ export type OfferReview = {
   comment: string | null
   updatedAt: string
   removedAt: string | null
+}
+
+export type EscrowStatus =
+  | 'AWAITING_PAYMENT'
+  | 'HELD'
+  | 'SHIPPED'
+  | 'DISPUTED'
+  | 'RELEASED'
+  | 'REFUNDED'
+  | 'CANCELLED'
+  | 'EXPIRED'
+
+export type EscrowEventType = 'CREATED' | 'PAID' | 'SHIPPED' | 'RECEIVED' | 'DISPUTED' | 'RELEASED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED'
+
+// server ไม่ส่งชื่อทีมงาน บอกแค่ว่าใครทำในฐานะอะไร
+export type EscrowActor = 'BUYER' | 'SELLER' | 'STAFF' | 'SYSTEM'
+
+export type Escrow = {
+  id: string
+  offerId: string
+  amount: string
+  // ดีลเงินบวกการ์ดแลก ทั้งสองฝ่ายต้องส่งของและยืนยันรับ
+  twoWay: boolean
+  status: EscrowStatus
+  paymentDueAt: string
+  shipDueAt: string | null
+  confirmDueAt: string | null
+  paidAt: string | null
+  sellerCarrier: string | null
+  sellerTrackingNumber: string | null
+  sellerShippedAt: string | null
+  buyerCarrier: string | null
+  buyerTrackingNumber: string | null
+  buyerShippedAt: string | null
+  buyerReceivedAt: string | null
+  sellerReceivedAt: string | null
+  disputedAt: string | null
+  disputeReason: string | null
+  settledAt: string | null
+  resolutionNote: string | null
+  events: { id: string; type: EscrowEventType; status: EscrowStatus; actor: EscrowActor; note: string | null; createdAt: string }[]
 }
 
 export type Offer = {
@@ -41,6 +82,8 @@ export type Offer = {
   // รีวิวของดีลนี้ (สูงสุดฝ่ายละหนึ่ง) และวันสุดท้ายที่ยังให้/แก้คะแนนได้ (null ถ้ายังไม่ตอบรับ)
   reviews: OfferReview[]
   reviewDeadline: string | null
+  // null เมื่อเป็นการแลกล้วนหรือยังไม่ตอบรับ
+  escrow: Escrow | null
 }
 
 export type CreateOfferInput = {
@@ -74,4 +117,16 @@ export const offersApi = {
     api<{ message: OfferMessage }>(`/offers/${id}/messages`, { method: 'POST', body: { body } }).then((r) => r.message),
   review: (id: string, input: { rating: number; comment: string }) =>
     api<{ review: OfferReview }>(`/offers/${id}/review`, { method: 'PUT', body: input }).then((r) => r.review),
+}
+
+type EscrowResponse = { escrow: Escrow }
+const escrowAction = (id: string, action: string, body?: object) =>
+  api<EscrowResponse>(`/escrow/${id}/${action}`, { method: 'POST', ...(body && { body }) }).then((r) => r.escrow)
+
+export const escrowApi = {
+  pay: (id: string) => escrowAction(id, 'pay'),
+  ship: (id: string, input: { carrier: string; trackingNumber: string }) => escrowAction(id, 'ship', input),
+  confirm: (id: string) => escrowAction(id, 'confirm'),
+  dispute: (id: string, reason: string) => escrowAction(id, 'dispute', { reason }),
+  cancel: (id: string) => escrowAction(id, 'cancel'),
 }

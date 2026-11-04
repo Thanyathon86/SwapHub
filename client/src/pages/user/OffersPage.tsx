@@ -5,6 +5,7 @@ import { Avatar } from '@shared/components/Avatar'
 import { Spinner } from '@shared/components/Spinner'
 import { RatingBadge } from '@shared/reviews/StarRating'
 import { formatDate, formatPrice } from '@shared/listings/labels'
+import { EscrowPanel } from '../../features/offers/EscrowPanel'
 import { offerStatusClass, offerStatusLabel } from '../../features/offers/labels'
 import { OfferChat } from '../../features/offers/OfferChat'
 import { offersApi, type Offer } from '../../features/offers/offersApi'
@@ -48,7 +49,7 @@ export default function OffersPage() {
     <div className="space-y-6 sm:space-y-8">
       <div>
         <h1 className="page-title">ข้อเสนอ</h1>
-        <p className="mt-2 text-sm text-zinc-500">คุยรายละเอียดกับอีกฝ่ายผ่านแชทในแต่ละข้อเสนอ หลังตอบรับแล้วจะเห็นอีเมลของกันและกันด้วย</p>
+        <p className="mt-2 text-sm text-zinc-500">คุยรายละเอียดกับอีกฝ่ายผ่านแชทในแต่ละข้อเสนอ ดีลที่มีเงินจะผ่านระบบเงินวางกลาง ผู้ขายได้เงินเมื่อผู้ซื้อยืนยันรับของ และจะเห็นอีเมลกันหลังชำระเงิน</p>
       </div>
 
       <div className="flex gap-2">
@@ -139,7 +140,11 @@ export default function OffersPage() {
                     </button>
                   )}
                   {chatId === offer.id && user && <OfferChat offerId={offer.id} me={user.id} other={counterpart} />}
-                  {offer.status === 'ACCEPTED' && user && (
+                  {offer.escrow && (
+                    <EscrowPanel escrow={offer.escrow} role={tab === 'incoming' ? 'SELLER' : 'BUYER'} onChanged={reload} />
+                  )}
+                  {/* ดีลผ่านเงินวางกลางรีวิวได้เมื่อเงินจบแล้ว server ส่ง reviewDeadline มาตอนนั้น */}
+                  {offer.status === 'ACCEPTED' && user && (!offer.escrow || offer.reviewDeadline) && (
                     <ReviewPanel offer={offer} me={user.id} other={counterpart} onSaved={reload} />
                   )}
                   {rowError?.id === offer.id && <p className="text-sm text-red-600">{errorMessage(rowError.error)}</p>}
@@ -151,7 +156,15 @@ export default function OffersPage() {
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={() => act(offer, 'accept', 'ตอบรับข้อเสนอนี้? ระบบจะตัดจำนวนการ์ดในประกาศให้อัตโนมัติ')}
+                          onClick={() =>
+                            act(
+                              offer,
+                              'accept',
+                              offer.cashAmount === null
+                                ? 'ตอบรับข้อเสนอนี้? ระบบจะตัดจำนวนการ์ดในประกาศให้อัตโนมัติ'
+                                : 'ตอบรับข้อเสนอนี้? ระบบจะตัดจำนวนการ์ดและให้ผู้ซื้อชำระเงินเข้าระบบเงินวางกลางภายใน 48 ชั่วโมง',
+                            )
+                          }
                           className="btn btn-primary"
                         >
                           ตอบรับ

@@ -53,6 +53,8 @@ export type AuditAction =
   | 'LISTING_REJECTED'
   | 'CATALOG_CHANGED'
   | 'TICKET_CLOSED'
+  | 'ESCROW_RELEASED'
+  | 'ESCROW_REFUNDED'
 
 type AuditParty = { id: string; displayName: string; email: string }
 
@@ -86,13 +88,13 @@ export type ReviewStatus = 'VISIBLE' | 'REMOVED'
 export type ReviewsQuery = { q?: string; status: ReviewStatus; page: number }
 export type ReviewsPage = { reviews: AdminReview[]; total: number; page: number; pageSize: number }
 
-export type AdminCounts = { pendingListings: number; openTickets: number }
+export type AdminCounts = { pendingListings: number; openTickets: number; openDisputes: number }
 
 export type DailyPoint = { day: string; users: number; listings: number; deals: number }
 
 export type Dashboard = {
-  attention: { pendingListings: number; pendingListingsOver24h: number; pendingOffers: number; openTickets: number }
-  totals: { users: number; newUsers7d: number; suspendedUsers: number; activeListings: number; deals7d: number }
+  attention: { pendingListings: number; pendingListingsOver24h: number; pendingOffers: number; openTickets: number; openDisputes: number }
+  totals: { users: number; newUsers7d: number; suspendedUsers: number; activeListings: number; deals7d: number; escrowHolding: string }
   daily: DailyPoint[]
   listingsByGame: { id: string; name: string; isActive: boolean; activeListings: number }[]
   security24h: { loginFailed: number; rateLimited: number; accessDenied: number; serverErrors: number }
@@ -140,6 +142,66 @@ export type AdminTicketListItem = AdminTicket & { _count: { messages: number } }
 export type AdminTicketDetail = AdminTicket & { messages: Required<TicketMessage>[] }
 export type TicketsQuery = { status: TicketStatus; category?: TicketCategory; page: number }
 export type TicketsPage = { tickets: AdminTicketListItem[]; total: number; page: number; pageSize: number }
+
+export type EscrowStatus = 'DISPUTED' | 'AWAITING_PAYMENT' | 'HELD' | 'SHIPPED' | 'RELEASED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED'
+export type EscrowEventType = 'CREATED' | 'PAID' | 'SHIPPED' | 'RECEIVED' | 'DISPUTED' | 'RELEASED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED'
+export type EscrowParty = { id: string; displayName: string; username: string; email: string; status: UserStatus }
+
+export type AdminEscrow = {
+  id: string
+  amount: string
+  status: EscrowStatus
+  updatedAt: string
+  buyer: EscrowParty
+  seller: EscrowParty
+  offer: { listing: { id: string; title: string } }
+}
+export type EscrowsPage = {
+  escrows: AdminEscrow[]
+  total: number
+  page: number
+  pageSize: number
+  holding: { count: number; amount: string }
+}
+
+type StaffName = { id: string; displayName: string }
+
+export type AdminEscrowDetail = Omit<AdminEscrow, 'offer'> & {
+  buyerId: string
+  sellerId: string
+  twoWay: boolean
+  paymentDueAt: string
+  shipDueAt: string | null
+  confirmDueAt: string | null
+  paidAt: string | null
+  paymentRef: string | null
+  payoutRef: string | null
+  refundRef: string | null
+  sellerCarrier: string | null
+  sellerTrackingNumber: string | null
+  sellerShippedAt: string | null
+  buyerCarrier: string | null
+  buyerTrackingNumber: string | null
+  buyerShippedAt: string | null
+  buyerReceivedAt: string | null
+  sellerReceivedAt: string | null
+  disputedAt: string | null
+  disputeReason: string | null
+  disputedBy: StaffName | null
+  settledAt: string | null
+  resolutionNote: string | null
+  resolvedBy: StaffName | null
+  events: { id: string; type: EscrowEventType; note: string | null; createdAt: string; actor: StaffName | null }[]
+  offer: {
+    id: string
+    quantity: number
+    message: string | null
+    listing: { id: string; title: string }
+    items: { quantity: number; listing: { id: string; title: string } }[]
+  }
+  // ว่างเมื่อดีลไม่เคยมีข้อพิพาท แชทเป็นเรื่องส่วนตัวของคู่ดีล
+  messages: { id: string; authorId: string; body: string; createdAt: string }[]
+}
 
 type TicketResponse = { ticket: AdminTicketDetail }
 const ticketAction = (id: string, action: 'assign' | 'close') =>
@@ -193,6 +255,12 @@ export const adminApi = {
     api<{ user: AdminUser }>(`/admin/users/${id}/role`, { method: 'PATCH', body: { role } }),
   listAuditLogs: (action: AuditAction | undefined, page: number) =>
     api<AuditLogsPage>(`/admin/audit-logs?${new URLSearchParams({ page: String(page), ...(action && { action }) })}`),
+
+  listEscrows: (status: EscrowStatus, page: number) =>
+    api<EscrowsPage>(`/admin/escrows?${new URLSearchParams({ status, page: String(page) })}`),
+  getEscrow: (id: string) => api<{ escrow: AdminEscrowDetail }>(`/admin/escrows/${id}`).then((r) => r.escrow),
+  resolveEscrow: (id: string, decision: 'RELEASE' | 'REFUND', reason: string) =>
+    api<{ escrow: AdminEscrowDetail }>(`/admin/escrows/${id}/resolve`, { method: 'POST', body: { decision, reason } }).then((r) => r.escrow),
 
   listReviews: ({ q, status, page }: ReviewsQuery) =>
     api<ReviewsPage>(`/admin/reviews?${new URLSearchParams({ status, page: String(page), ...(q && { q }) })}`),

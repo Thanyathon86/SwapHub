@@ -75,8 +75,11 @@ describe('ตอบรับ / ปฏิเสธ / ยกเลิก', () => {
 
     const res = await ctx.seller.post(`/api/offers/${created.body.offer.id}/accept`)
     expect(res.body.offer.status).toBe('ACCEPTED')
-    expect(res.body.offer.buyer.email).toMatch(/@test\.local$/)
-    expect(res.body.offer.listing.seller.email).toMatch(/@test\.local$/)
+    // ดีลมีเงิน อีเมลเปิดหลังจ่ายเข้า escrow แล้วเท่านั้น
+    expect(res.body.offer.buyer.email).toBeNull()
+    await ctx.buyer.post(`/api/escrow/${res.body.offer.escrow.id}/pay`).expect(200)
+    const outgoing = (await ctx.buyer.get('/api/offers/outgoing')).body.offers as { id: string; buyer: { email: string } }[]
+    expect(outgoing.find((o) => o.id === created.body.offer.id)?.buyer.email).toMatch(/@test\.local$/)
 
     expect(await prisma.listing.findUnique({ where: { id: target.id } })).toMatchObject({ quantity: 0, status: 'CLOSED' })
     expect(await prisma.listing.findUnique({ where: { id: myCard.id } })).toMatchObject({ quantity: 0, status: 'CLOSED' })

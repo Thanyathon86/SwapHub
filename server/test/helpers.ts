@@ -81,3 +81,12 @@ export const eventsOf = async (type: EventType) => {
   await waitForEventWrites()
   return prisma.eventLog.findMany({ where: { type }, orderBy: { createdAt: 'asc' } })
 }
+
+// พาดีลเงินสดที่ตอบรับแล้วไปจนเงินถึงผู้ขาย ใช้กับ test ที่ต้องการดีลที่จบแล้ว เช่น รีวิว
+export const settleCashDeal = async (seller: Agent, buyer: Agent, offerId: string) => {
+  const { id } = await prisma.escrow.findUniqueOrThrow({ where: { offerId }, select: { id: true } })
+  await buyer.post(`/api/escrow/${id}/pay`).expect(200)
+  await seller.post(`/api/escrow/${id}/ship`).send({ carrier: 'Thailand Post', trackingNumber: 'EX1' }).expect(200)
+  await buyer.post(`/api/escrow/${id}/confirm`).expect(200)
+  return id
+}

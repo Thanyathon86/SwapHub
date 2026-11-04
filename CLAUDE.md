@@ -25,8 +25,10 @@
 | `ListingImage` | รูปของประกาศ (สูงสุด 6) เก็บแค่ `key` ไฟล์จริงอยู่ใน storage |
 | `Review` | คะแนน 1–5 + ความเห็นที่คู่ดีลให้กันหลัง offer `ACCEPTED` ฝ่ายละหนึ่งรีวิวต่อดีล (unique `offerId + reviewerId`) แก้ได้ภายใน 30 วันหลังตอบรับ admin ซ่อนได้ (`removedAt`, ไม่ลบแถวจริง) |
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
+| `Escrow` | เงินวางกลางของดีลที่มีเงินสด หนึ่งต่อหนึ่งกับ `Offer` มี `status`: `AWAITING_PAYMENT` → `HELD` → `SHIPPED` → `RELEASED`, เปิดข้อพิพาทเป็น `DISPUTED` แล้ว admin ตัดสินเป็น `RELEASED`/`REFUNDED`, ปิดก่อนจ่ายเป็น `CANCELLED`/`EXPIRED` |
+| `EscrowEvent` | ประวัติทุกการเปลี่ยนแปลงของ escrow (`actorId` null คือระบบ) ไม่มี API แก้หรือลบ |
 | `OfferMessage` | แชทระหว่างสองฝ่ายใน `Offer` แก้/ลบไม่ได้ |
-| `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร ซ่อนรีวิว ตรวจประกาศ แก้เกมหรือบริษัทเกรด หรือปิดเรื่องที่แจ้ง (`AuditAction`, เหตุผลหรือสิ่งที่ถูกแก้อยู่ใน `detail`, `targetUserId` เป็น null เมื่อไม่ได้เจาะจงผู้ใช้คนเดียว) มีแค่ API อ่าน (กรองด้วย `action`) ห้ามเพิ่ม API แก้หรือลบ |
+| `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร ซ่อนรีวิว ตรวจประกาศ แก้เกมหรือบริษัทเกรด ปิดเรื่องที่แจ้ง หรือตัดสินเงินวางกลาง (`AuditAction`, เหตุผลหรือสิ่งที่ถูกแก้อยู่ใน `detail`, `targetUserId` เป็น null เมื่อไม่ได้เจาะจงผู้ใช้คนเดียว) มีแค่ API อ่าน (กรองด้วย `action`) ห้ามเพิ่ม API แก้หรือลบ |
 | `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
 | `PasswordResetToken` | ลิงก์ลืมรหัสผ่าน เก็บแค่ sha256, หมดอายุ 30 นาที, ใช้ได้ครั้งเดียว ขอใหม่แล้วอันเก่าใช้ไม่ได้ |
 | `SupportTicket` | เรื่องที่ user แจ้ง admin มี `status`: `OPEN` (รอทีมงาน) ⇄ `ANSWERED` (รอผู้ใช้) → `CLOSED` และ `assigneeId` (admin ที่รับเรื่อง) |
@@ -48,7 +50,7 @@
 
 กฎของ support ที่ตรวจใน service: ผู้ใช้เห็นเฉพาะเรื่องของตัวเอง (ของคนอื่นตอบ 404), เปิดค้างได้ไม่เกิน 5 เรื่อง, เรื่องที่ปิดแล้วตอบต่อไม่ได้, API ฝั่งผู้ใช้ห้ามส่งชื่อหรือ id ของ admin ที่ตอบ (หน้าเว็บแสดงเป็น "ทีมงาน TCGNexus")
 
-ตัวเลขแจ้งเตือนบนเมนู: `GET /api/me/counts` และ `GET /api/admin/counts` นับเฉพาะสิ่งที่ต้องทำต่อ (ยังไม่มีระบบ "อ่านแล้ว") หน้าเว็บดึงด้วย `usePolling` ทุก 60 วินาทีและทุกครั้งที่เปลี่ยนหน้า ฝั่ง client ส่งต่อให้หน้าลูกผ่าน `<Outlet context>` (`useCounts`)
+ตัวเลขแจ้งเตือนบนเมนู: `GET /api/me/counts` (รวม `escrowActions`) และ `GET /api/admin/counts` (รวม `openDisputes`) นับเฉพาะสิ่งที่ต้องทำต่อ (ยังไม่มีระบบ "อ่านแล้ว") หน้าเว็บดึงด้วย `usePolling` ทุก 60 วินาทีและทุกครั้งที่เปลี่ยนหน้า ฝั่ง client ส่งต่อให้หน้าลูกผ่าน `<Outlet context>` (`useCounts`)
 
 รูปประกาศ: `POST /api/listings/:id/images` (ทีละรูป field `image`, ≤ 5MB) รับเฉพาะ JPEG, PNG, WebP (ตรวจลายเซ็นไฟล์ก่อนถึงตัวถอดรหัสใน `lib/images.ts`) ผ่าน `sharp` ทุกครั้ง (ตรวจว่าเป็นรูปจริง, ย่อด้านยาว ≤ 1600px, แปลงเป็น WebP, ตัด EXIF) แล้วเก็บผ่าน `lib/storage.ts` ซึ่งตอนนี้เขียนลง `UPLOAD_DIR` (default `server/uploads`, ไม่ commit) และเสิร์ฟที่ `/uploads/*` (Vite proxy ทั้งสองแอป) ย้ายไป S3/R2 ให้แก้แค่ `storage.ts` และ `imageUrl` ใน shared เพิ่ม/ลบรูปนับเป็นการแก้ตัวการ์ด (กลับไปรอตรวจ)
 
@@ -63,6 +65,8 @@
 ซ่อนรีวิว: `GET /api/admin/reviews` (`status=VISIBLE|REMOVED`, `q`=username), `POST /api/admin/reviews/:id/remove` (ต้องมี `reason`, ลง audit `REVIEW_REMOVED` โดย target คือคนเขียน) รีวิวที่ซ่อนไม่แสดงในโปรไฟล์ ไม่นับในค่าเฉลี่ย คนเขียนแก้หรือเขียนใหม่ในดีลเดิมไม่ได้ ใน offer ส่งแค่ `removedAt` (rating/comment เป็น null)
 
 แชท: `GET|POST /api/offers/:id/messages` เฉพาะสองฝ่ายในดีล (คนอื่น 404) ส่งได้ตอน `PENDING`/`ACCEPTED` ดีลที่ `DECLINED`/`CANCELLED` อ่านได้อย่างเดียว (`canSend`, `OFFER_CHAT_CLOSED`) ส่งกลับล่าสุด 200 ข้อความ หน้าเว็บเปิดแชทได้ทีละข้อเสนอและ poll ทุก 15 วินาที (`OfferChat`)
+
+เงินวางกลาง (escrow): `acceptOffer` สร้างให้เมื่อ `cashAmount` > 0 และล็อกยอดไว้ การแลกล้วนไม่มี escrow ดีลเงินบวกการ์ดแลก (`twoWay`) ทั้งสองฝ่ายต้องแจ้งส่งและยืนยันรับก่อนปล่อยเงิน API: `POST /api/escrow/:id/pay|ship|confirm|dispute|cancel` (คนนอก 404, ผิดฝ่าย `ESCROW_WRONG_PARTY`), หลังบ้าน `GET /api/admin/escrows`, `GET /api/admin/escrows/:id`, `POST /api/admin/escrows/:id/resolve` (`decision`, `reason`, ลง audit, คู่ดีลเองตัดสินไม่ได้) การจ่ายเงินเป็นแบบจำลองใน `lib/payments.ts` ส่วนสถานะและกำหนดเวลาทำงานจริง production ต้องตั้ง `MOCK_PAYMENTS_ENABLED=true` ไม่งั้นแอปไม่เริ่มทำงาน กำหนดเวลา: จ่าย 48 ชม. (เลยแล้ว `EXPIRED`), ส่ง 5 วัน (ไม่มีใครส่งคืนเงิน, ส่งฝั่งเดียวเป็น `DISPUTED`), ยืนยันรับ 7 วัน (เลยแล้วปล่อยเงิน) กวาดรายชั่วโมงใน `index.ts` (`processEscrowDeadlines`) ดีลไม่เกิด (ยกเลิก, เลยกำหนดจ่าย, คืนเงินก่อนมีใครส่ง) offer เป็น `CANCELLED` คืนสต็อกและเปิดประกาศที่ปิดเพราะของหมดกลับมา คืนเงินหลังส่งแล้วคืนสต็อกเฉพาะฝั่งที่ยังไม่ส่ง อีเมลคู่ดีลเปิดหลังจ่าย รีวิวได้หลังเงินจบ (`ESCROW_NOT_SETTLED`) นับ 30 วันจาก `settledAt` ฝั่งผู้ใช้ห้ามส่งชื่อหรือ id ทีมงานและเลขอ้างอิงการเงิน (`toPartyEscrow`) ทีมงานอ่านแชทได้เฉพาะดีลที่เคยมีข้อพิพาท
 
 หน้าเว็บ user: `/` เป็นหน้าร้าน (hero, tile เกม, แถวการ์ด) ส่วนการค้นหาและตัวกรองอยู่ที่ `/browse` (query `q`, `game`, `itemKind`, `type`, `sort`, `page`) ช่องค้นหาอยู่บน header ทุกหน้า แถวเกมบนหน้าแรกแสดง 5 เกมที่มีประกาศเปิดอยู่มากที่สุด (`GET /api/catalog/games/popular`, เท่ากันเรียงตามชื่อ) เลื่อนด้วยปุ่มหรือตุ่มด้านล่าง เกมอื่นหาได้จากหน้าเรียกดู หน้าแรกยิง `GET /api/listings` 4 ครั้ง + เกม 1 ครั้งต่อการเปิด (ตอน dev StrictMode ยิงซ้ำเป็นเท่าตัว ถ้าเจอ 429 ให้ restart server)
 
@@ -107,7 +111,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 1. build: `npm run build` ที่ root (ตั้ง `VITE_CLIENT_URL` ตอน build แอป admin ไม่งั้นลิงก์ "ไปหน้าเว็บ" จะชี้ localhost) และ `npm run build` ใน `server/`
 2. migrate: `npx prisma migrate deploy` ใน `server/`
-3. รัน: `npm start` ใน `server/` โดยตั้ง `NODE_ENV=production`, `CLIENT_ORIGIN` กับ `ADMIN_ORIGIN` เป็น https คนละ hostname, `SMTP_URL`, `WEB_CLIENT_DIR`, `WEB_ADMIN_DIR` (ขาดข้อไหนแอปจะไม่เริ่มทำงาน)
+3. รัน: `npm start` ใน `server/` โดยตั้ง `NODE_ENV=production`, `CLIENT_ORIGIN` กับ `ADMIN_ORIGIN` เป็น https คนละ hostname, `SMTP_URL`, `WEB_CLIENT_DIR`, `WEB_ADMIN_DIR`, `MOCK_PAYMENTS_ENABLED=true` (ขาดข้อไหนแอปจะไม่เริ่มทำงาน)
 4. HTTPS มาจาก host หรือ reverse proxy ด้านหน้า ตั้ง `TRUST_PROXY` เป็นจำนวน proxy และต้องส่ง `Host` หรือ `X-Forwarded-Host` เดิมมา เพราะ server เลือกแอปจาก hostname
 
 ### Test (server)
@@ -121,16 +125,16 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 ```
 server/
-  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, OfferMessage, Review, AuditLog, EventLog, SupportTicket, SupportMessage
+  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, OfferMessage, Escrow, EscrowEvent, Review, AuditLog, EventLog, SupportTicket, SupportMessage
   prisma.config.ts          ตั้งค่า Prisma 7 (URL อ่านจาก env)
   src/
     index.ts, app.ts        เปิด server + graceful shutdown, Express app + middleware
     routes.ts               รวม router ทุก module ใต้ /api
     config/env.ts           ตรวจ env ด้วย zod ตอนเริ่ม
-    lib/                    prisma, session, password + commonPasswords, names (ตรวจชื่อที่แสดง), images, storage, mailer, errors (AppError), events (logEvent)
+    lib/                    prisma, session, password + commonPasswords, names (ตรวจชื่อที่แสดง), images, storage, payments (ชำระเงินแบบจำลอง), mailer, errors (AppError), events (logEvent)
     middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler, uploadImage, serveWeb (เสิร์ฟหน้าเว็บตอน production แยกแอปตาม hostname)
     scripts/                seed.ts (เกม/บริษัทเกรดเริ่มต้น), seedAdmin.ts (admin คนแรก แยกไฟล์ให้เขียน test ได้)
-    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู, แก้โปรไฟล์, รูปโปรไฟล์), profiles (โปรไฟล์สาธารณะ), reviews, audit, events, admin (dashboard, counts)
+    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู, แก้โปรไฟล์, รูปโปรไฟล์), profiles (โปรไฟล์สาธารณะ), reviews, escrow (เงินวางกลาง), audit, events, admin (dashboard, counts)
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
       <feature>.schema.ts   zod schema ของ request
@@ -139,10 +143,10 @@ client/src/                 เว็บ user
   pages/                    public/, user/
   layouts/                  UserLayout, ContainedLayout (กรอบหน้าฟอร์ม/บัญชี), StoreTabs, BottomNav (เมนูจอเล็ก), HeaderSearch, SiteFooter
   components/icons.tsx      ไอคอน SVG ที่วาดเอง ไม่ใช้ library
-  features/<feature>/       auth (RegisterForm), home (HomeHero, GameTiles, SellBanner), listings (ListingCard, ListingRow, BrowseRow), offers, support
+  features/<feature>/       auth (RegisterForm), home (HomeHero, GameTiles, SellBanner), listings (ListingCard, ListingRow, BrowseRow), offers (รวม EscrowPanel), support
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
   router.tsx, layouts/AdminLayout.tsx, components/ (RequireAdmin, AdminTopBar, AuthShell, icons ไอคอนที่วาดเอง)
-  pages/                    Login, ForgotPassword, ResetPassword, Dashboard, ListingReview, Users, Catalog, Reviews, Support, TicketDetail, AuditLog, Events, Account
+  pages/                    Login, ForgotPassword, ResetPassword, Dashboard, ListingReview, Users, Catalog, Escrow, EscrowDetail, Reviews, Support, TicketDetail, AuditLog, Events, Account
   features/                 adminApi, labels, CatalogSection, GameImageCropper, dashboard/ (ColumnChart, DonutChart วาดเองไม่ใช้ library)
   lib/env.ts                VITE_CLIENT_URL (ลิงก์ไปเว็บ user)
 shared/src/                 import ด้วย '@shared/...' (alias ใน vite.config.ts + paths ใน tsconfig.app.json ของแต่ละแอป)
@@ -167,10 +171,10 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - การกระทำของ admin ที่กระทบผู้ใช้ ให้บันทึกด้วย `recordAudit(tx, ...)` ใน transaction เดียวกับการเปลี่ยนแปลง บันทึกเฉพาะที่เปลี่ยนจริง ถ้ากระทบหลายคนไม่ต้องใส่ `targetUserId` แล้วบอกรายละเอียดใน `detail` การ์ดบน dashboard ไม่นับ `LISTING_APPROVED` เพราะเป็นงานประจำจำนวนมาก
 - เหตุการณ์ด้านความปลอดภัยให้บันทึกด้วย `logEvent(req, ...)` จาก `lib/events.ts` (ไม่ await, พลาดแล้ว request ไม่ล้ม) ห้ามใส่รหัสผ่าน, token, body หรือ error message เต็มลง log เหตุการณ์ที่อาจถูกยิงรัว ๆ ใช้ `logEventThrottled`
 - งานกวาดข้อมูลเก่า (session หมดอายุ, EventLog เกินกำหนด) อยู่ใน `index.ts` รันทุกชั่วโมง
-- อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อนอกระบบหลังตกลงกัน)
+- อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อนอกระบบหลังตกลงกัน) ถ้าดีลมีเงินต้องจ่ายเข้า escrow ก่อน
 - ผลการตรวจประกาศ (`rejectReason`, `reviewedAt`) ส่งให้เฉพาะเจ้าของกับหลังบ้าน หน้าสาธารณะ โปรไฟล์ และ offer ใช้ `publicOmit`, ประกาศของตัวเองใช้ `ownerOmit`
-- ระงับบัญชีแล้วยกเลิก offer ที่ค้างทั้งที่ส่งไปและที่เข้ามา และตอบรับ offer ของผู้ขอที่ถูกระงับไม่ได้ (`OFFER_PARTY_UNAVAILABLE`)
-- ตอบรับ offer จะตัด `quantity` ทั้งประกาศปลายทางและของที่แลก ประกาศที่เหลือ 0 จะกลายเป็น `CLOSED` และ offer ที่ค้างกับประกาศที่ปิดจะถูก `CANCELLED`
+- ระงับบัญชีแล้วยกเลิก offer ที่ค้างทั้งที่ส่งไปและที่เข้ามา และตอบรับ offer ของผู้ขอที่ถูกระงับไม่ได้ (`OFFER_PARTY_UNAVAILABLE`) escrow ที่ค้าง: ยังไม่จ่ายยกเลิก, จ่ายแล้วแต่ยังไม่มีใครส่งคืนเงิน, ส่งแล้วเป็น `DISPUTED` ให้ทีมงานตัดสิน
+- ตอบรับ offer จะตัด `quantity` ทั้งประกาศปลายทางและของที่แลก ประกาศที่เหลือ 0 จะกลายเป็น `CLOSED` และ offer ที่ค้างกับประกาศที่ปิดจะถูก `CANCELLED` ดีลที่มีเงินสร้าง `Escrow` ใน transaction เดียวกัน
 
 ## หน้าตาและ responsive
 

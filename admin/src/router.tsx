@@ -9,6 +9,8 @@ import AuditLogPage from './pages/AuditLogPage'
 import CatalogPage from './pages/CatalogPage'
 import DashboardPage from './pages/DashboardPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import EscrowDetailPage from './pages/EscrowDetailPage'
+import EscrowPage from './pages/EscrowPage'
 import EventsPage from './pages/EventsPage'
 import ListingReviewPage from './pages/ListingReviewPage'
 import LoginPage from './pages/LoginPage'
@@ -38,6 +40,8 @@ export const router = createBrowserRouter([
               { path: 'users', element: <UsersPage /> },
               { path: 'catalog', element: <CatalogPage /> },
               { path: 'reviews', element: <ReviewsPage /> },
+              { path: 'escrows', element: <EscrowPage /> },
+              { path: 'escrows/:id', element: <EscrowDetailPage /> },
               { path: 'audit', element: <AuditLogPage /> },
               { path: 'events', element: <EventsPage /> },
               { path: 'support', element: <SupportPage /> },

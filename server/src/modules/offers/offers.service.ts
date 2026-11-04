@@ -1,6 +1,13 @@
 import type { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
+import {
+  contactVisible,
+  createEscrowForOffer,
+  partyEscrowInclude,
+  reviewOpen,
+  toPartyEscrow,
+} from '../escrow/escrow.service.js'
 import { listingInclude, publicOmit, publicWhere } from '../listings/listings.service.js'
 import { ratingSummaries, REVIEW_WINDOW_MS, type RatingSummary } from '../reviews/reviews.service.js'
 import { cancelPendingOffers } from './cancelPendingOffers.js'
@@ -18,6 +25,7 @@ const offerInclude = {
   reviews: { select: { reviewerId: true, rating: true, comment: true, updatedAt: true, removedAt: true } },
   // หน้ารายการแสดงแค่จำนวน ข้อความจริงดึงตอนเปิดแชท
   _count: { select: { messages: true } },
+  escrow: { include: partyEscrowInclude },
 } satisfies Prisma.OfferInclude
 
 type OfferRow = Prisma.OfferGetPayload<{ include: typeof offerInclude }>
@@ -28,21 +36,24 @@ const noRating: RatingSummary = { average: null, count: 0 }
 
 const toView = (offer: OfferRow, ratings: Map<string, RatingSummary>) => {
   const accepted = offer.status === 'ACCEPTED'
+  const showContact = accepted && contactVisible(offer.escrow)
+  const reviewFrom = offer.escrow?.settledAt ?? offer.respondedAt
   return {
     ...offer,
-    buyer: { ...offer.buyer, email: accepted ? offer.buyer.email : null, rating: ratings.get(offer.buyer.id) ?? noRating },
+    escrow: offer.escrow && toPartyEscrow(offer.escrow),
+    buyer: { ...offer.buyer, email: showContact ? offer.buyer.email : null, rating: ratings.get(offer.buyer.id) ?? noRating },
     listing: {
       ...offer.listing,
       seller: {
         ...offer.listing.seller,
-        email: accepted ? offer.listing.seller.email : null,
+        email: showContact ? offer.listing.seller.email : null,
         rating: ratings.get(offer.listing.seller.id) ?? noRating,
       },
     },
     // รีวิวที่ทีมงานซ่อนส่งไปแค่ว่าถูกซ่อน ไม่ส่งคะแนนและข้อความเดิม
     reviews: offer.reviews.map((r) => (r.removedAt ? { ...r, rating: null, comment: null } : r)),
     // หน้าเว็บใช้ซ่อนปุ่มให้คะแนนเมื่อเลยกำหนด (server ตรวจซ้ำอีกที)
-    reviewDeadline: accepted && offer.respondedAt ? new Date(offer.respondedAt.getTime() + REVIEW_WINDOW_MS) : null,
+    reviewDeadline: accepted && reviewOpen(offer.escrow) && reviewFrom ? new Date(reviewFrom.getTime() + REVIEW_WINDOW_MS) : null,
   }
 }
 
@@ -203,6 +214,15 @@ export const acceptOffer = (sellerId: string, id: string) =>
       const ids = soldOut.map((l) => l.id)
       await tx.listing.updateMany({ where: { id: { in: ids } }, data: { status: 'CLOSED' } })
       await cancelPendingOffers(tx, ids)
+    }
+
+    // การแลกล้วนไม่มีเงินให้ถือ ทำงานแบบเดิม
+    if (offer.cashAmount?.gt(0)) {
+      await createEscrowForOffer(
+        tx,
+        { id, buyerId: offer.buyerId, cashAmount: offer.cashAmount, hasItems: offer.items.length > 0 },
+        sellerId,
+      )
     }
 
     return tx.offer.findUniqueOrThrow({ where: { id }, include: offerInclude })

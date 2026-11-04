@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { prisma } from '../src/lib/prisma.js'
-import { createListing, signedInAdmin, signedInUser, type Agent } from './helpers.js'
+import { createListing, signedInAdmin, signedInUser, type Agent, settleCashDeal } from './helpers.js'
 
 type Party = { agent: Agent; id: string; username: string }
 let seller: Party
@@ -17,6 +17,7 @@ const reviewedDeal = async (rating = 1) => {
   const listing = await createListing(seller.id, { quantity: 5 })
   const { body } = await buyer.agent.post('/api/offers').send({ listingId: listing.id, cashAmount: 10 })
   await seller.agent.post(`/api/offers/${body.offer.id}/accept`)
+  await settleCashDeal(seller.agent, buyer.agent, body.offer.id)
   const res = await buyer.agent.put(`/api/offers/${body.offer.id}/review`).send({ rating, comment: 'คำหยาบ' })
   return { offerId: body.offer.id as string, reviewId: res.body.review.id as string }
 }

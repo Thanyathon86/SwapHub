@@ -3,7 +3,7 @@ import { NavLink } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
 import { CountBadge } from '@shared/components/CountBadge'
 import { CardsIcon, HomeIcon, PlusIcon, SwapIcon, UserIcon } from '../components/icons'
-import type { UserCounts } from '../features/counts/counts'
+import { OFFER_TASKS_LABEL, offerTasks, type UserCounts } from '../features/counts/counts'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex h-full flex-col items-center justify-center gap-0.5 text-[11px] leading-none font-medium transition ${isActive ? 'text-brand-600' : 'text-zinc-500'}`
@@ -55,7 +55,7 @@ export function BottomNav({ counts }: { counts: UserCounts | null | undefined })
             ลงประกาศ
           </NavLink>
         </li>
-        <Item to="/offers" label="ข้อเสนอ" icon={SwapIcon} count={counts?.incomingOffers} countLabel="ข้อเสนอที่รอตอบ" />
+        <Item to="/offers" label="ข้อเสนอ" icon={SwapIcon} count={offerTasks(counts) ?? undefined} countLabel={OFFER_TASKS_LABEL} />
         {guest ? (
           <Item to="/login" label="เข้าสู่ระบบ" icon={UserIcon} />
         ) : (

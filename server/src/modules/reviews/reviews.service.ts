@@ -3,6 +3,7 @@ import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { recordAudit } from '../audit/audit.service.js'
 import type { AdminReviewsQuery, RemoveReviewInput, ReviewInput, ReviewsQuery } from './reviews.schema.js'
+import { reviewOpen } from '../escrow/escrow.service.js'
 
 // เขียนหรือแก้รีวิวได้ภายในช่วงนี้หลังตอบรับ ให้เวลาส่งของและตรวจของก่อน แล้วล็อกไว้ไม่ให้แก้ย้อนหลังไปเรื่อย ๆ
 export const REVIEW_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
@@ -39,7 +40,13 @@ const offerNotFound = () => new AppError(404, 'OFFER_NOT_FOUND', 'Offer not foun
 export const upsertReview = async (reviewerId: string, offerId: string, input: ReviewInput) => {
   const offer = await prisma.offer.findUnique({
     where: { id: offerId },
-    select: { status: true, respondedAt: true, buyerId: true, listing: { select: { sellerId: true } } },
+    select: {
+      status: true,
+      respondedAt: true,
+      buyerId: true,
+      listing: { select: { sellerId: true } },
+      escrow: { select: { status: true, settledAt: true } },
+    },
   })
   const sellerId = offer?.listing.sellerId
   // คนนอกดีลได้ 404 เหมือนไม่มีข้อเสนอนี้ ไม่บอกว่ามีอยู่
@@ -47,7 +54,9 @@ export const upsertReview = async (reviewerId: string, offerId: string, input: R
   if (offer.status !== 'ACCEPTED' || !offer.respondedAt) {
     throw new AppError(409, 'OFFER_NOT_ACCEPTED', 'Only accepted deals can be reviewed')
   }
-  if (Date.now() - offer.respondedAt.getTime() > REVIEW_WINDOW_MS) {
+  if (!reviewOpen(offer.escrow)) throw new AppError(409, 'ESCROW_NOT_SETTLED', 'Reviews open once the escrow is settled')
+  // ดีลผ่าน escrow อาจใช้เวลาหลายวัน จึงนับจากวันที่เงินจบ ไม่งั้นเวลารีวิวจะถูกกินไปกับการรอของ
+  if (Date.now() - (offer.escrow?.settledAt ?? offer.respondedAt).getTime() > REVIEW_WINDOW_MS) {
     throw new AppError(409, 'REVIEW_WINDOW_CLOSED', 'Reviews can only be written or edited within 30 days of the deal')
   }
 

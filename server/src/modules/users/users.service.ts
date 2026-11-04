@@ -2,6 +2,7 @@ import { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { recordAudit } from '../audit/audit.service.js'
+import { settleEscrowsOfSuspendedUser } from '../escrow/escrow.service.js'
 import { cancelPendingOffersOfUser } from '../offers/cancelPendingOffers.js'
 import type { ListUsersQuery, UpdateUserRoleInput, UpdateUserStatusInput } from './users.schema.js'
 
@@ -61,6 +62,7 @@ export const setUserStatus = async (actorId: string, userId: string, { status }:
     if (status === 'SUSPENDED') {
       await tx.session.deleteMany({ where: { userId } })
       await cancelPendingOffersOfUser(tx, userId)
+      await settleEscrowsOfSuspendedUser(tx, userId, actorId)
     }
     // กดซ้ำสถานะเดิมไม่ต้องลง log ให้ประวัติมีแต่การเปลี่ยนจริง
     if (target.status !== status) {

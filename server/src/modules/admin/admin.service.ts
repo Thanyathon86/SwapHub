@@ -16,11 +16,12 @@ const lastDays = (count: number) =>
 
 // เบากว่า getDashboard มาก ใช้กับตัวเลขบนเมนูที่ดึงทุกนาที
 export const getCounts = async () => {
-  const [pendingListings, openTickets] = await Promise.all([
+  const [pendingListings, openTickets, openDisputes] = await Promise.all([
     prisma.listing.count({ where: { status: 'PENDING_REVIEW' } }),
     prisma.supportTicket.count({ where: { status: 'OPEN' } }),
+    prisma.escrow.count({ where: { status: 'DISPUTED' } }),
   ])
-  return { pendingListings, openTickets }
+  return { pendingListings, openTickets, openDisputes }
 }
 
 export const getDashboard = async () => {
@@ -48,6 +49,8 @@ export const getDashboard = async () => {
     pendingListingsOver24h,
     pendingOffers,
     openTickets,
+    openDisputes,
+    escrowHolding,
     deals7d,
     games,
     securityCounts,
@@ -64,6 +67,8 @@ export const getDashboard = async () => {
     prisma.listing.count({ where: { status: 'PENDING_REVIEW', createdAt: { lt: since24h } } }),
     prisma.offer.count({ where: { status: 'PENDING' } }),
     prisma.supportTicket.count({ where: { status: 'OPEN' } }),
+    prisma.escrow.count({ where: { status: 'DISPUTED' } }),
+    prisma.escrow.aggregate({ where: { status: { in: ['HELD', 'SHIPPED', 'DISPUTED'] } }, _sum: { amount: true } }),
     prisma.offer.count({ where: { status: 'ACCEPTED', respondedAt: { gte: since7d } } }),
     prisma.game.findMany({
       select: { id: true, name: true, isActive: true, _count: { select: { listings: { where: { status: 'ACTIVE' } } } } },
@@ -94,8 +99,8 @@ export const getDashboard = async () => {
   const security = Object.fromEntries(securityCounts.map((row) => [row.type, row._count._all]))
 
   return {
-    attention: { pendingListings, pendingListingsOver24h, pendingOffers, openTickets },
-    totals: { users, newUsers7d, suspendedUsers, activeListings, deals7d },
+    attention: { pendingListings, pendingListingsOver24h, pendingOffers, openTickets, openDisputes },
+    totals: { users, newUsers7d, suspendedUsers, activeListings, deals7d, escrowHolding: escrowHolding._sum.amount ?? '0' },
     daily: lastDays(CHART_DAYS).map((day) => ({
       day,
       users: u.get(day) ?? 0,

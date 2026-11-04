@@ -109,6 +109,12 @@ const messages: Record<string, string> = {
   OFFER_NO_LONGER_VALID: 'การ์ดในข้อเสนอนี้ถูกปิดหรือจำนวนไม่พอแล้ว',
   OFFER_PARTY_UNAVAILABLE: 'อีกฝ่ายของข้อเสนอนี้ไม่พร้อมทำดีลแล้ว',
   OFFER_CHAT_CLOSED: 'ข้อเสนอนี้ถูกปฏิเสธหรือยกเลิกแล้ว ส่งข้อความต่อไม่ได้',
+  ESCROW_NOT_FOUND: 'ไม่พบรายการเงินวางกลางนี้',
+  ESCROW_INVALID_STATE: 'ทำรายการนี้ในขั้นตอนปัจจุบันไม่ได้ ลองรีเฟรชหน้า',
+  ESCROW_WRONG_PARTY: 'ขั้นตอนนี้ต้องให้อีกฝ่ายเป็นคนทำ',
+  ESCROW_PAYMENT_EXPIRED: 'เลยกำหนดชำระเงินแล้ว',
+  ESCROW_NOT_SETTLED: 'ให้คะแนนได้หลังดีลจบและเงินถูกโอนหรือคืนแล้ว',
+  ESCROW_SELF_RESOLVE: 'คุณเป็นคู่ดีลนี้ จึงตัดสินเองไม่ได้',
 }
 
 export const errorMessage = (err: unknown) =>

@@ -51,6 +51,11 @@ model User {
   reviewsReceived  Review[]           @relation("ReviewSubject")
   reviewsRemoved   Review[]           @relation("ReviewRemover")
   offerMessages    OfferMessage[]
+  escrowsAsBuyer   Escrow[]           @relation("EscrowBuyer")
+  escrowsAsSeller  Escrow[]           @relation("EscrowSeller")
+  escrowsDisputed  Escrow[]           @relation("EscrowDisputer")
+  escrowsResolved  Escrow[]           @relation("EscrowResolver")
+  escrowEvents     EscrowEvent[]
 }
 
 model Session {
@@ -193,6 +198,7 @@ model Offer {
   items    OfferItem[]
   reviews  Review[]
   messages OfferMessage[]
+  escrow   Escrow?
 
   @@index([listingId, status])
   @@index([buyerId])
@@ -221,6 +227,8 @@ enum AuditAction {
   LISTING_REJECTED
   CATALOG_CHANGED
   TICKET_CLOSED
+  ESCROW_RELEASED
+  ESCROW_REFUNDED
 }
 
 // บันทึกว่า admin คนไหนทำอะไรกับใคร ไว้ตรวจย้อนหลังเมื่อมีการใช้สิทธิ์ผิด
@@ -396,4 +404,101 @@ model OfferMessage {
   createdAt DateTime @default(now())
 
   @@index([offerId, createdAt])
+}
+
+// AWAITING_PAYMENT -> HELD -> SHIPPED -> RELEASED เป็นเส้นปกติ
+// HELD/SHIPPED เปิดข้อพิพาทเป็น DISPUTED ได้ แล้ว admin ตัดสินเป็น RELEASED หรือ REFUNDED
+enum EscrowStatus {
+  AWAITING_PAYMENT
+  HELD
+  SHIPPED
+  DISPUTED
+  RELEASED
+  REFUNDED
+  CANCELLED
+  EXPIRED
+}
+
+enum EscrowEventType {
+  CREATED
+  PAID
+  SHIPPED
+  RECEIVED
+  DISPUTED
+  RELEASED
+  REFUNDED
+  CANCELLED
+  EXPIRED
+}
+
+// เงินวางกลางของดีลที่มีเงินสด หนึ่ง offer มีได้หนึ่งแถว ตอนนี้เงินเป็น mock (ดู lib/payments.ts) แต่สถานะและกำหนดเวลาใช้งานจริง
+model Escrow {
+  id       String       @id @default(uuid()) @db.Uuid
+  offerId  String       @unique @db.Uuid
+  offer    Offer        @relation(fields: [offerId], references: [id])
+  buyerId  String       @db.Uuid
+  buyer    User         @relation("EscrowBuyer", fields: [buyerId], references: [id])
+  sellerId String       @db.Uuid
+  seller   User         @relation("EscrowSeller", fields: [sellerId], references: [id])
+  // ล็อกยอดตอนตอบรับ ไม่อ่านจาก offer ซ้ำ
+  amount   Decimal      @db.Decimal(12, 2)
+  // ดีลเงินบวกการ์ดแลก ทั้งสองฝ่ายต้องส่งของและยืนยันรับ ผู้ขายจะได้ไม่เสียการ์ดที่ตกลงแลกกัน
+  twoWay   Boolean
+  status   EscrowStatus @default(AWAITING_PAYMENT)
+
+  paymentDueAt DateTime
+  shipDueAt    DateTime?
+  confirmDueAt DateTime?
+  paidAt       DateTime?
+
+  // เลขอ้างอิงจากผู้ให้บริการชำระเงิน ใช้กระทบยอด ไม่ส่งให้ผู้ใช้
+  paymentRef String?
+  payoutRef  String?
+  refundRef  String?
+
+  sellerCarrier        String?
+  sellerTrackingNumber String?
+  sellerShippedAt      DateTime?
+  buyerCarrier         String?
+  buyerTrackingNumber  String?
+  buyerShippedAt       DateTime?
+  buyerReceivedAt      DateTime?
+  sellerReceivedAt     DateTime?
+
+  disputedAt    DateTime?
+  disputedById  String?   @db.Uuid
+  disputedBy    User?     @relation("EscrowDisputer", fields: [disputedById], references: [id], onDelete: Restrict)
+  disputeReason String?
+
+  settledAt      DateTime?
+  // null เมื่อระบบปิดเองหรือคู่ดีลปิดกันเอง
+  resolvedById   String?   @db.Uuid
+  resolvedBy     User?     @relation("EscrowResolver", fields: [resolvedById], references: [id], onDelete: Restrict)
+  resolutionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events EscrowEvent[]
+
+  @@index([status, updatedAt])
+  @@index([buyerId, status])
+  @@index([sellerId, status])
+}
+
+// ประวัติทุกการเปลี่ยนแปลงของ escrow ไม่มี API แก้หรือลบ ใช้ตรวจย้อนหลังเมื่อมีข้อพิพาท
+model EscrowEvent {
+  id        String          @id @default(uuid()) @db.Uuid
+  escrowId  String          @db.Uuid
+  escrow    Escrow          @relation(fields: [escrowId], references: [id], onDelete: Restrict)
+  type      EscrowEventType
+  // null = ระบบทำเองตามกำหนดเวลา
+  actorId   String?         @db.Uuid
+  actor     User?           @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  // สถานะหลังเหตุการณ์นี้
+  status    EscrowStatus
+  note      String?
+  createdAt DateTime        @default(now())
+
+  @@index([escrowId, createdAt])
 }

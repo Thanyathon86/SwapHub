@@ -9,6 +9,7 @@ const production = {
   SMTP_URL: 'smtps://user:pass@smtp.example.com:465',
   WEB_CLIENT_DIR: '../client/dist',
   WEB_ADMIN_DIR: '../admin/dist',
+  MOCK_PAYMENTS_ENABLED: 'true',
 }
 
 const failedFields = (input: object) => {
@@ -29,6 +30,12 @@ describe('env ตอน production', () => {
   it('ลืมตั้ง ADMIN_ORIGIN แล้วค่าเริ่มต้น localhost ใช้ไม่ได้', () => {
     const { ADMIN_ORIGIN: _omit, ...rest } = production
     expect(failedFields(rest)).toEqual(['ADMIN_ORIGIN'])
+  })
+
+  it('ต้องยืนยันว่ารู้ตัวว่าการจ่ายเงินเป็นแบบจำลอง', () => {
+    const { MOCK_PAYMENTS_ENABLED: _omit, ...rest } = production
+    expect(failedFields(rest)).toEqual(['MOCK_PAYMENTS_ENABLED'])
+    expect(failedFields({ ...production, MOCK_PAYMENTS_ENABLED: 'false' })).toEqual(['MOCK_PAYMENTS_ENABLED'])
   })
 
   it('ต้องมี SMTP_URL ไม่งั้นลิงก์ลืมรหัสผ่านส่งไม่ได้', () => {

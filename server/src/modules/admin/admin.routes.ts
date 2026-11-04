@@ -3,6 +3,7 @@ import { requireAuth } from '../../middleware/requireAuth.js'
 import { requireRole } from '../../middleware/requireRole.js'
 import { auditAdminRouter } from '../audit/audit.routes.js'
 import { catalogAdminRouter } from '../catalog/catalog.routes.js'
+import { escrowAdminRouter } from '../escrow/escrow.routes.js'
 import { eventsAdminRouter } from '../events/events.routes.js'
 import { listingsAdminRouter } from '../listings/listings.routes.js'
 import { reviewsAdminRouter } from '../reviews/reviews.routes.js'
@@ -30,3 +31,4 @@ adminRouter.use('/audit-logs', auditAdminRouter)
 adminRouter.use('/events', eventsAdminRouter)
 adminRouter.use('/support', supportAdminRouter)
 adminRouter.use('/reviews', reviewsAdminRouter)
+adminRouter.use('/escrows', escrowAdminRouter)

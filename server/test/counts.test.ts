@@ -15,9 +15,9 @@ describe('GET /api/me/counts', () => {
     await prisma.supportTicket.create({ data: { userId: seller.user.id, subject: 's', category: 'OTHER', status: 'ANSWERED' } })
     await prisma.supportTicket.create({ data: { userId: seller.user.id, subject: 's', category: 'OTHER', status: 'OPEN' } })
 
-    expect((await seller.agent.get('/api/me/counts')).body).toEqual({ incomingOffers: 1, answeredTickets: 1 })
+    expect((await seller.agent.get('/api/me/counts')).body).toEqual({ incomingOffers: 1, answeredTickets: 1, escrowActions: 0 })
     // ฝั่งผู้ซื้อไม่มีอะไรรอตอบ
-    expect((await buyer.agent.get('/api/me/counts')).body).toEqual({ incomingOffers: 0, answeredTickets: 0 })
+    expect((await buyer.agent.get('/api/me/counts')).body).toEqual({ incomingOffers: 0, answeredTickets: 0, escrowActions: 0 })
   })
 })
 
@@ -28,7 +28,7 @@ describe('GET /api/admin/counts', () => {
     await createListing(user.id, { status: 'PENDING_REVIEW' })
     await createListing(user.id)
     await prisma.supportTicket.create({ data: { userId: user.id, subject: 's', category: 'OTHER' } })
-    expect((await agent.get('/api/admin/counts')).body).toEqual({ pendingListings: 1, openTickets: 1 })
+    expect((await agent.get('/api/admin/counts')).body).toEqual({ pendingListings: 1, openTickets: 1, openDisputes: 0 })
   })
 
   it('user ธรรมดาเรียกไม่ได้', async () => {

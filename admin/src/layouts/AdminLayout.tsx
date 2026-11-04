@@ -22,6 +22,7 @@ const menuGroups: { title: string; items: MenuItem[] }[] = [
       { label: 'ประกาศ', to: '/listings', icon: 'tag', count: 'pendingListings', countLabel: 'ประกาศรอตรวจ' },
       { label: 'ผู้ใช้', to: '/users', icon: 'users' },
       { label: 'เรื่องที่แจ้ง', to: '/support', icon: 'message', count: 'openTickets', countLabel: 'เรื่องที่รอตอบ' },
+      { label: 'เงินวางกลาง', to: '/escrows', icon: 'shield', count: 'openDisputes', countLabel: 'ข้อพิพาทที่รอตัดสิน' },
       { label: 'รีวิว', to: '/reviews', icon: 'star' },
     ],
   },

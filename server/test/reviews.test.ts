@@ -2,7 +2,7 @@ import request from 'supertest'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { app } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
-import { createListing, signedInUser, type Agent } from './helpers.js'
+import { createListing, signedInUser, type Agent, settleCashDeal } from './helpers.js'
 
 type Party = { agent: Agent; id: string; username: string }
 let seller: Party
@@ -18,6 +18,7 @@ const acceptedDeal = async () => {
   const listing = await createListing(seller.id, { quantity: 5 })
   const { body } = await buyer.agent.post('/api/offers').send({ listingId: listing.id, cashAmount: 10 })
   await seller.agent.post(`/api/offers/${body.offer.id}/accept`)
+  await settleCashDeal(seller.agent, buyer.agent, body.offer.id)
   return body.offer.id as string
 }
 
@@ -62,8 +63,21 @@ describe('ให้คะแนน', () => {
     expect((await review(seller.agent, body.offer.id, { rating: 1 })).body.error.code).toBe('OFFER_NOT_ACCEPTED')
   })
 
-  it('เกิน 30 วันหลังตอบรับ ให้หรือแก้ไม่ได้', async () => {
+  it('ดีลผ่าน escrow นับ 30 วันจากวันที่เงินจบ ไม่ใช่วันที่ตอบรับ', async () => {
     const offerId = await acceptedDeal()
+    const longAgo = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000)
+    await prisma.offer.update({ where: { id: offerId }, data: { respondedAt: longAgo } })
+    expect((await review(buyer.agent, offerId, { rating: 5 })).status).toBe(200)
+    await prisma.escrow.update({ where: { offerId }, data: { settledAt: longAgo } })
+    expect((await review(buyer.agent, offerId, { rating: 4 })).body.error.code).toBe('REVIEW_WINDOW_CLOSED')
+  })
+
+  it('การแลกล้วนนับ 30 วันจากวันที่ตอบรับ', async () => {
+    const listing = await createListing(seller.id, { type: 'TRADE', price: null })
+    const myCard = await createListing(buyer.id, { type: 'TRADE', price: null })
+    const { body } = await buyer.agent.post('/api/offers').send({ listingId: listing.id, items: [{ listingId: myCard.id }] })
+    await seller.agent.post(`/api/offers/${body.offer.id}/accept`)
+    const offerId = body.offer.id as string
     await prisma.offer.update({ where: { id: offerId }, data: { respondedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } })
     expect((await review(buyer.agent, offerId, { rating: 5 })).body.error.code).toBe('REVIEW_WINDOW_CLOSED')
   })

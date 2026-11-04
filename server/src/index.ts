@@ -4,6 +4,7 @@ import { deleteOldEvents } from './lib/events.js'
 import { prisma } from './lib/prisma.js'
 import { deleteExpiredSessions } from './lib/session.js'
 import { deleteStaleResetTokens } from './modules/auth/auth.service.js'
+import { processEscrowDeadlines } from './modules/escrow/escrow.service.js'
 
 const server = app.listen(env.PORT, () => {
   console.log(`API running on http://localhost:${env.PORT}`)
@@ -11,10 +12,12 @@ const server = app.listen(env.PORT, () => {
 
 // session หมดอายุ, log ที่เกินระยะเก็บ และลิงก์รีเซ็ตรหัสที่หมดอายุจะค้างใน DB ถ้าไม่กวาดเป็นรอบ
 const CLEANUP_MS = 60 * 60 * 1000
+// escrow ที่เลยกำหนดรันรอบเดียวกัน การจ่ายเงินตรวจกำหนดเองอีกชั้นจึงไม่ต้องกวาดถี่
 const cleanup = () => {
   deleteExpiredSessions().catch((err: unknown) => console.error('Session cleanup failed:', err))
   deleteOldEvents().catch((err: unknown) => console.error('Event log cleanup failed:', err))
   deleteStaleResetTokens().catch((err: unknown) => console.error('Reset token cleanup failed:', err))
+  processEscrowDeadlines().catch((err: unknown) => console.error('Escrow sweep failed:', err))
 }
 cleanup()
 const cleanupTimer = setInterval(cleanup, CLEANUP_MS)
