@@ -103,6 +103,13 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 | root | `npm install` | ติดตั้ง dependency ของ client, admin, shared |
 | root | `npm run build`, `npm run lint` | build/lint ทุก workspace |
 
+### รัน production
+
+1. build: `npm run build` ที่ root (ตั้ง `VITE_CLIENT_URL` ตอน build แอป admin ไม่งั้นลิงก์ "ไปหน้าเว็บ" จะชี้ localhost) และ `npm run build` ใน `server/`
+2. migrate: `npx prisma migrate deploy` ใน `server/`
+3. รัน: `npm start` ใน `server/` โดยตั้ง `NODE_ENV=production`, `CLIENT_ORIGIN` กับ `ADMIN_ORIGIN` เป็น https คนละ hostname, `SMTP_URL`, `WEB_CLIENT_DIR`, `WEB_ADMIN_DIR` (ขาดข้อไหนแอปจะไม่เริ่มทำงาน)
+4. HTTPS มาจาก host หรือ reverse proxy ด้านหน้า ตั้ง `TRUST_PROXY` เป็นจำนวน proxy และต้องส่ง `Host` หรือ `X-Forwarded-Host` เดิมมา เพราะ server เลือกแอปจาก hostname
+
 ### Test (server)
 
 - `server/test/*.test.ts` ยิง `app` ผ่าน supertest ไม่ต้องเปิด server ใช้ DB แยก (`vitest.config.ts` เปลี่ยนชื่อ DB เป็น `_test` และหยุดถ้าชี้ไป DB dev)
@@ -121,7 +128,7 @@ server/
     routes.ts               รวม router ทุก module ใต้ /api
     config/env.ts           ตรวจ env ด้วย zod ตอนเริ่ม
     lib/                    prisma, session, password + commonPasswords, names (ตรวจชื่อที่แสดง), images, storage, mailer, errors (AppError), events (logEvent)
-    middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler
+    middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler, uploadImage, serveWeb (เสิร์ฟหน้าเว็บตอน production แยกแอปตาม hostname)
     scripts/                seed.ts (เกม/บริษัทเกรดเริ่มต้น), seedAdmin.ts (admin คนแรก แยกไฟล์ให้เขียน test ได้)
     modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู, แก้โปรไฟล์, รูปโปรไฟล์), profiles (โปรไฟล์สาธารณะ), reviews, audit, events, admin (dashboard, counts)
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
@@ -184,6 +191,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - comment เขียนภาษาไทย สั้น ๆ อธิบายเหตุผล ไม่ใช่อธิบายว่าโค้ดทำอะไร
 - validate ทุก input จาก request ด้วย zod (`validate` ปฏิเสธ NUL ในข้อความทุกช่องให้เอง เพราะ Postgres เก็บไม่ได้) env ใหม่ต้องเพิ่มใน `config/env.ts` และ `.env.example` ค่าที่ production ใช้ค่าเริ่มต้นไม่ได้ให้บังคับใน `envSchema`
 - error จาก Express หรือ body-parser ที่มี status 4xx ตอบ `BAD_REQUEST` และไม่ลง `SERVER_ERROR` ทุกเส้นใต้ `/api` ตอบ `Cache-Control: no-store`
+- security header ตั้งที่เดียวใน `app.ts` (helmet) ครอบทั้ง API, รูป และหน้าเว็บ CSP ไม่มี `unsafe-inline` และอนุญาตแค่ตัวเอง, Google Fonts กับรูป `blob:` ตอน dev Vite เสิร์ฟหน้าเว็บจึงไม่มี CSP ถ้าเพิ่มของจากภายนอก (รูป, script, iframe) ต้องแก้ CSP ด้วยและลองกับ build จริง ไม่งั้นจะพังเฉพาะบน production (`style={{...}}` ของ React ใช้ได้เพราะไม่ใช่ inline style แบบข้อความ)
 - เข้าถึง DB ผ่าน `prisma` จาก `lib/prisma.ts` เท่านั้น
 - server `tsconfig` เปิด `strict` + `noUncheckedIndexedAccess`
 

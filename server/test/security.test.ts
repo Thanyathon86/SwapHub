@@ -18,6 +18,19 @@ describe('Cache-Control ของ API', () => {
   })
 })
 
+describe('ตอน dev ไม่เสิร์ฟหน้าเว็บ', () => {
+  it('ไม่ได้ตั้ง WEB_*_DIR -> เส้นทางนอก API เป็น 404 เพราะ Vite เสิร์ฟหน้าเว็บแทน', async () => {
+    expect((await request(app).get('/')).status).toBe(404)
+    expect((await request(app).get('/listings/abc')).status).toBe(404)
+  })
+
+  it('รูปที่ไม่มีอยู่ -> 404 แบบเดียวกับ API', async () => {
+    const res = await request(app).get('/uploads/listings/nope.webp')
+    expect(res.status).toBe(404)
+    expect(res.body.error.code).toBe('NOT_FOUND')
+  })
+})
+
 describe('request ที่ผิดรูปแบบเป็นความผิดของ client ไม่ใช่ระบบพัง', () => {
   it('URL ที่ encode ผิด -> 400 และไม่ลง SERVER_ERROR', async () => {
     const res = await request(app).get('/api/listings/%E0%A4%A')

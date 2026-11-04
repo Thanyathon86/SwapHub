@@ -7,6 +7,8 @@ const production = {
   CLIENT_ORIGIN: 'https://tcgnexus.example',
   ADMIN_ORIGIN: 'https://admin.tcgnexus.example',
   SMTP_URL: 'smtps://user:pass@smtp.example.com:465',
+  WEB_CLIENT_DIR: '../client/dist',
+  WEB_ADMIN_DIR: '../admin/dist',
 }
 
 const failedFields = (input: object) => {
@@ -35,8 +37,26 @@ describe('env ตอน production', () => {
   })
 })
 
+describe('env ของการเสิร์ฟหน้าเว็บ', () => {
+  it('production ต้องตั้งโฟลเดอร์ build ทั้งสองแอป ไม่งั้นหน้าเว็บจะไม่มี security header', () => {
+    const { WEB_CLIENT_DIR: _client, ...noClient } = production
+    expect(failedFields(noClient)).toEqual(['WEB_CLIENT_DIR'])
+    const { WEB_ADMIN_DIR: _admin, ...noAdmin } = production
+    expect(failedFields(noAdmin)).toEqual(['WEB_ADMIN_DIR'])
+  })
+
+  it('สองแอปต้องคนละ hostname เพราะแยกแอปด้วย hostname', () => {
+    const sameHost = { ...production, ADMIN_ORIGIN: 'https://tcgnexus.example:8443' }
+    expect(failedFields(sameHost)).toEqual(['ADMIN_ORIGIN'])
+  })
+
+  it('URL ผิดรูปแบบรายงานเป็น error ปกติ ไม่ทำให้ตัวตรวจ env พัง', () => {
+    expect(failedFields({ ...production, CLIENT_ORIGIN: 'not-a-url' })).toContain('CLIENT_ORIGIN')
+  })
+})
+
 describe('env ตอน dev', () => {
-  it('ใช้ http และไม่ตั้ง SMTP ได้', () => {
+  it('ใช้ http ไม่ตั้ง SMTP และไม่เสิร์ฟหน้าเว็บได้', () => {
     const dev = { DATABASE_URL: production.DATABASE_URL, CLIENT_ORIGIN: 'http://localhost:5173' }
     expect(failedFields(dev)).toEqual([])
   })

@@ -1,6 +1,9 @@
 import 'dotenv/config'
 import { z } from 'zod'
 
+// superRefine ยังทำงานแม้ URL ผิดรูปแบบ (error จากด้านล่างจะรายงานให้อยู่แล้ว) จึงห้าม new URL แบบที่ throw ได้
+const hostnameOf = (origin: string) => (URL.canParse(origin) ? new URL(origin).hostname : origin)
+
 // ตรวจ env ตอนเริ่มแอป ถ้าขาดหรือผิดรูปแบบให้หยุดทันที
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -22,6 +25,9 @@ export const envSchema = z.object({
   LOG_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(60),
   // โฟลเดอร์เก็บรูปที่อัปโหลด (path สัมพัทธ์นับจากโฟลเดอร์ server)
   UPLOAD_DIR: z.string().min(1).default('uploads'),
+  // โฟลเดอร์ build ของหน้าเว็บ ตั้งแล้ว Express เสิร์ฟหน้าเว็บเองพร้อม security header (ตอน dev ไม่ต้องตั้ง Vite เสิร์ฟให้)
+  WEB_CLIENT_DIR: z.string().min(1).optional(),
+  WEB_ADMIN_DIR: z.string().min(1).optional(),
   // ไม่ตั้ง = ไม่ส่งอีเมลจริง พิมพ์ลง console แทน (ใช้ตอน dev) รูปแบบ smtp(s)://user:pass@host:port
   SMTP_URL: z.string().regex(/^smtps?:\/\//, 'Must start with smtp:// or smtps://').optional(),
   MAIL_FROM: z.string().min(3).default('TCGNexus <no-reply@tcgnexus.local>'),
@@ -36,11 +42,21 @@ export const envSchema = z.object({
     ctx.addIssue({ code: 'custom', path: ['ADMIN_SESSION_ABSOLUTE_HOURS'], message: 'Must be greater than or equal to ADMIN_SESSION_TTL_HOURS' })
   }
 
+  // serveWeb แยกแอปด้วย hostname ถ้าซ้ำกันจะเปิดได้แค่แอปเดียว
+  if (e.WEB_CLIENT_DIR && e.WEB_ADMIN_DIR && hostnameOf(e.CLIENT_ORIGIN) === hostnameOf(e.ADMIN_ORIGIN)) {
+    ctx.addIssue({ code: 'custom', path: ['ADMIN_ORIGIN'], message: 'Must use a different hostname from CLIENT_ORIGIN when serving the web apps' })
+  }
+
   // ค่าเริ่มต้นตั้งไว้สำหรับ dev ถ้าเผลอใช้บน production แอปจะยังรันได้แต่ไม่ปลอดภัย จึงให้หยุดตั้งแต่ตอนเริ่ม
   if (e.NODE_ENV !== 'production') return
   for (const key of ['CLIENT_ORIGIN', 'ADMIN_ORIGIN'] as const) {
     if (!e[key].startsWith('https://')) {
       ctx.addIssue({ code: 'custom', path: [key], message: 'Must use https in production' })
+    }
+  }
+  for (const key of ['WEB_CLIENT_DIR', 'WEB_ADMIN_DIR'] as const) {
+    if (!e[key]) {
+      ctx.addIssue({ code: 'custom', path: [key], message: 'Required in production, the web apps need the security headers set by this server' })
     }
   }
   if (!e.SMTP_URL) {
