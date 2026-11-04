@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { z } from 'zod'
 
 // ตรวจ env ตอนเริ่มแอป ถ้าขาดหรือผิดรูปแบบให้หยุดทันที
-const envSchema = z.object({
+export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.url(),
@@ -15,6 +15,9 @@ const envSchema = z.object({
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
   // เพดานอายุนับจาก login ต่ออายุเกินนี้ไม่ได้ ต้อง login ใหม่ กัน session ที่อยู่ได้ตลอดไปถ้าโดนขโมย
   SESSION_ABSOLUTE_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  // session ของ admin ใช้ค่าชุดนี้แทน นับเป็นชั่วโมงเพราะควรสั้นกว่าผู้ใช้ทั่วไปมาก
+  ADMIN_SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(2),
+  ADMIN_SESSION_ABSOLUTE_HOURS: z.coerce.number().int().min(1).max(720).default(12),
   // log เหตุการณ์ (EventLog) เก่ากว่านี้ถูกลบอัตโนมัติ ไม่รวม AuditLog ที่เก็บถาวร
   LOG_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(60),
   // โฟลเดอร์เก็บรูปที่อัปโหลด (path สัมพัทธ์นับจากโฟลเดอร์ server)
@@ -25,9 +28,24 @@ const envSchema = z.object({
   // ใช้เฉพาะตอน seed admin คนแรก แอปปกติไม่ต้องมี
   ADMIN_EMAIL: z.email().optional(),
   ADMIN_PASSWORD: z.string().min(12).optional(),
-}).refine((e) => e.SESSION_ABSOLUTE_DAYS >= e.SESSION_TTL_DAYS, {
-  path: ['SESSION_ABSOLUTE_DAYS'],
-  message: 'Must be greater than or equal to SESSION_TTL_DAYS',
+}).superRefine((e, ctx) => {
+  if (e.SESSION_ABSOLUTE_DAYS < e.SESSION_TTL_DAYS) {
+    ctx.addIssue({ code: 'custom', path: ['SESSION_ABSOLUTE_DAYS'], message: 'Must be greater than or equal to SESSION_TTL_DAYS' })
+  }
+  if (e.ADMIN_SESSION_ABSOLUTE_HOURS < e.ADMIN_SESSION_TTL_HOURS) {
+    ctx.addIssue({ code: 'custom', path: ['ADMIN_SESSION_ABSOLUTE_HOURS'], message: 'Must be greater than or equal to ADMIN_SESSION_TTL_HOURS' })
+  }
+
+  // ค่าเริ่มต้นตั้งไว้สำหรับ dev ถ้าเผลอใช้บน production แอปจะยังรันได้แต่ไม่ปลอดภัย จึงให้หยุดตั้งแต่ตอนเริ่ม
+  if (e.NODE_ENV !== 'production') return
+  for (const key of ['CLIENT_ORIGIN', 'ADMIN_ORIGIN'] as const) {
+    if (!e[key].startsWith('https://')) {
+      ctx.addIssue({ code: 'custom', path: [key], message: 'Must use https in production' })
+    }
+  }
+  if (!e.SMTP_URL) {
+    ctx.addIssue({ code: 'custom', path: ['SMTP_URL'], message: 'Required in production, password reset emails cannot be sent without it' })
+  }
 })
 
 const parsed = envSchema.safeParse(process.env)

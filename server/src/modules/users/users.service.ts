@@ -2,6 +2,7 @@ import { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { recordAudit } from '../audit/audit.service.js'
+import { cancelPendingOffersOfUser } from '../offers/cancelPendingOffers.js'
 import type { ListUsersQuery, UpdateUserRoleInput, UpdateUserStatusInput } from './users.schema.js'
 
 const PAGE_SIZE = 20
@@ -57,7 +58,10 @@ export const setUserStatus = async (actorId: string, userId: string, { status }:
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.update({ where: { id: userId }, data: { status }, select: adminUserSelect })
     // requireAuth เช็ก status ทุก request อยู่แล้ว ลบ session ด้วยอีกชั้นเผื่อมีโค้ดที่ลืมเช็ก
-    if (status === 'SUSPENDED') await tx.session.deleteMany({ where: { userId } })
+    if (status === 'SUSPENDED') {
+      await tx.session.deleteMany({ where: { userId } })
+      await cancelPendingOffersOfUser(tx, userId)
+    }
     // กดซ้ำสถานะเดิมไม่ต้องลง log ให้ประวัติมีแต่การเปลี่ยนจริง
     if (target.status !== status) {
       await recordAudit(tx, {

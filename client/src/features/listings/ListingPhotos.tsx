@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { errorMessage } from '@shared/lib/api'
 import { imageUrl, listingsApi, type Listing } from '@shared/listings/listingsApi'
-import { MAX_PHOTOS, photoProblem } from './photos'
+import { MAX_PHOTOS, PHOTO_ACCEPT, photoProblem } from './photos'
 
 type Props = { listing: Listing; onChange: (listing: Listing) => void }
 
@@ -84,7 +84,7 @@ export function ListingPhotos({ listing, onChange }: Props) {
             className={`grid aspect-square place-items-center rounded-xl border border-dashed border-zinc-300 text-sm text-zinc-500 ${busy ? 'cursor-wait' : 'cursor-pointer hover:border-zinc-500 hover:text-zinc-800'}`}
           >
             {busy ? 'กำลังอัปโหลด...' : '+ เพิ่มรูป'}
-            <input type="file" accept="image/*" multiple disabled={busy} onChange={onPick} className="sr-only" />
+            <input type="file" accept={PHOTO_ACCEPT} multiple disabled={busy} onChange={onPick} className="sr-only" />
           </label>
         )}
       </div>

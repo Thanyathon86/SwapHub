@@ -10,15 +10,16 @@ const upload = multer({
   limits: { fileSize: MAX_BYTES, files: 1, fields: 0 },
 }).single('image')
 
+const invalidUpload = () => new AppError(400, 'INVALID_UPLOAD', 'Send exactly one file in the "image" field')
+
 // แปลง error ของ multer ให้เป็นรูปแบบเดียวกับ error อื่นของ API
 export const uploadImage: RequestHandler = (req, res, next) => {
   upload(req, res, (err: unknown) => {
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') return next(new AppError(413, 'IMAGE_TOO_LARGE', 'Image must be 5MB or smaller'))
-      return next(new AppError(400, 'INVALID_UPLOAD', 'Send exactly one file in the "image" field'))
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return next(new AppError(413, 'IMAGE_TOO_LARGE', 'Image must be 5MB or smaller'))
     }
-    if (err) return next(err)
-    if (!req.file) return next(new AppError(400, 'INVALID_UPLOAD', 'Send exactly one file in the "image" field'))
+    // เก็บใน memory จึงไม่มี error จากดิสก์ ที่เหลือคือ multipart ผิดรูปแบบ (ไม่มี boundary, ตัดจบกลางคัน) ซึ่ง request ผิดเอง
+    if (err || !req.file) return next(invalidUpload())
     next()
   })
 }

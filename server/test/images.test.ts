@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { app } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
 import { uploadRoot } from '../src/lib/storage.js'
-import { createListing, signedInUser, type Agent } from './helpers.js'
+import { createListing, eventsOf, signedInUser, type Agent } from './helpers.js'
 
 let seller: Agent
 let sellerId: string
@@ -44,6 +44,37 @@ describe('อัปโหลดรูป', () => {
     const meta = await sharp(served.body as Buffer).metadata()
     expect(meta.format).toBe('webp')
     expect(meta.exif).toBeUndefined()
+    // ชื่อไฟล์เป็น uuid ไม่เคยถูกเขียนทับ รูปจึงต้อง cache ได้ ไม่เหมือน response ของ API
+    expect(served.headers['cache-control']).toContain('immutable')
+  })
+
+  it('รับ JPEG, PNG และ WebP', async () => {
+    const listing = await createListing(sellerId, { status: 'PENDING_REVIEW' })
+    const blank = () => sharp({ create: { width: 20, height: 20, channels: 3, background: '#09c' } })
+    expect((await upload(seller, listing.id, await blank().jpeg().toBuffer(), 'a.jpg')).status).toBe(201)
+    expect((await upload(seller, listing.id, await blank().png().toBuffer(), 'a.png')).status).toBe(201)
+    expect((await upload(seller, listing.id, await blank().webp().toBuffer(), 'a.webp')).status).toBe(201)
+  })
+
+  it('ชนิดอื่นที่ sharp อ่านได้ (SVG, GIF, TIFF) ไม่รับ', async () => {
+    const listing = await createListing(sellerId)
+    const blank = () => sharp({ create: { width: 20, height: 20, channels: 3, background: '#09c' } })
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20"/></svg>')
+    const files = [svg, await blank().gif().toBuffer(), await blank().tiff().toBuffer()]
+    for (const file of files) {
+      const res = await upload(seller, listing.id, file, 'card.jpg')
+      expect(res.status).toBe(400)
+      expect(res.body.error.code).toBe('INVALID_IMAGE')
+      // รูปโปรไฟล์ใช้อีกเส้นทางแต่ต้องกันเหมือนกัน
+      expect((await seller.post('/api/me/avatar').attach('image', file, 'a.jpg')).body.error.code).toBe('INVALID_IMAGE')
+    }
+    expect(await prisma.listingImage.count()).toBe(0)
+  })
+
+  it('ขึ้นต้นเหมือน JPEG แต่เนื้อไฟล์ไม่ใช่รูป ก็ไม่รับ', async () => {
+    const listing = await createListing(sellerId)
+    const fake = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.from('<script>alert(1)</script>')])
+    expect((await upload(seller, listing.id, fake, 'card.jpg')).body.error.code).toBe('INVALID_IMAGE')
   })
 
   it('ไฟล์ที่ไม่ใช่รูปจริง ถึงจะตั้งชื่อ .jpg ก็ไม่รับ และไม่บันทึกอะไร', async () => {
@@ -58,6 +89,22 @@ describe('อัปโหลดรูป', () => {
     const res = await upload(seller, listing.id, Buffer.alloc(5 * 1024 * 1024 + 1), 'big.jpg')
     expect(res.status).toBe(413)
     expect(res.body.error.code).toBe('IMAGE_TOO_LARGE')
+  })
+
+  it('multipart ผิดรูปแบบ -> 400 ไม่ใช่ 500 และไม่ลง SERVER_ERROR', async () => {
+    const listing = await createListing(sellerId)
+    const send = (contentType: string, body: string) =>
+      seller.post(`/api/listings/${listing.id}/images`).set('content-type', contentType).send(body)
+    const noBoundary = await send('multipart/form-data', 'x')
+    const cutOff = await send(
+      'multipart/form-data; boundary=abc',
+      '--abc\r\nContent-Disposition: form-data; name="image"; filename="a.png"\r\n\r\nxx',
+    )
+    for (const res of [noBoundary, cutOff]) {
+      expect(res.status).toBe(400)
+      expect(res.body.error.code).toBe('INVALID_UPLOAD')
+    }
+    expect(await eventsOf('SERVER_ERROR')).toHaveLength(0)
   })
 
   it('ไม่ส่งไฟล์มา -> INVALID_UPLOAD', async () => {

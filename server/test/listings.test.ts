@@ -1,6 +1,8 @@
+import request from 'supertest'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { app } from '../src/app.js'
 import { prisma } from '../src/lib/prisma.js'
-import { createGame, createListing, signedInUser, type Agent } from './helpers.js'
+import { createGame, createListing, createUser, signedInUser, type Agent } from './helpers.js'
 
 let seller: Agent
 let sellerId: string
@@ -117,5 +119,30 @@ describe('สถานะอื่นและสิทธิ์', () => {
   it('GET /api/listings/mine/:id ดูประกาศของตัวเองได้ทุกสถานะ', async () => {
     const listing = await createListing(sellerId, { gameId, status: 'REJECTED' })
     expect((await seller.get(`/api/listings/mine/${listing.id}`)).body.listing.id).toBe(listing.id)
+  })
+})
+
+describe('ผลการตรวจประกาศ', () => {
+  it('เจ้าของเห็นเหตุผลที่ไม่ผ่าน แต่ไม่เห็นว่า admin คนไหนตรวจ', async () => {
+    const admin = await createUser({ role: 'ADMIN' })
+    const listing = await createListing(sellerId, { gameId, status: 'REJECTED', rejectReason: 'รูปไม่ชัด', reviewedById: admin.id, reviewedAt: new Date() })
+    const { body } = await seller.get(`/api/listings/mine/${listing.id}`)
+    expect(body.listing.rejectReason).toBe('รูปไม่ชัด')
+    expect(body.listing.reviewedAt).toEqual(expect.any(String))
+    expect(body.listing.reviewedById).toBeUndefined()
+    expect((await seller.get('/api/listings/mine')).body.listings[0].rejectReason).toBe('รูปไม่ชัด')
+  })
+
+  it('หน้าสาธารณะไม่ส่งผลการตรวจ', async () => {
+    const listing = await createListing(sellerId, { gameId, reviewedAt: new Date() })
+    const paths = [`/api/listings/${listing.id}`, '/api/listings']
+    for (const path of paths) {
+      const { body } = await request(app).get(path)
+      const row = body.listing ?? body.listings[0]
+      expect(row.id).toBe(listing.id)
+      expect(row).not.toHaveProperty('rejectReason')
+      expect(row).not.toHaveProperty('reviewedAt')
+      expect(row).not.toHaveProperty('reviewedById')
+    }
   })
 })

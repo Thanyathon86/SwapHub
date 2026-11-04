@@ -50,13 +50,13 @@
 
 ตัวเลขแจ้งเตือนบนเมนู: `GET /api/me/counts` และ `GET /api/admin/counts` นับเฉพาะสิ่งที่ต้องทำต่อ (ยังไม่มีระบบ "อ่านแล้ว") หน้าเว็บดึงด้วย `usePolling` ทุก 60 วินาทีและทุกครั้งที่เปลี่ยนหน้า ฝั่ง client ส่งต่อให้หน้าลูกผ่าน `<Outlet context>` (`useCounts`)
 
-รูปประกาศ: `POST /api/listings/:id/images` (ทีละรูป field `image`, ≤ 5MB) ผ่าน `sharp` ทุกครั้ง (ตรวจว่าเป็นรูปจริง, ย่อด้านยาว ≤ 1600px, แปลงเป็น WebP, ตัด EXIF) แล้วเก็บผ่าน `lib/storage.ts` ซึ่งตอนนี้เขียนลง `UPLOAD_DIR` (default `server/uploads`, ไม่ commit) และเสิร์ฟที่ `/uploads/*` (Vite proxy ทั้งสองแอป) ย้ายไป S3/R2 ให้แก้แค่ `storage.ts` และ `imageUrl` ใน shared เพิ่ม/ลบรูปนับเป็นการแก้ตัวการ์ด (กลับไปรอตรวจ)
+รูปประกาศ: `POST /api/listings/:id/images` (ทีละรูป field `image`, ≤ 5MB) รับเฉพาะ JPEG, PNG, WebP (ตรวจลายเซ็นไฟล์ก่อนถึงตัวถอดรหัสใน `lib/images.ts`) ผ่าน `sharp` ทุกครั้ง (ตรวจว่าเป็นรูปจริง, ย่อด้านยาว ≤ 1600px, แปลงเป็น WebP, ตัด EXIF) แล้วเก็บผ่าน `lib/storage.ts` ซึ่งตอนนี้เขียนลง `UPLOAD_DIR` (default `server/uploads`, ไม่ commit) และเสิร์ฟที่ `/uploads/*` (Vite proxy ทั้งสองแอป) ย้ายไป S3/R2 ให้แก้แค่ `storage.ts` และ `imageUrl` ใน shared เพิ่ม/ลบรูปนับเป็นการแก้ตัวการ์ด (กลับไปรอตรวจ)
 
-ลืมรหัสผ่าน: `POST /api/auth/forgot-password` ตอบ 204 เสมอ (ไม่บอกว่ามีบัญชีไหม, จำกัด 5 ครั้ง/15 นาที/IP ด้วย `resetLimiter`) ลิงก์ชี้ไปเว็บ user หรือ admin ตาม role, `POST /api/auth/reset-password` ตั้งรหัสใหม่และเตะทุก session ส่งอีเมลผ่าน `lib/mailer.ts`: ตั้ง `SMTP_URL` แล้วส่งจริง ไม่ตั้งจะพิมพ์อีเมลลง console ของ server (dev) และเก็บใน `devOutbox` ให้ test อ่าน
+ลืมรหัสผ่าน: `POST /api/auth/forgot-password` ตอบ 204 เสมอ (ไม่บอกว่ามีบัญชีไหม, จำกัด 5 ครั้ง/15 นาที/IP ด้วย `resetLimiter` และ 5 ครั้ง/ชั่วโมง/อีเมลด้วย `resetAccountLimiter`) ลิงก์ชี้ไปเว็บ user หรือ admin ตาม role, `POST /api/auth/reset-password` ตั้งรหัสใหม่และเตะทุก session ส่งอีเมลผ่าน `lib/mailer.ts`: ตั้ง `SMTP_URL` แล้วส่งจริง ไม่ตั้งจะพิมพ์อีเมลลง console ของ server (dev) และเก็บใน `devOutbox` ให้ test อ่าน ส่วน production ต้องตั้งเสมอ ไม่งั้นแอปไม่เริ่มทำงาน
 
 รูปเกม: `POST|DELETE /api/admin/games/:id/image` (field `image`, ≤ 5MB) server บังคับเป็น WebP 960×600 ทุกครั้ง หน้าหลังบ้านเลือกรูปแล้วครอปในเครื่องก่อนส่ง (`GameImageCropper` กรอบ 16:10, ลาก, ซูม, หมุน 90° วาดเองไม่ใช้ library) เปลี่ยนหรือลบรูปแล้วลบไฟล์เก่าทิ้ง
 
-โปรไฟล์: `PATCH /api/me/profile`, `POST|DELETE /api/me/avatar` (ครอป 400×400 WebP), `GET /api/users/:username` ดูได้โดยไม่ล็อกอิน แต่บัญชีที่ถูกระงับและบัญชี admin ตอบ 404 username ห้ามมีคำสงวน (admin, tcgnexus, swaphub, support ฯลฯ ใน `me.service`) หน้าเว็บ: `/u/:username`, `/profile/edit`
+โปรไฟล์: `PATCH /api/me/profile`, `POST|DELETE /api/me/avatar` (ครอป 400×400 WebP), `GET /api/users/:username` ดูได้โดยไม่ล็อกอิน แต่บัญชีที่ถูกระงับและบัญชี admin ตอบ 404 username ห้ามมีคำสงวน (admin, tcgnexus, swaphub, support ฯลฯ ใน `me.service`) ชื่อที่แสดงตรวจด้วย `assertDisplayName` (`lib/names.ts`) ห้ามอักขระที่มองไม่เห็นและคำที่ทำให้เข้าใจผิดว่าเป็นทีมงาน ตรวจเฉพาะตอนเปลี่ยนชื่อ ชื่อเดิมใช้ต่อได้ หน้าเว็บ: `/u/:username`, `/profile/edit`
 
 รีวิว: `PUT /api/offers/:id/review` (สร้างหรือแก้ของเดิม) ผู้รับรีวิวคืออีกฝ่ายของดีลเสมอ คะแนนเฉลี่ยคิดสดจากตาราง (`ratingSummaries` คิดหลายคนในคิวรีเดียว) แนบใน offer (ทั้งผู้ซื้อและผู้ขาย), หน้ารายละเอียดประกาศ (ผู้ขาย) และโปรไฟล์ หน้ารวมประกาศไม่แนบ รายการรีวิว: `GET /api/users/:username/reviews`
 
@@ -66,7 +66,7 @@
 
 หน้าเว็บ user: `/` เป็นหน้าร้าน (hero, tile เกม, แถวการ์ด) ส่วนการค้นหาและตัวกรองอยู่ที่ `/browse` (query `q`, `game`, `itemKind`, `type`, `sort`, `page`) ช่องค้นหาอยู่บน header ทุกหน้า แถวเกมบนหน้าแรกแสดง 5 เกมที่มีประกาศเปิดอยู่มากที่สุด (`GET /api/catalog/games/popular`, เท่ากันเรียงตามชื่อ) เลื่อนด้วยปุ่มหรือตุ่มด้านล่าง เกมอื่นหาได้จากหน้าเรียกดู หน้าแรกยิง `GET /api/listings` 4 ครั้ง + เกม 1 ครั้งต่อการเปิด (ตอน dev StrictMode ยิงซ้ำเป็นเท่าตัว ถ้าเจอ 429 ให้ restart server)
 
-ยังไม่ทำ: แจ้งเตือนทางอีเมล
+ยังไม่ทำ: แจ้งเตือนทางอีเมล (มีแค่ลิงก์ลืมรหัสผ่านกับอีเมลแจ้งเมื่อรหัสเปลี่ยน)
 
 ## Stack
 
@@ -94,7 +94,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 | `server/` | `npm run db:migrate` | สร้าง migration และอัปเดตตารางตาม `schema.prisma` |
 | `server/` | `npm run db:generate` | สร้าง Prisma Client ใหม่ (ไปที่ `src/generated/prisma`, ไม่ commit) |
 | `server/` | `npm run db:studio` | เปิดดูข้อมูลใน DB |
-| `server/` | `npm run db:seed` | ลงเกม/บริษัทเกรดเริ่มต้น และสร้าง admin ถ้าตั้ง `ADMIN_EMAIL`/`ADMIN_PASSWORD` ไว้ (รันซ้ำได้) |
+| `server/` | `npm run db:seed` | ลงเกม/บริษัทเกรดเริ่มต้น และสร้าง admin ถ้าตั้ง `ADMIN_EMAIL`/`ADMIN_PASSWORD` ไว้ (รันซ้ำได้ ไม่ยกบัญชีผู้ใช้ที่มีอยู่เป็น admin และไม่รับรหัสตัวอย่างหรือรหัสเดาง่าย) |
 | `client/` | `npm run dev` | รันหน้าเว็บที่ :5173 |
 | `client/` | `npm run build` | `tsc -b` + `vite build` |
 | `client/` | `npm run lint` | oxlint |
@@ -107,7 +107,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 - `server/test/*.test.ts` ยิง `app` ผ่าน supertest ไม่ต้องเปิด server ใช้ DB แยก (`vitest.config.ts` เปลี่ยนชื่อ DB เป็น `_test` และหยุดถ้าชี้ไป DB dev)
 - ทุกตารางถูกล้างก่อนแต่ละเคส (`test/setup.ts`) ใช้ helper ใน `test/helpers.ts` (`signedInUser`, `signedInAdmin`, `createListing`, `eventsOf` ฯลฯ) สร้างข้อมูลเอง
-- rate limit ปิดตอน `NODE_ENV=test` และ event log เขียนแบบไม่รอ ให้ใช้ `eventsOf` / `waitForEventWrites` ก่อนนับ
+- rate limit ปิดตอน `NODE_ENV=test` (`rate-limit.test.ts` เปิดกลับเฉพาะไฟล์ตัวเองด้วยการตั้ง `env.NODE_ENV` และสลับ IP ผ่าน `X-Forwarded-For`) และ event log เขียนแบบไม่รอ ให้ใช้ `eventsOf` / `waitForEventWrites` ก่อนนับ
 - ฟีเจอร์ใหม่ฝั่ง server ต้องมี test ด้วย ฝั่ง client ยังไม่มี test และ server ยังไม่มี lint ถ้าจะเพิ่มให้เสนอในแผนก่อน
 
 ## โครงสร้างไฟล์
@@ -120,9 +120,9 @@ server/
     index.ts, app.ts        เปิด server + graceful shutdown, Express app + middleware
     routes.ts               รวม router ทุก module ใต้ /api
     config/env.ts           ตรวจ env ด้วย zod ตอนเริ่ม
-    lib/                    prisma, session, password, errors (AppError), events (logEvent)
+    lib/                    prisma, session, password + commonPasswords, names (ตรวจชื่อที่แสดง), images, storage, mailer, errors (AppError), events (logEvent)
     middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler
-    scripts/seed.ts         เกม/บริษัทเกรดเริ่มต้น + admin
+    scripts/                seed.ts (เกม/บริษัทเกรดเริ่มต้น), seedAdmin.ts (admin คนแรก แยกไฟล์ให้เขียน test ได้)
     modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู, แก้โปรไฟล์, รูปโปรไฟล์), profiles (โปรไฟล์สาธารณะ), reviews, audit, events, admin (dashboard, counts)
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
@@ -150,8 +150,9 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 ```
 
 - route ของ admin อยู่ใต้ `/api/admin/*` และต้องผ่าน `requireRole('ADMIN')` ทุกเส้น ตรวจสิทธิ์ที่ server เสมอ การซ่อนเมนูฝั่ง client ไม่นับเป็นการป้องกัน
-- รหัสผ่าน: user อย่างน้อย 8 ตัว, admin อย่างน้อย 12 ตัว เปลี่ยนรหัสผ่านแล้วลบ session อื่นทั้งหมดยกเว้นเครื่องที่กำลังใช้ error ที่ไม่ได้แปลว่า session หลุดห้ามใช้ 401 เพราะ client จะเด้งออกจากระบบ
-- `authLimiter` นับเฉพาะ request ที่ล้มเหลว (10 ครั้ง / 15 นาที / IP) ตอนเทสถ้าโดนบล็อก restart server เพื่อล้างตัวนับได้
+- รหัสผ่าน: user อย่างน้อย 8 ตัว, admin อย่างน้อย 12 ตัว เปลี่ยนรหัสผ่านแล้วลบ session อื่นทั้งหมดยกเว้นเครื่องที่กำลังใช้ error ที่ไม่ได้แปลว่า session หลุดห้ามใช้ 401 เพราะ client จะเด้งออกจากระบบ ตั้งรหัสใหม่ทุกทาง (สมัคร, เปลี่ยน, รีเซ็ต) ต้องผ่าน `isGuessablePassword` (รหัสยอดนิยม, รหัสเรียงกัน, มีชื่ออีเมลหรือชื่อเว็บ) เปลี่ยนหรือรีเซ็ตสำเร็จแล้วส่งอีเมลแจ้งเจ้าของ admin ที่รหัสสั้นกว่า 12 ตัวล็อกอินหลังบ้านไม่ได้ (`ADMIN_PASSWORD_TOO_SHORT`) ต้องตั้งใหม่ผ่านลืมรหัสผ่าน
+- session ของ admin สั้นกว่าผู้ใช้ทั่วไป (`ADMIN_SESSION_TTL_HOURS` ค่าเริ่มต้น 2, `ADMIN_SESSION_ABSOLUTE_HOURS` ค่าเริ่มต้น 12) ต่ออายุเมื่อเหลือไม่ถึงครึ่งเหมือนกัน แท็บหลังบ้านที่เปิดค้างและมองเห็นอยู่จึงต่ออายุเองจาก polling จนถึงเพดาน
+- `authLimiter` นับเฉพาะ request ที่ล้มเหลว (10 ครั้ง / 15 นาที / IP) `registerLimiter` นับทุกการสมัคร (20 ครั้ง / ชั่วโมง / IP) `loginAccountLimiter` นับล็อกอินผิดต่ออีเมล (30 ครั้ง / 15 นาที) กันเดารหัสจากหลาย IP ตัวนับต่ออีเมลต้องอยู่หลัง `validate` ตอนเทสถ้าโดนบล็อก restart server เพื่อล้างตัวนับได้
 - หน้า login แยกกัน: เว็บ user ใช้ `POST /api/auth/login`, เว็บ admin ใช้ `POST /api/auth/admin/login` แต่ละเส้นรับเฉพาะ role ของตัวเอง
 - `shared/` ห้าม import จาก `client/` หรือ `admin/` ใส่เฉพาะของที่ทั้งสองแอปใช้จริง เพราะแก้ shared พังจะพังทั้งคู่ ของที่ใช้แอปเดียวให้อยู่ในแอปนั้น
 - แก้ `shared/` แล้วต้อง build ทั้ง client และ admin
@@ -160,6 +161,8 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - เหตุการณ์ด้านความปลอดภัยให้บันทึกด้วย `logEvent(req, ...)` จาก `lib/events.ts` (ไม่ await, พลาดแล้ว request ไม่ล้ม) ห้ามใส่รหัสผ่าน, token, body หรือ error message เต็มลง log เหตุการณ์ที่อาจถูกยิงรัว ๆ ใช้ `logEventThrottled`
 - งานกวาดข้อมูลเก่า (session หมดอายุ, EventLog เกินกำหนด) อยู่ใน `index.ts` รันทุกชั่วโมง
 - อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อนอกระบบหลังตกลงกัน)
+- ผลการตรวจประกาศ (`rejectReason`, `reviewedAt`) ส่งให้เฉพาะเจ้าของกับหลังบ้าน หน้าสาธารณะ โปรไฟล์ และ offer ใช้ `publicOmit`, ประกาศของตัวเองใช้ `ownerOmit`
+- ระงับบัญชีแล้วยกเลิก offer ที่ค้างทั้งที่ส่งไปและที่เข้ามา และตอบรับ offer ของผู้ขอที่ถูกระงับไม่ได้ (`OFFER_PARTY_UNAVAILABLE`)
 - ตอบรับ offer จะตัด `quantity` ทั้งประกาศปลายทางและของที่แลก ประกาศที่เหลือ 0 จะกลายเป็น `CLOSED` และ offer ที่ค้างกับประกาศที่ปิดจะถูก `CANCELLED`
 
 ## หน้าตาและ responsive
@@ -179,7 +182,8 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - ESM ทั้งสองฝั่ง ฝั่ง server import ไฟล์ภายในต้องลงท้าย `.js` (NodeNext) เช่น `'./config/env.js'`
 - สไตล์โค้ด: single quote, ไม่มี semicolon, indent 2 ช่อง
 - comment เขียนภาษาไทย สั้น ๆ อธิบายเหตุผล ไม่ใช่อธิบายว่าโค้ดทำอะไร
-- validate ทุก input จาก request ด้วย zod, env ใหม่ต้องเพิ่มใน `config/env.ts` และ `.env.example`
+- validate ทุก input จาก request ด้วย zod (`validate` ปฏิเสธ NUL ในข้อความทุกช่องให้เอง เพราะ Postgres เก็บไม่ได้) env ใหม่ต้องเพิ่มใน `config/env.ts` และ `.env.example` ค่าที่ production ใช้ค่าเริ่มต้นไม่ได้ให้บังคับใน `envSchema`
+- error จาก Express หรือ body-parser ที่มี status 4xx ตอบ `BAD_REQUEST` และไม่ลง `SERVER_ERROR` ทุกเส้นใต้ `/api` ตอบ `Cache-Control: no-store`
 - เข้าถึง DB ผ่าน `prisma` จาก `lib/prisma.ts` เท่านั้น
 - server `tsconfig` เปิด `strict` + `noUncheckedIndexedAccess`
 

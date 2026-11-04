@@ -1,5 +1,12 @@
 import { Router, type Request, type Response } from 'express'
-import { authLimiter, resetLimiter } from '../../middleware/rateLimit.js'
+import type { Role } from '../../generated/prisma/enums.js'
+import {
+  authLimiter,
+  loginAccountLimiter,
+  registerLimiter,
+  resetAccountLimiter,
+  resetLimiter,
+} from '../../middleware/rateLimit.js'
 import { getAuthUser, requireAuth } from '../../middleware/requireAuth.js'
 import { validate } from '../../middleware/validate.js'
 import {
@@ -29,17 +36,17 @@ import type { LoginPortal } from './auth.service.js'
 export const authRouter = Router()
 
 // สร้าง session ใหม่ทุกครั้งที่ login และลบอันเก่า กัน session fixation
-const startSession = async (req: Request, res: Response, userId: string) => {
+const startSession = async (req: Request, res: Response, user: { id: string; role: Role }) => {
   const oldToken: unknown = req.cookies?.[SESSION_COOKIE]
   if (typeof oldToken === 'string' && oldToken) await deleteSession(oldToken)
 
-  const { token, expiresAt } = await createSession(userId, { ip: req.ip, userAgent: req.get('user-agent') })
+  const { token, expiresAt } = await createSession(user, { ip: req.ip, userAgent: req.get('user-agent') })
   res.cookie(SESSION_COOKIE, token, sessionCookieOptions(expiresAt))
 }
 
-authRouter.post('/register', authLimiter, validate({ body: registerSchema }), async (req, res) => {
+authRouter.post('/register', authLimiter, registerLimiter, validate({ body: registerSchema }), async (req, res) => {
   const user = await authService.register(req.body as RegisterInput)
-  await startSession(req, res, user.id)
+  await startSession(req, res, user)
   logEvent(req, { type: 'REGISTER', userId: user.id })
   res.status(201).json({ user: authService.toPublicUser(user) })
 })
@@ -56,13 +63,13 @@ const login = (portal: LoginPortal) => async (req: Request, res: Response) => {
     }
     throw err
   }
-  await startSession(req, res, user.id)
+  await startSession(req, res, user)
   logEvent(req, { type: 'LOGIN_SUCCESS', userId: user.id, detail: portal })
   res.json({ user: authService.toPublicUser(user) })
 }
 
-authRouter.post('/login', authLimiter, validate({ body: loginSchema }), login('USER'))
-authRouter.post('/admin/login', authLimiter, validate({ body: loginSchema }), login('ADMIN'))
+authRouter.post('/login', authLimiter, validate({ body: loginSchema }), loginAccountLimiter, login('USER'))
+authRouter.post('/admin/login', authLimiter, validate({ body: loginSchema }), loginAccountLimiter, login('ADMIN'))
 
 // ไม่ต้อง requireAuth: session หมดอายุแล้วก็ควร logout ได้
 authRouter.post('/logout', async (req, res) => {
@@ -99,7 +106,7 @@ authRouter.post(
 )
 
 // ตอบ 204 เสมอไม่ว่าอีเมลจะมีบัญชีหรือไม่ กันการใช้หน้านี้เช็กว่าใครเป็นสมาชิก
-authRouter.post('/forgot-password', resetLimiter, validate({ body: forgotPasswordSchema }), async (req, res) => {
+authRouter.post('/forgot-password', resetLimiter, validate({ body: forgotPasswordSchema }), resetAccountLimiter, async (req, res) => {
   const input = req.body as ForgotPasswordInput
   const userId = await authService.requestPasswordReset(input)
   logEvent(req, { type: 'PASSWORD_RESET_REQUESTED', userId: userId ?? undefined, email: userId ? undefined : input.email })

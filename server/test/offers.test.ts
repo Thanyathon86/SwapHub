@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { prisma } from '../src/lib/prisma.js'
-import { createListing, signedInUser, type Agent } from './helpers.js'
+import { createListing, signedInAdmin, signedInUser, type Agent } from './helpers.js'
 
 type Ctx = { seller: Agent; buyer: Agent; sellerId: string; buyerId: string }
 let ctx: Ctx
@@ -111,6 +111,87 @@ describe('ตอบรับ / ปฏิเสธ / ยกเลิก', () => {
     expect((await ctx.seller.get('/api/offers/incoming')).body.offers).toHaveLength(1)
     expect((await ctx.seller.get('/api/offers/outgoing')).body.offers).toHaveLength(0)
     expect((await ctx.buyer.get('/api/offers/outgoing')).body.offers).toHaveLength(1)
+  })
+})
+
+describe('บัญชีที่ถูกระงับ', () => {
+  const statusOf = async (id: string) => (await prisma.offer.findUniqueOrThrow({ where: { id } })).status
+  const suspend = async (userId: string, status: 'SUSPENDED' | 'ACTIVE' = 'SUSPENDED') =>
+    (await signedInAdmin()).agent.patch(`/api/admin/users/${userId}/status`).send({ status })
+
+  it('ระงับผู้ขอ -> ยกเลิกข้อเสนอที่ส่งไป ผู้ขายตอบรับไม่ได้และสต็อกไม่ถูกตัด', async () => {
+    const listing = await createListing(ctx.sellerId)
+    const { body } = await offer(ctx.buyer, { listingId: listing.id, cashAmount: 10 })
+    expect((await suspend(ctx.buyerId)).status).toBe(200)
+    expect(await statusOf(body.offer.id)).toBe('CANCELLED')
+    expect((await ctx.seller.post(`/api/offers/${body.offer.id}/accept`)).body.error.code).toBe('OFFER_NOT_PENDING')
+    expect(await prisma.listing.findUnique({ where: { id: listing.id } })).toMatchObject({ quantity: 1, status: 'ACTIVE' })
+  })
+
+  it('ระงับผู้ขาย -> ยกเลิกข้อเสนอที่เข้ามา ผู้ขอไม่ต้องรอเก้อ', async () => {
+    const listing = await createListing(ctx.sellerId)
+    const { body } = await offer(ctx.buyer, { listingId: listing.id, cashAmount: 10 })
+    await suspend(ctx.sellerId)
+    expect(await statusOf(body.offer.id)).toBe('CANCELLED')
+  })
+
+  it('ไม่กระทบข้อเสนอของคนอื่น และดีลที่ตกลงแล้วยังอยู่', async () => {
+    const listing = await createListing(ctx.sellerId, { quantity: 2 })
+    const other = await signedInUser()
+    const accepted = await offer(other.agent, { listingId: listing.id, cashAmount: 10 })
+    await ctx.seller.post(`/api/offers/${accepted.body.offer.id}/accept`)
+    const third = await signedInUser()
+    const untouched = await offer(third.agent, { listingId: listing.id, cashAmount: 10 })
+    const mine = await offer(ctx.buyer, { listingId: listing.id, cashAmount: 10 })
+
+    await suspend(ctx.buyerId)
+    expect(await statusOf(mine.body.offer.id)).toBe('CANCELLED')
+    expect(await statusOf(untouched.body.offer.id)).toBe('PENDING')
+    expect(await statusOf(accepted.body.offer.id)).toBe('ACCEPTED')
+  })
+
+  it('ปลดระงับแล้วข้อเสนอเดิมไม่กลับมา', async () => {
+    const listing = await createListing(ctx.sellerId)
+    const { body } = await offer(ctx.buyer, { listingId: listing.id, cashAmount: 10 })
+    await suspend(ctx.buyerId)
+    await suspend(ctx.buyerId, 'ACTIVE')
+    expect(await statusOf(body.offer.id)).toBe('CANCELLED')
+  })
+
+  it('ข้อเสนอที่ค้างจากก่อนมีกฎนี้ ตอบรับไม่ได้ ยังเป็น PENDING และสต็อกไม่ถูกตัด', async () => {
+    const listing = await createListing(ctx.sellerId)
+    const { body } = await offer(ctx.buyer, { listingId: listing.id, cashAmount: 10 })
+    // แก้ใน DB ตรง ๆ จำลองบัญชีที่ถูกระงับก่อนหน้านี้ ซึ่งตอนนั้นไม่ได้ยกเลิกข้อเสนอให้
+    await prisma.user.update({ where: { id: ctx.buyerId }, data: { status: 'SUSPENDED' } })
+    const res = await ctx.seller.post(`/api/offers/${body.offer.id}/accept`)
+    expect(res.status).toBe(409)
+    expect(res.body.error.code).toBe('OFFER_PARTY_UNAVAILABLE')
+    expect(await statusOf(body.offer.id)).toBe('PENDING')
+    expect(await prisma.listing.findUnique({ where: { id: listing.id } })).toMatchObject({ quantity: 1, status: 'ACTIVE' })
+    // ผู้ขายยังกดปฏิเสธเพื่อเคลียร์รายการได้
+    expect((await ctx.seller.post(`/api/offers/${body.offer.id}/decline`)).body.offer.status).toBe('DECLINED')
+  })
+})
+
+describe('ข้อมูลที่อีกฝ่ายเห็น', () => {
+  it('เหตุผลที่ประกาศไม่ผ่านตรวจไม่ส่งถึงคู่ข้อเสนอ', async () => {
+    const target = await createListing(ctx.sellerId, { type: 'BOTH' })
+    const myCard = await createListing(ctx.buyerId, { type: 'TRADE', price: null })
+    await offer(ctx.buyer, { listingId: target.id, items: [{ listingId: myCard.id }] })
+    // ทั้งสองประกาศถูกแก้แล้วส่งตรวจใหม่ แล้ว admin ปฏิเสธภายหลัง แถว offer ยังชี้มาที่ประกาศเดิม
+    await prisma.listing.updateMany({
+      where: { id: { in: [target.id, myCard.id] } },
+      data: { status: 'REJECTED', rejectReason: 'เหตุผลภายใน', reviewedAt: new Date() },
+    })
+
+    const views = [await ctx.buyer.get('/api/offers/outgoing'), await ctx.seller.get('/api/offers/incoming')]
+    for (const { body } of views) {
+      const [row] = body.offers
+      expect(row.listing).not.toHaveProperty('rejectReason')
+      expect(row.listing).not.toHaveProperty('reviewedAt')
+      expect(row.items[0].listing).not.toHaveProperty('rejectReason')
+      expect(JSON.stringify(body)).not.toContain('เหตุผลภายใน')
+    }
   })
 })
 

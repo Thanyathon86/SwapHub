@@ -14,12 +14,10 @@ export const sendMail = async (mail: Mail) => {
     await transport.sendMail({ from: env.MAIL_FROM, ...mail })
     return
   }
+  // production ต้องตั้ง SMTP_URL เสมอ (config/env.ts) ส่วนนี้จึงทำงานแค่ตอน dev กับ test ซึ่งพิมพ์ลิงก์ออก console ได้
   devOutbox.push(mail)
   if (devOutbox.length > OUTBOX_LIMIT) devOutbox.shift()
-  if (env.NODE_ENV === 'production') {
-    // production ที่ลืมตั้ง SMTP ผู้ใช้จะไม่ได้รับอีเมล ต้องให้คนดูแลเห็น แต่ห้ามพิมพ์ลิงก์ออก log
-    console.error(`SMTP_URL is not set, email to ${mail.to} was not sent`)
-  } else if (env.NODE_ENV === 'development') {
+  if (env.NODE_ENV === 'development') {
     console.log(`\n[dev mail] to: ${mail.to}\nsubject: ${mail.subject}\n\n${mail.text}\n`)
   }
 }

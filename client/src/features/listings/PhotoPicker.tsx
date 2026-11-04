@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
-import { MAX_PHOTOS, photoProblem } from './photos'
+import { MAX_PHOTOS, PHOTO_ACCEPT, photoProblem } from './photos'
 
 // เลือกรูปไว้ในเครื่องก่อน ยังไม่อัปโหลด ใช้ตอนลงประกาศใหม่ที่ยังไม่มี id ให้อัปโหลดเข้าไป
 export function PhotoPicker({ files, onChange }: { files: File[]; onChange: (files: File[]) => void }) {
@@ -42,7 +42,7 @@ export function PhotoPicker({ files, onChange }: { files: File[]; onChange: (fil
         {files.length < MAX_PHOTOS && (
           <label className="grid aspect-square cursor-pointer place-items-center rounded-xl border border-dashed border-zinc-300 text-sm text-zinc-500 hover:border-zinc-500 hover:text-zinc-800">
             + เพิ่มรูป
-            <input type="file" accept="image/*" multiple onChange={onPick} className="sr-only" />
+            <input type="file" accept={PHOTO_ACCEPT} multiple onChange={onPick} className="sr-only" />
           </label>
         )}
       </div>

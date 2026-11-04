@@ -10,3 +10,11 @@ export const cancelPendingOffers = (db: Prisma.TransactionClient, listingIds: st
     },
     data: { status: 'CANCELLED', respondedAt: new Date() },
   })
+
+// บัญชีที่ถูกระงับเข้ามาตอบไม่ได้และประกาศถูกซ่อนแล้ว ถ้าปล่อยไว้อีกฝ่ายจะรอเก้อ หรือตอบรับดีลกับบัญชีที่ถูกระงับ
+// ของที่เอามาแลกเป็นของผู้ขอเสมอ เงื่อนไข buyerId จึงครอบคลุมแล้ว
+export const cancelPendingOffersOfUser = (db: Prisma.TransactionClient, userId: string) =>
+  db.offer.updateMany({
+    where: { status: 'PENDING', OR: [{ buyerId: userId }, { listing: { sellerId: userId } }] },
+    data: { status: 'CANCELLED', respondedAt: new Date() },
+  })

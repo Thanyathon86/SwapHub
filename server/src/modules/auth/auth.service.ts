@@ -2,8 +2,9 @@ import { randomBytes } from 'node:crypto'
 import { env } from '../../config/env.js'
 import { Prisma, type User } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
-import { burnPasswordCheck, hashPassword, verifyPassword } from '../../lib/password.js'
 import { sendMail } from '../../lib/mailer.js'
+import { assertDisplayName } from '../../lib/names.js'
+import { burnPasswordCheck, hashPassword, isGuessablePassword, verifyPassword } from '../../lib/password.js'
 import { prisma } from '../../lib/prisma.js'
 import { hashToken } from '../../lib/session.js'
 import type {
@@ -24,7 +25,38 @@ export const toPublicUser = (user: Pick<User, 'id' | 'email' | 'displayName' | '
   role: user.role,
 })
 
+// ตรงกับที่ seed บังคับตอนสร้าง admin
+const ADMIN_MIN_PASSWORD = 12
+
+const assertPasswordPolicy = (user: Pick<User, 'role' | 'email'>, password: string) => {
+  if (user.role === 'ADMIN' && password.length < ADMIN_MIN_PASSWORD) {
+    throw new AppError(400, 'PASSWORD_TOO_SHORT', `Admin passwords must be at least ${ADMIN_MIN_PASSWORD} characters`)
+  }
+  if (isGuessablePassword(password, user.email)) {
+    throw new AppError(400, 'PASSWORD_TOO_COMMON', 'Password is too easy to guess')
+  }
+}
+
+// admin ล็อกอินที่แอปหลังบ้าน ลิงก์ในอีเมลต้องพาไปแอปนั้น
+const webOrigin = (role: User['role']) => new URL(role === 'ADMIN' ? env.ADMIN_ORIGIN : env.CLIENT_ORIGIN).origin
+
+// ถ้าเจ้าของไม่ได้เปลี่ยนเอง จะได้รู้ตัวและตั้งรหัสใหม่ได้ทัน ไม่รอส่งเสร็จเพราะอีเมลมีปัญหาไม่ควรทำให้การเปลี่ยนรหัสล้ม
+const notifyPasswordChanged = (user: Pick<User, 'role' | 'email'>) => {
+  sendMail({
+    to: user.email,
+    subject: 'รหัสผ่าน TCGNexus ของคุณถูกเปลี่ยน',
+    text: [
+      'รหัสผ่านของบัญชีนี้เพิ่งถูกเปลี่ยน',
+      '',
+      'ถ้าคุณเป็นคนเปลี่ยนเอง ไม่ต้องทำอะไร',
+      `ถ้าไม่ใช่ ให้ตั้งรหัสใหม่ทันทีที่ ${webOrigin(user.role)}/forgot-password`,
+    ].join('\n'),
+  }).catch((err: unknown) => console.error('Failed to send password changed email:', err))
+}
+
 export const register = async (input: RegisterInput) => {
+  assertDisplayName(input.displayName)
+  assertPasswordPolicy({ role: 'USER', email: input.email }, input.password)
   const passwordHash = await hashPassword(input.password)
   try {
     // role ใช้ค่า default (USER) เสมอ admin สร้างได้ผ่าน seed เท่านั้น
@@ -60,28 +92,27 @@ export const login = async (input: LoginInput, portal: LoginPortal = 'USER') => 
   if (portal === 'USER' && user.role === 'ADMIN') {
     throw new AppError(403, 'USE_ADMIN_LOGIN', 'Admin accounts must sign in from the admin login page')
   }
+  // user ที่ถูกตั้งเป็น admin อาจมีรหัสสั้นกว่าที่กำหนด และรู้ความยาวได้แค่ตอนล็อกอินเพราะเก็บแค่ hash
+  // ให้ตั้งใหม่ผ่านลืมรหัสผ่าน ซึ่งบังคับความยาวของ admin อยู่แล้ว
+  if (portal === 'ADMIN' && input.password.length < ADMIN_MIN_PASSWORD) {
+    throw new AppError(403, 'ADMIN_PASSWORD_TOO_SHORT', 'Reset your password to meet the admin password policy')
+  }
 
   return prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
 }
 
-// ตรงกับที่ seed บังคับตอนสร้าง admin
-const ADMIN_MIN_PASSWORD = 12
-
-const assertPasswordLength = (role: User['role'], password: string) => {
-  if (role === 'ADMIN' && password.length < ADMIN_MIN_PASSWORD) {
-    throw new AppError(400, 'PASSWORD_TOO_SHORT', `Admin passwords must be at least ${ADMIN_MIN_PASSWORD} characters`)
-  }
-}
-
 export const changePassword = async (userId: string, keepSessionId: string, input: ChangePasswordInput) => {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true, role: true } })
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { passwordHash: true, role: true, email: true },
+  })
   if (!user) throw new AppError(404, 'USER_NOT_FOUND', 'User not found')
 
   // ใช้ 400 ไม่ใช่ 401 เพราะ client ถือว่า 401 คือ session หลุดแล้วจะเด้งออกจากระบบ
   if (!(await verifyPassword(user.passwordHash, input.currentPassword))) {
     throw new AppError(400, 'INVALID_CURRENT_PASSWORD', 'Current password is incorrect')
   }
-  assertPasswordLength(user.role, input.newPassword)
+  assertPasswordPolicy(user, input.newPassword)
   if (input.newPassword === input.currentPassword) {
     throw new AppError(400, 'PASSWORD_UNCHANGED', 'New password must be different from the current one')
   }
@@ -92,6 +123,7 @@ export const changePassword = async (userId: string, keepSessionId: string, inpu
     // เตะอุปกรณ์อื่นออก เผื่อเปลี่ยนรหัสเพราะสงสัยว่ามีคนอื่นเข้าบัญชี แต่เครื่องที่กำลังใช้ยังอยู่ต่อได้
     prisma.session.deleteMany({ where: { userId, id: { not: keepSessionId } } }),
   ])
+  notifyPasswordChanged(user)
 }
 
 const RESET_TTL_MS = 30 * 60 * 1000
@@ -110,9 +142,7 @@ export const requestPasswordReset = async ({ email }: ForgotPasswordInput) => {
     }),
   ])
 
-  // admin ล็อกอินที่แอปหลังบ้าน ลิงก์ต้องพาไปหน้ารีเซ็ตของแอปนั้น
-  const origin = user.role === 'ADMIN' ? env.ADMIN_ORIGIN : env.CLIENT_ORIGIN
-  const link = `${new URL(origin).origin}/reset-password?token=${token}`
+  const link = `${webOrigin(user.role)}/reset-password?token=${token}`
   // ไม่รอส่งเสร็จ ให้เวลาตอบใกล้เคียงกับกรณีที่ไม่มีบัญชี เดาจากเวลาไม่ได้ว่าอีเมลนี้มีอยู่
   sendMail({
     to: user.email,
@@ -134,13 +164,18 @@ const invalidResetToken = () => new AppError(400, 'INVALID_RESET_TOKEN', 'Reset 
 export const resetPassword = async ({ token, newPassword }: ResetPasswordInput) => {
   const record = await prisma.passwordResetToken.findUnique({
     where: { tokenHash: hashToken(token) },
-    select: { id: true, usedAt: true, expiresAt: true, user: { select: { id: true, role: true, status: true } } },
+    select: {
+      id: true,
+      usedAt: true,
+      expiresAt: true,
+      user: { select: { id: true, role: true, status: true, email: true } },
+    },
   })
   // ทุกกรณีที่ใช้ไม่ได้ตอบเหมือนกัน ไม่บอกว่าเป็นเพราะหมดอายุ ใช้ไปแล้ว หรือไม่มีอยู่
   if (!record || record.usedAt || record.expiresAt <= new Date() || record.user.status !== 'ACTIVE') {
     throw invalidResetToken()
   }
-  assertPasswordLength(record.user.role, newPassword)
+  assertPasswordPolicy(record.user, newPassword)
 
   const passwordHash = await hashPassword(newPassword)
   const userId = record.user.id
@@ -155,6 +190,7 @@ export const resetPassword = async ({ token, newPassword }: ResetPasswordInput) 
     // รีเซ็ตมักเกิดตอนสงสัยว่าบัญชีหลุด เตะทุกอุปกรณ์ออก
     await tx.session.deleteMany({ where: { userId } })
   })
+  notifyPasswordChanged(record.user)
   return userId
 }
 

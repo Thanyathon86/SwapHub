@@ -171,7 +171,14 @@ export const cancelOffer = async (buyerId: string, id: string) => {
 export const acceptOffer = (sellerId: string, id: string) =>
   prisma.$transaction(async (tx) => {
     await markPending(tx, id, sellerOf(sellerId), 'ACCEPTED')
-    const offer = await tx.offer.findUniqueOrThrow({ where: { id }, include: { items: true } })
+    const offer = await tx.offer.findUniqueOrThrow({
+      where: { id },
+      include: { items: true, buyer: { select: { status: true } } },
+    })
+    // ระงับบัญชีจะยกเลิกข้อเสนอที่ค้างให้แล้ว ส่วนนี้กันข้อเสนอที่ค้างมาก่อนหน้านั้น และการระงับที่เกิดพร้อมกับการกดตอบรับ
+    if (offer.buyer.status !== 'ACTIVE') {
+      throw new AppError(409, 'OFFER_PARTY_UNAVAILABLE', 'The other party can no longer complete this deal')
+    }
 
     // ตัดสต็อกทั้งฝั่งผู้ขายและของที่ผู้ขอเอามาแลก
     const takes = [

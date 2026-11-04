@@ -13,6 +13,13 @@ const bodyParserErrors: Record<string, { status: number; code: string; message: 
 const getType = (err: unknown) =>
   typeof err === 'object' && err !== null && 'type' in err && typeof err.type === 'string' ? err.type : undefined
 
+// Express กับ body-parser ติด status 4xx มาเมื่อ request ผิดเอง เช่น URL ที่ encode ผิด
+// ถ้านับเป็น SERVER_ERROR คนนอกจะเติม log และปั่นตัวเลขบน dashboard ได้โดยไม่ต้องล็อกอิน
+const clientErrorStatus = (err: unknown) => {
+  const status = typeof err === 'object' && err !== null && 'status' in err ? err.status : undefined
+  return typeof status === 'number' && status >= 400 && status < 500 ? status : undefined
+}
+
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   // ส่ง header ไปแล้วแก้ response ไม่ได้ ให้ Express ปิด connection เอง
   if (res.headersSent) return next(err)
@@ -27,6 +34,12 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   const known = bodyParserErrors[getType(err) ?? '']
   if (known) {
     res.status(known.status).json({ error: { code: known.code, message: known.message } })
+    return
+  }
+
+  const clientStatus = clientErrorStatus(err)
+  if (clientStatus) {
+    res.status(clientStatus).json({ error: { code: 'BAD_REQUEST', message: 'Malformed request' } })
     return
   }
 

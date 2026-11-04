@@ -18,6 +18,11 @@ app.set('trust proxy', env.TRUST_PROXY)
 
 app.use(helmet())
 app.use(cors({ origin: [env.CLIENT_ORIGIN, env.ADMIN_ORIGIN], credentials: true }))
+// API มีข้อมูลส่วนตัว (อีเมล, ข้อเสนอ, แชท) ถ้า browser หรือ proxy เก็บไว้ คนที่ใช้เครื่องร่วมกันจะเห็นได้
+app.use('/api', (_req, res, next) => {
+  res.set('Cache-Control', 'no-store')
+  next()
+})
 // จำกัดก่อน parse body เพื่อไม่เสียแรง parse request ที่จะโดนปฏิเสธอยู่แล้ว
 app.use('/api', apiLimiter)
 app.use('/api', checkOrigin)

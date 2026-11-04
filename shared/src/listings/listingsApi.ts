@@ -34,8 +34,9 @@ export type Listing = {
   quantity: number
   price: string | null
   description: string | null
-  rejectReason: string | null
-  reviewedAt: string | null
+  // ผลตรวจมีเฉพาะประกาศของตัวเองและในหลังบ้าน หน้าสาธารณะและข้อเสนอไม่ได้รับ
+  rejectReason?: string | null
+  reviewedAt?: string | null
   createdAt: string
   updatedAt: string
   // ประกาศไม่ได้แนบรูปเกมมาด้วย ใช้เฉพาะ tile หน้าแรก

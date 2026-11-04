@@ -6,7 +6,7 @@ import { Field, FormField } from '@shared/components/FormField'
 import { Spinner } from '@shared/components/Spinner'
 import { errorMessage, fieldErrors } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
-import { photoProblem } from '../../features/listings/photos'
+import { PHOTO_ACCEPT, photoProblem } from '../../features/listings/photos'
 import { profileApi } from '../../features/profile/profileApi'
 
 const BIO_MAX = 150
@@ -93,7 +93,7 @@ export default function EditProfilePage() {
           <div className="mt-1 flex flex-wrap gap-3 text-sm">
             <label className={`font-medium text-brand-600 ${busy ? 'opacity-50' : 'cursor-pointer hover:underline'}`}>
               เปลี่ยนรูปโปรไฟล์
-              <input type="file" accept="image/*" disabled={busy} onChange={onAvatar} className="sr-only" />
+              <input type="file" accept={PHOTO_ACCEPT} disabled={busy} onChange={onAvatar} className="sr-only" />
             </label>
             {user.avatarKey && (
               <button type="button" onClick={onRemoveAvatar} disabled={busy} className="text-zinc-500 hover:underline">

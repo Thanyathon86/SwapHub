@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
 import { processAvatar } from '../../lib/images.js'
+import { assertDisplayName } from '../../lib/names.js'
 import { prisma } from '../../lib/prisma.js'
 import { removeFile, saveFile } from '../../lib/storage.js'
 import { toPublicUser } from '../auth/auth.service.js'
@@ -25,7 +26,12 @@ const isReserved = (username: string) =>
   RESERVED_EXACT.has(username) || RESERVED_WORDS.some((word) => username.includes(word))
 
 export const updateProfile = async (userId: string, input: UpdateProfileInput) => {
-  const current = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { username: true } })
+  const current = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { username: true, displayName: true, role: true },
+  })
+  // ฟอร์มส่งชื่อมาทุกครั้ง ตรวจเฉพาะตอนเปลี่ยนจริง บัญชีที่ตั้งชื่อไว้ก่อนมีกฎนี้จะได้แก้ช่องอื่นได้
+  if (input.displayName !== current.displayName) assertDisplayName(input.displayName, current.role)
   // ชื่อสุ่มเดิมของบัญชีเก็บไว้ได้ ไม่ต้องผ่านกฎชื่อสงวนซ้ำ
   if (input.username !== current.username && isReserved(input.username)) {
     throw new AppError(400, 'USERNAME_RESERVED', 'This username is not available')

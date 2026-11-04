@@ -23,8 +23,11 @@ export const listingInclude = {
   images: { select: { id: true, key: true, width: true, height: true }, orderBy: { position: 'asc' } },
 } satisfies Prisma.ListingInclude
 
-// ไม่บอกคนทั่วไปว่า admin คนไหนตรวจประกาศ
-export const publicOmit = { reviewedById: true } satisfies Prisma.ListingOmit
+// เจ้าของเห็นผลตรวจของประกาศตัวเอง (ต้องใช้เหตุผลไปแก้) แต่ไม่บอกว่า admin คนไหนตรวจ
+const ownerOmit = { reviewedById: true } satisfies Prisma.ListingOmit
+
+// คนอื่นรวมถึงคู่ข้อเสนอไม่ต้องเห็นผลตรวจ เหตุผลที่ไม่ผ่านเป็นเรื่องระหว่างผู้ขายกับทีมงาน
+export const publicOmit = { ...ownerOmit, rejectReason: true, reviewedAt: true } satisfies Prisma.ListingOmit
 
 // ประกาศที่คนทั่วไปเห็นได้: ผ่านการตรวจแล้ว และเกมกับผู้ขายยังไม่ถูกปิด
 export const publicWhere = {
@@ -104,7 +107,7 @@ export const createListing = async (sellerId: string, input: CreateListingInput)
   await assertCatalog(prisma, input)
 
   // ทุกประกาศใหม่ต้องรอ admin ตรวจก่อน status ไม่รับจาก client
-  return prisma.listing.create({ data: { ...input, sellerId }, include: listingInclude, omit: publicOmit })
+  return prisma.listing.create({ data: { ...input, sellerId }, include: listingInclude, omit: ownerOmit })
 }
 
 // ยังไม่แบ่งหน้า ผู้ขายหนึ่งคนไม่น่ามีประกาศเยอะขนาดนั้นในช่วงแรก
@@ -112,13 +115,13 @@ export const listMyListings = (sellerId: string) =>
   prisma.listing.findMany({
     where: { sellerId },
     include: listingInclude,
-    omit: publicOmit,
+    omit: ownerOmit,
     orderBy: { createdAt: 'desc' },
     take: 100,
   })
 
 export const getMyListing = async (sellerId: string, id: string) => {
-  const listing = await prisma.listing.findFirst({ where: { id, sellerId }, include: listingInclude, omit: publicOmit })
+  const listing = await prisma.listing.findFirst({ where: { id, sellerId }, include: listingInclude, omit: ownerOmit })
   if (!listing) throw notFound()
   return listing
 }
@@ -201,7 +204,7 @@ export const updateListing = (sellerId: string, id: string, input: CreateListing
       }
     }
 
-    return tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: publicOmit })
+    return tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: ownerOmit })
   })
 
 const MAX_IMAGES = 6
@@ -242,7 +245,7 @@ export const addListingImage = async (sellerId: string, id: string, file: Buffer
         data: { listingId: id, key, width: image.width, height: image.height, position: (existing._max.position ?? -1) + 1 },
       })
       await sendBackToReviewIfNeeded(tx, id, listing.status)
-      return tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: publicOmit })
+      return tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: ownerOmit })
     })
   } catch (err) {
     await removeFile(key)
@@ -257,7 +260,7 @@ export const removeListingImage = async (sellerId: string, id: string, imageId: 
     if (!image) throw new AppError(404, 'IMAGE_NOT_FOUND', 'Image not found')
     await tx.listingImage.delete({ where: { id: imageId } })
     await sendBackToReviewIfNeeded(tx, id, current.status)
-    const listing = await tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: publicOmit })
+    const listing = await tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: ownerOmit })
     return { listing, key: image.key }
   })
   // ลบไฟล์หลัง commit แล้วเท่านั้น ถ้า transaction ล้มรูปยังต้องอยู่
@@ -278,7 +281,7 @@ export const closeListing = (sellerId: string, id: string) =>
       throw new AppError(409, 'LISTING_NOT_CLOSABLE', 'Listing is already closed or rejected')
     }
     await cancelPendingOffers(tx, [id])
-    return tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: publicOmit })
+    return tx.listing.findUniqueOrThrow({ where: { id }, include: listingInclude, omit: ownerOmit })
   })
 
 // admin ต้องเห็นอีเมลผู้ขายไว้ติดต่อ และเห็นว่าใครเป็นคนตรวจ

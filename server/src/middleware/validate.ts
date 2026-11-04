@@ -8,6 +8,14 @@ type Schemas = {
   body?: z.ZodType
 }
 
+// Postgres เก็บ NUL ในข้อความไม่ได้ ถ้าปล่อยถึง DB จะตอบ 500 และลง SERVER_ERROR ทั้งที่ request ผิดเอง
+// ตรวจกับค่าหลัง schema parse แล้ว โครงสร้างจึงตื้นตาม schema ไม่ต้องกลัว JSON ที่ซ้อนลึกผิดปกติ
+const hasNul = (value: unknown): boolean => {
+  if (typeof value === 'string') return value.includes('\0')
+  if (Array.isArray(value)) return value.some(hasNul)
+  return typeof value === 'object' && value !== null && Object.values(value).some(hasNul)
+}
+
 // ควรใช้ z.strictObject ใน schema เพื่อปฏิเสธฟิลด์ที่ไม่ได้ประกาศ (กันส่ง role/status มาเอง)
 export const validate =
   (schemas: Schemas): RequestHandler =>
@@ -21,6 +29,10 @@ export const validate =
       const result = schema.safeParse(req[key])
       if (!result.success) {
         errors[key] = z.flattenError(result.error)
+        continue
+      }
+      if (hasNul(result.data)) {
+        errors[key] = { formErrors: ['Text must not contain NUL characters'], fieldErrors: {} }
         continue
       }
       // Express 5 ทำ req.query เป็น getter จึงต้อง defineProperty แทนการ assign ตรง ๆ
