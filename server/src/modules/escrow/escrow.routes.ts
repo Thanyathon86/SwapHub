@@ -5,11 +5,13 @@ import {
   adminEscrowsQuery,
   disputeEscrowSchema,
   escrowIdParams,
+  escrowImageParams,
   resolveEscrowSchema,
   shipEscrowSchema,
   type AdminEscrowsQuery,
   type DisputeEscrowInput,
   type EscrowIdParams,
+  type EscrowImageParams,
   type ResolveEscrowInput,
   type ShipEscrowInput,
 } from './escrow.schema.js'
@@ -59,4 +61,9 @@ escrowAdminRouter.get('/:id', validate({ params: escrowIdParams }), async (req, 
 escrowAdminRouter.post('/:id/resolve', validate({ params: escrowIdParams, body: resolveEscrowSchema }), async (req, res) => {
   const { id } = req.params as EscrowIdParams
   res.json({ escrow: await escrowService.resolveEscrow(getAuthUser(req).id, id, req.body as ResolveEscrowInput) })
+})
+
+escrowAdminRouter.get('/:id/messages/:messageId/image', validate({ params: escrowImageParams }), async (req, res) => {
+  const { id, messageId } = req.params as EscrowImageParams
+  res.type('image/webp').send(await escrowService.readEscrowChatImage(id, messageId))
 })

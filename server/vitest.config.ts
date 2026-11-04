@@ -24,7 +24,7 @@ export default defineConfig({
     // ทุกไฟล์ใช้ DB เดียวกันและล้างตารางก่อนแต่ละเคส รันพร้อมกันจะทับข้อมูลกัน
     fileParallelism: false,
     // รูปที่ test อัปโหลดไปอยู่ในโฟลเดอร์ชั่วคราว ไม่ปนกับรูปจริงใน server/uploads
-    env: { DATABASE_URL: testUrl, NODE_ENV: 'test', UPLOAD_DIR: join(tmpdir(), 'ge175-test-uploads') },
+    env: { DATABASE_URL: testUrl, NODE_ENV: 'test', UPLOAD_DIR: join(tmpdir(), 'ge175-test-uploads'), PRIVATE_UPLOAD_DIR: join(tmpdir(), 'ge175-test-uploads-private') },
     // argon2 กับ DB ทำให้บางเคสช้ากว่าค่า default 5 วินาทีได้บนเครื่องช้า
     testTimeout: 20_000,
   },

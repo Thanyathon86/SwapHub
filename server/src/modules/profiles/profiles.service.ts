@@ -41,8 +41,16 @@ export const getProfile = async (username: string) => {
       orderBy: { createdAt: 'desc' },
       take: PROFILE_LISTINGS,
     }),
-    // ดีลที่ตกลงกันได้ ไม่ว่าจะเป็นฝั่งผู้ซื้อหรือผู้ขาย
-    prisma.offer.count({ where: { status: 'ACCEPTED', OR: [{ buyerId: profile.id }, { listing: { sellerId: profile.id } }] } }),
+    // ดีลที่จบจริง ไม่ว่าจะเป็นฝั่งผู้ซื้อหรือผู้ขาย การแลกล้วนจบตอนตอบรับ ส่วนดีลที่มีเงินจบเมื่อโอนเงินแล้ว ไม่นับที่ค้างหรือคืนเงิน
+    prisma.offer.count({
+      where: {
+        status: 'ACCEPTED',
+        AND: [
+          { OR: [{ buyerId: profile.id }, { listing: { sellerId: profile.id } }] },
+          { OR: [{ escrow: { is: null } }, { escrow: { is: { status: 'RELEASED' } } }] },
+        ],
+      },
+    }),
     ratingOf(profile.id),
   ])
   return { profile: { ...profile, stats: { activeListings: listings.length, deals, rating } }, listings }

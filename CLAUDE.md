@@ -27,7 +27,9 @@
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
 | `Escrow` | เงินวางกลางของดีลที่มีเงินสด หนึ่งต่อหนึ่งกับ `Offer` มี `status`: `AWAITING_PAYMENT` → `HELD` → `SHIPPED` → `RELEASED`, เปิดข้อพิพาทเป็น `DISPUTED` แล้ว admin ตัดสินเป็น `RELEASED`/`REFUNDED`, ปิดก่อนจ่ายเป็น `CANCELLED`/`EXPIRED` |
 | `EscrowEvent` | ประวัติทุกการเปลี่ยนแปลงของ escrow (`actorId` null คือระบบ) ไม่มี API แก้หรือลบ |
-| `OfferMessage` | แชทระหว่างสองฝ่ายใน `Offer` แก้/ลบไม่ได้ |
+| `Conversation` | ห้องแชทหนึ่งห้องต่อหนึ่งประกาศต่อผู้ซื้อหนึ่งคน (unique `listingId + buyerId`) ข้อเสนอของคู่เดียวกันในประกาศนี้ใช้ห้องเดียวกัน เก็บเวลาอ่านล่าสุดของแต่ละฝ่าย |
+| `ChatMessage` | ข้อความหรือรูปในห้องแชท แก้/ลบไม่ได้ `imageKey` ไม่ส่งให้ client |
+| `ChatBlock` | บล็อกแล้วส่งข้อความหากันไม่ได้ทั้งสองทางทุกห้อง ดีลที่ค้างยังดำเนินต่อได้ |
 | `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร ซ่อนรีวิว ตรวจประกาศ แก้เกมหรือบริษัทเกรด ปิดเรื่องที่แจ้ง หรือตัดสินเงินวางกลาง (`AuditAction`, เหตุผลหรือสิ่งที่ถูกแก้อยู่ใน `detail`, `targetUserId` เป็น null เมื่อไม่ได้เจาะจงผู้ใช้คนเดียว) มีแค่ API อ่าน (กรองด้วย `action`) ห้ามเพิ่ม API แก้หรือลบ |
 | `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
 | `PasswordResetToken` | ลิงก์ลืมรหัสผ่าน เก็บแค่ sha256, หมดอายุ 30 นาที, ใช้ได้ครั้งเดียว ขอใหม่แล้วอันเก่าใช้ไม่ได้ |
@@ -50,21 +52,21 @@
 
 กฎของ support ที่ตรวจใน service: ผู้ใช้เห็นเฉพาะเรื่องของตัวเอง (ของคนอื่นตอบ 404), เปิดค้างได้ไม่เกิน 5 เรื่อง, เรื่องที่ปิดแล้วตอบต่อไม่ได้, API ฝั่งผู้ใช้ห้ามส่งชื่อหรือ id ของ admin ที่ตอบ (หน้าเว็บแสดงเป็น "ทีมงาน TCGNexus")
 
-ตัวเลขแจ้งเตือนบนเมนู: `GET /api/me/counts` (รวม `escrowActions`) และ `GET /api/admin/counts` (รวม `openDisputes`) นับเฉพาะสิ่งที่ต้องทำต่อ (ยังไม่มีระบบ "อ่านแล้ว") หน้าเว็บดึงด้วย `usePolling` ทุก 60 วินาทีและทุกครั้งที่เปลี่ยนหน้า ฝั่ง client ส่งต่อให้หน้าลูกผ่าน `<Outlet context>` (`useCounts`)
+ตัวเลขแจ้งเตือนบนเมนู: `GET /api/me/counts` (รวม `escrowActions`, `unreadMessages`) และ `GET /api/admin/counts` (รวม `openDisputes`) นับเฉพาะสิ่งที่ต้องทำต่อ (มีระบบ "อ่านแล้ว" เฉพาะแชท) หน้าเว็บดึงด้วย `usePolling` ทุก 60 วินาทีและทุกครั้งที่เปลี่ยนหน้า ฝั่ง client ส่งต่อให้หน้าลูกผ่าน `<Outlet context>` (`useCounts`)
 
-รูปประกาศ: `POST /api/listings/:id/images` (ทีละรูป field `image`, ≤ 5MB) รับเฉพาะ JPEG, PNG, WebP (ตรวจลายเซ็นไฟล์ก่อนถึงตัวถอดรหัสใน `lib/images.ts`) ผ่าน `sharp` ทุกครั้ง (ตรวจว่าเป็นรูปจริง, ย่อด้านยาว ≤ 1600px, แปลงเป็น WebP, ตัด EXIF) แล้วเก็บผ่าน `lib/storage.ts` ซึ่งตอนนี้เขียนลง `UPLOAD_DIR` (default `server/uploads`, ไม่ commit) และเสิร์ฟที่ `/uploads/*` (Vite proxy ทั้งสองแอป) ย้ายไป S3/R2 ให้แก้แค่ `storage.ts` และ `imageUrl` ใน shared เพิ่ม/ลบรูปนับเป็นการแก้ตัวการ์ด (กลับไปรอตรวจ)
+รูปประกาศ: `POST /api/listings/:id/images` (ทีละรูป field `image`, ≤ 5MB) รับเฉพาะ JPEG, PNG, WebP (ตรวจลายเซ็นไฟล์ก่อนถึงตัวถอดรหัสใน `lib/images.ts`) ผ่าน `sharp` ทุกครั้ง (ตรวจว่าเป็นรูปจริง, ย่อด้านยาว ≤ 1600px, แปลงเป็น WebP, ตัด EXIF) แล้วเก็บผ่าน `lib/storage.ts` ซึ่งตอนนี้เขียนลง `UPLOAD_DIR` (default `server/uploads`, ไม่ commit และเปิดสาธารณะทั้งโฟลเดอร์ ห้ามเก็บไฟล์ส่วนตัว) และเสิร์ฟที่ `/uploads/*` (Vite proxy ทั้งสองแอป) ย้ายไป S3/R2 ให้แก้แค่ `storage.ts` และ `imageUrl` ใน shared เพิ่ม/ลบรูปนับเป็นการแก้ตัวการ์ด (กลับไปรอตรวจ)
 
 ลืมรหัสผ่าน: `POST /api/auth/forgot-password` ตอบ 204 เสมอ (ไม่บอกว่ามีบัญชีไหม, จำกัด 5 ครั้ง/15 นาที/IP ด้วย `resetLimiter` และ 5 ครั้ง/ชั่วโมง/อีเมลด้วย `resetAccountLimiter`) ลิงก์ชี้ไปเว็บ user หรือ admin ตาม role, `POST /api/auth/reset-password` ตั้งรหัสใหม่และเตะทุก session ส่งอีเมลผ่าน `lib/mailer.ts`: ตั้ง `SMTP_URL` แล้วส่งจริง ไม่ตั้งจะพิมพ์อีเมลลง console ของ server (dev) และเก็บใน `devOutbox` ให้ test อ่าน ส่วน production ต้องตั้งเสมอ ไม่งั้นแอปไม่เริ่มทำงาน
 
 รูปเกม: `POST|DELETE /api/admin/games/:id/image` (field `image`, ≤ 5MB) server บังคับเป็น WebP 960×600 ทุกครั้ง หน้าหลังบ้านเลือกรูปแล้วครอปในเครื่องก่อนส่ง (`GameImageCropper` กรอบ 16:10, ลาก, ซูม, หมุน 90° วาดเองไม่ใช้ library) เปลี่ยนหรือลบรูปแล้วลบไฟล์เก่าทิ้ง
 
-โปรไฟล์: `PATCH /api/me/profile`, `POST|DELETE /api/me/avatar` (ครอป 400×400 WebP), `GET /api/users/:username` ดูได้โดยไม่ล็อกอิน แต่บัญชีที่ถูกระงับและบัญชี admin ตอบ 404 username ห้ามมีคำสงวน (admin, tcgnexus, swaphub, support ฯลฯ ใน `me.service`) ชื่อที่แสดงตรวจด้วย `assertDisplayName` (`lib/names.ts`) ห้ามอักขระที่มองไม่เห็นและคำที่ทำให้เข้าใจผิดว่าเป็นทีมงาน ตรวจเฉพาะตอนเปลี่ยนชื่อ ชื่อเดิมใช้ต่อได้ หน้าเว็บ: `/u/:username`, `/profile/edit`
+โปรไฟล์: `PATCH /api/me/profile`, `POST|DELETE /api/me/avatar` (ครอป 400×400 WebP), `GET /api/users/:username` ดูได้โดยไม่ล็อกอิน แต่บัญชีที่ถูกระงับและบัญชี admin ตอบ 404 username ห้ามมีคำสงวน (admin, tcgnexus, swaphub, support ฯลฯ ใน `me.service`) ชื่อที่แสดงตรวจด้วย `assertDisplayName` (`lib/names.ts`) ห้ามอักขระที่มองไม่เห็นและคำที่ทำให้เข้าใจผิดว่าเป็นทีมงาน ตรวจเฉพาะตอนเปลี่ยนชื่อ ชื่อเดิมใช้ต่อได้ หน้าเว็บ: `/u/:username` (การ์ดชื่อและตัวเลขความน่าเชื่อถือ ตามด้วยประกาศกับรีวิวโดยไม่มีแท็บ), `/profile/edit` "ดีลสำเร็จ" นับการแลกล้วนที่ตอบรับแล้วและดีลที่โอนเงินแล้ว
 
 รีวิว: `PUT /api/offers/:id/review` (สร้างหรือแก้ของเดิม) ผู้รับรีวิวคืออีกฝ่ายของดีลเสมอ คะแนนเฉลี่ยคิดสดจากตาราง (`ratingSummaries` คิดหลายคนในคิวรีเดียว) แนบใน offer (ทั้งผู้ซื้อและผู้ขาย), หน้ารายละเอียดประกาศ (ผู้ขาย) และโปรไฟล์ หน้ารวมประกาศไม่แนบ รายการรีวิว: `GET /api/users/:username/reviews`
 
 ซ่อนรีวิว: `GET /api/admin/reviews` (`status=VISIBLE|REMOVED`, `q`=username), `POST /api/admin/reviews/:id/remove` (ต้องมี `reason`, ลง audit `REVIEW_REMOVED` โดย target คือคนเขียน) รีวิวที่ซ่อนไม่แสดงในโปรไฟล์ ไม่นับในค่าเฉลี่ย คนเขียนแก้หรือเขียนใหม่ในดีลเดิมไม่ได้ ใน offer ส่งแค่ `removedAt` (rating/comment เป็น null)
 
-แชท: `GET|POST /api/offers/:id/messages` เฉพาะสองฝ่ายในดีล (คนอื่น 404) ส่งได้ตอน `PENDING`/`ACCEPTED` ดีลที่ `DECLINED`/`CANCELLED` อ่านได้อย่างเดียว (`canSend`, `OFFER_CHAT_CLOSED`) ส่งกลับล่าสุด 200 ข้อความ หน้าเว็บเปิดแชทได้ทีละข้อเสนอและ poll ทุก 15 วินาที (`OfferChat`)
+แชท: `GET|POST /api/chat/conversations` (เปิดห้องด้วย `listingId` จากหน้าประกาศ หรือ `offerId` จากหน้าข้อเสนอ เปิดซ้ำได้ห้องเดิม ห้องใหม่จาก `listingId` ต้องเป็นประกาศที่อยู่ในตลาด), `GET .../:id`, `GET|POST .../:id/messages` (`before` โหลดของเก่าทีละ 50), `POST .../:id/images`, `POST .../:id/read`, `PUT|DELETE .../:id/block` คนนอกห้อง 404 ส่งไม่ได้เมื่อบล็อกกันหรืออีกฝ่ายถูกระงับ (`CHAT_UNAVAILABLE` ไม่บอกเหตุผล) จำกัด 40 ข้อความ/นาที และ 30 รูป/15 นาทีต่อบัญชี ห้องที่ยังไม่มีข้อความไม่แสดงในกล่องข้อความ ข้อความใหม่ส่งแบบทันทีด้วย Server-Sent Events (`GET /api/chat/events`, `chatEvents.ts` เก็บการเชื่อมต่อใน memory จึงรองรับ server ตัวเดียว) ตรวจ session ทุก 30 วินาทีโดยไม่ต่ออายุ (`isSessionActive`) ระงับบัญชีตัดทันที หน้าเว็บต่อครั้งเดียวทั้งแอป (`chatStream.ts`) ปิดเมื่อแท็บถูกซ่อน และดึงเป็นรอบแทนเมื่อการเชื่อมต่อหลุด รูปในแชทผ่าน `processImage` เหมือนรูปประกาศ เก็บใน `PRIVATE_UPLOAD_DIR` (default `server/uploads-private`, ต้องอยู่นอก `UPLOAD_DIR`) และเปิดผ่าน `GET /api/chat/images/:messageId` เท่านั้น ทีมงานอ่านแชทและรูปของห้องได้เฉพาะดีลที่เคยมีข้อพิพาท (`GET /api/admin/escrows/:id/messages/:messageId/image`) หน้าเว็บ: `/messages`, `/messages/:id` ซ่อนแท็บหมวดกับ footer เพื่อใช้ความสูงเต็มจอ
 
 เงินวางกลาง (escrow): `acceptOffer` สร้างให้เมื่อ `cashAmount` > 0 และล็อกยอดไว้ การแลกล้วนไม่มี escrow ดีลเงินบวกการ์ดแลก (`twoWay`) ทั้งสองฝ่ายต้องแจ้งส่งและยืนยันรับก่อนปล่อยเงิน API: `POST /api/escrow/:id/pay|ship|confirm|dispute|cancel` (คนนอก 404, ผิดฝ่าย `ESCROW_WRONG_PARTY`), หลังบ้าน `GET /api/admin/escrows`, `GET /api/admin/escrows/:id`, `POST /api/admin/escrows/:id/resolve` (`decision`, `reason`, ลง audit, คู่ดีลเองตัดสินไม่ได้) การจ่ายเงินเป็นแบบจำลองใน `lib/payments.ts` ส่วนสถานะและกำหนดเวลาทำงานจริง production ต้องตั้ง `MOCK_PAYMENTS_ENABLED=true` ไม่งั้นแอปไม่เริ่มทำงาน กำหนดเวลา: จ่าย 48 ชม. (เลยแล้ว `EXPIRED`), ส่ง 5 วัน (ไม่มีใครส่งคืนเงิน, ส่งฝั่งเดียวเป็น `DISPUTED`), ยืนยันรับ 7 วัน (เลยแล้วปล่อยเงิน) กวาดรายชั่วโมงใน `index.ts` (`processEscrowDeadlines`) ดีลไม่เกิด (ยกเลิก, เลยกำหนดจ่าย, คืนเงินก่อนมีใครส่ง) offer เป็น `CANCELLED` คืนสต็อกและเปิดประกาศที่ปิดเพราะของหมดกลับมา คืนเงินหลังส่งแล้วคืนสต็อกเฉพาะฝั่งที่ยังไม่ส่ง อีเมลคู่ดีลเปิดหลังจ่าย รีวิวได้หลังเงินจบ (`ESCROW_NOT_SETTLED`) นับ 30 วันจาก `settledAt` ฝั่งผู้ใช้ห้ามส่งชื่อหรือ id ทีมงานและเลขอ้างอิงการเงิน (`toPartyEscrow`) ทีมงานอ่านแชทได้เฉพาะดีลที่เคยมีข้อพิพาท
 
@@ -125,7 +127,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 
 ```
 server/
-  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, OfferMessage, Escrow, EscrowEvent, Review, AuditLog, EventLog, SupportTicket, SupportMessage
+  prisma/schema.prisma      User, Session, Game, GradingCompany, Listing, Offer, OfferItem, Conversation, ChatMessage, ChatBlock, Escrow, EscrowEvent, Review, AuditLog, EventLog, SupportTicket, SupportMessage
   prisma.config.ts          ตั้งค่า Prisma 7 (URL อ่านจาก env)
   src/
     index.ts, app.ts        เปิด server + graceful shutdown, Express app + middleware
@@ -134,7 +136,7 @@ server/
     lib/                    prisma, session, password + commonPasswords, names (ตรวจชื่อที่แสดง), images, storage, payments (ชำระเงินแบบจำลอง), mailer, errors (AppError), events (logEvent)
     middleware/             requireAuth, requireRole, checkOrigin (กัน CSRF), validate, rateLimit, errorHandler, uploadImage, serveWeb (เสิร์ฟหน้าเว็บตอน production แยกแอปตาม hostname)
     scripts/                seed.ts (เกม/บริษัทเกรดเริ่มต้น), seedAdmin.ts (admin คนแรก แยกไฟล์ให้เขียน test ได้)
-    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู, แก้โปรไฟล์, รูปโปรไฟล์), profiles (โปรไฟล์สาธารณะ), reviews, escrow (เงินวางกลาง), audit, events, admin (dashboard, counts)
+    modules/<feature>/      auth, users, listings, offers, catalog (เกม + บริษัทเกรด), support, me (ตัวเลขบนเมนู, แก้โปรไฟล์, รูปโปรไฟล์), profiles (โปรไฟล์สาธารณะ), reviews, escrow (เงินวางกลาง), chat (แชท), audit, events, admin (dashboard, counts)
       <feature>.routes.ts   เส้นทาง + middleware ที่ใช้
       <feature>.service.ts  logic + เรียก Prisma
       <feature>.schema.ts   zod schema ของ request
@@ -143,7 +145,7 @@ client/src/                 เว็บ user
   pages/                    public/, user/
   layouts/                  UserLayout, ContainedLayout (กรอบหน้าฟอร์ม/บัญชี), StoreTabs, BottomNav (เมนูจอเล็ก), HeaderSearch, SiteFooter
   components/icons.tsx      ไอคอน SVG ที่วาดเอง ไม่ใช้ library
-  features/<feature>/       auth (RegisterForm), home (HomeHero, GameTiles, SellBanner), listings (ListingCard, ListingRow, BrowseRow), offers (รวม EscrowPanel), support
+  features/<feature>/       auth (RegisterForm), home (HomeHero, GameTiles, SellBanner), listings (ListingCard, ListingRow, BrowseRow), offers (รวม EscrowPanel), chat (chatApi, chatStream, ConversationList, ChatRoom), support
 admin/src/                  เว็บหลังบ้าน route ไม่มี /admin นำหน้า เช่น /login, /users
   router.tsx, layouts/AdminLayout.tsx, components/ (RequireAdmin, AdminTopBar, AuthShell, icons ไอคอนที่วาดเอง)
   pages/                    Login, ForgotPassword, ResetPassword, Dashboard, ListingReview, Users, Catalog, Escrow, EscrowDetail, Reviews, Support, TicketDetail, AuditLog, Events, Account
@@ -154,7 +156,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
   auth/                     authApi, AuthProvider, useAuth, LoginForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm
   components/               Spinner, Pagination, FormField, Avatar, CountBadge, RequireAuth, ErrorPage, NotFoundPage
   listings/                 listingsApi (types, imageUrl), labels, gradient (สีประจำเกมตาม slug), ListingArt, ListingCover (รูปปกหรือภาพวาด)
-  support/                  types + label หมวด, MessageThread (ใช้กับแชทใน offer ด้วย)
+  support/                  types + label หมวด, MessageThread (ใช้กับเรื่องที่แจ้งและแชทของดีลในหลังบ้าน)
   brand/                    Logo (LogoMark, LogoFull) และไฟล์โลโก้
   reviews/                  StarRating (RatingBadge, Stars, StarInput)
   styles.css                theme (สี brand-*) + .btn/.input/.page-title ฯลฯ ทั้งสองแอป import หลัง tailwindcss
@@ -182,9 +184,9 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - ไม่ใช้โลโก้ รูป หรือฟอนต์ของแบรนด์อื่น
 - โลโก้: จุดเล็กกว่าประมาณ 56px (header, เมนูหลังบ้าน, ไอคอนแท็บ) ใช้ `LogoMark` ซึ่งครอปเฉพาะการ์ดกับลูกศร ตั้งแต่ 96px ขึ้นไปใช้ `LogoFull` เพราะแบบเต็มย่อแล้วอ่านไม่ออก รูปมีพื้นขาวจึงอยู่ในกรอบขาวมุมมนเสมอ
 - ต้องใช้งานได้ตั้งแต่จอกว้าง 320px โดยหน้าไม่ล้นแนวนอน ถ้าแก้หน้าให้ลองทั้งมือถือและจอใหญ่
-- เว็บ user: ต่ำกว่า `lg` เมนูอยู่ที่ `BottomNav` ด้านล่าง และ header เหลือแค่โลโก้กับช่องค้นหา ตั้งแต่ `lg` เมนูอยู่บน header และแท็บหมวดติดบนสุดตอนเลื่อน
+- เว็บ user: ต่ำกว่า `lg` เมนูอยู่ที่ `BottomNav` ด้านล่าง (คนที่ล็อกอินแล้วเห็นแชทแทนเรียกดู และซ่อนแถบนี้ในห้องแชท) และ header เหลือแค่โลโก้กับช่องค้นหา ตั้งแต่ `lg` เมนูอยู่บน header และแท็บหมวดติดบนสุดตอนเลื่อน
 - หลังบ้าน: ต่ำกว่า `lg` เมนูข้างพับเป็นปุ่ม "เมนู" ตารางต้องอยู่ในกรอบ `overflow-x-auto` ใช้สี `brand-*` ชุดเดียวกับหน้าร้าน งานค้างและคำเตือนจึงใช้สีเหลือง (`amber`) พร้อมไอคอน ไม่ใช้แดงอย่างเดียว ส่วนป้ายสถานะปกติใช้สีน้ำเงินหรือเทา
-- หน้าที่มีแถบเต็มจอหรือใช้ความกว้างหน้าร้าน (`/`, `/browse`, `/listings/:id`) จัดกรอบเองด้วย `.page-container` หน้าอื่นอยู่ใต้ `ContainedLayout`
+- หน้าที่มีแถบเต็มจอหรือใช้ความกว้างหน้าร้าน (`/`, `/browse`, `/listings/:id`, `/messages`) จัดกรอบเองด้วย `.page-container` หน้าอื่นอยู่ใต้ `ContainedLayout`
 - layout ชั้นกลางต้องส่ง `<Outlet context>` ต่อ (ดู `RequireAuth`) ไม่งั้น `useCounts` ในหน้าลูกจะได้ `undefined`
 - `.input` ใช้ตัวหนังสือ 16px บนจอเล็กเพราะ iOS ซูมหน้าเมื่อโฟกัสช่องที่เล็กกว่านั้น ข้อความยาวติดกันตัดบรรทัดด้วยกฎที่ `body` แต่ flex/grid item ที่มีข้อความจากผู้ใช้ยังต้องใส่ `min-w-0` หรือ `grid-cols-1` ไม่งั้นจะขยายตามคำยาวสุด
 

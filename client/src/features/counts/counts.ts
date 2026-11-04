@@ -1,7 +1,7 @@
 import { useOutletContext } from 'react-router'
 import { api } from '@shared/lib/api'
 
-export type UserCounts = { incomingOffers: number; answeredTickets: number; escrowActions: number }
+export type UserCounts = { incomingOffers: number; answeredTickets: number; escrowActions: number; unreadMessages: number }
 
 export const fetchCounts = () => api<UserCounts>('/me/counts')
 

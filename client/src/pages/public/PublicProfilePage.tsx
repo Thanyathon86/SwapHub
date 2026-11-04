@@ -1,31 +1,29 @@
-import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
 import { Avatar } from '@shared/components/Avatar'
 import { Spinner } from '@shared/components/Spinner'
 import { errorMessage } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
-import { RatingBadge } from '@shared/reviews/StarRating'
 import { ListingCard } from '../../features/listings/ListingCard'
 import { ProfileReviews } from '../../features/profile/ProfileReviews'
 import { profileApi } from '../../features/profile/profileApi'
 
 const joined = (iso: string) => new Date(iso).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })
 
-function Stat({ value, label }: { value: number | string; label: string }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div>
-      <span className="font-semibold tabular-nums">{value}</span> <span className="text-zinc-500">{label}</span>
+    <div className="min-w-0 px-2 py-4 text-center sm:px-4">
+      <div className="text-xl font-bold text-zinc-900 tabular-nums sm:text-2xl">{value}</div>
+      <div className="mt-0.5 text-xs text-zinc-500 sm:text-sm">{label}</div>
     </div>
   )
 }
 
-// หน้าโปรไฟล์แบบ IG: รูป + สถิติด้านบน ตามด้วยตารางประกาศ
+// คนเปิดหน้านี้มักอยากรู้ว่าคนขายน่าเชื่อถือไหมและมีอะไรขาย จึงเรียงชื่อ ตัวเลขความน่าเชื่อถือ แล้วประกาศกับรีวิว ไม่ต้องสลับแท็บ
 export default function PublicProfilePage() {
   const { username = '' } = useParams()
   const { user } = useAuth()
   const { data, error } = useResource(() => profileApi.get(username), username)
-  const [tab, setTab] = useState<'listings' | 'reviews'>('listings')
 
   if (error !== undefined && !data) {
     return (
@@ -40,69 +38,56 @@ export default function PublicProfilePage() {
   if (!data) return <Spinner />
 
   const { profile, listings } = data
-  const isMe = user?.id === profile.id
+  const { rating, deals, activeListings } = profile.stats
+  const details = [`@${profile.username}`, profile.location, `สมาชิกตั้งแต่ ${joined(profile.createdAt)}`].filter(Boolean)
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 sm:space-y-10">
-      <header className="flex items-start gap-4 sm:gap-10">
-        <Avatar user={profile} size="lg" />
-        <div className="min-w-0 flex-1 space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="truncate text-xl font-medium">@{profile.username}</h1>
-            {isMe && (
-              <Link to="/profile/edit" className="btn btn-secondary">
-                แก้ไขโปรไฟล์
-              </Link>
-            )}
+    <div className="space-y-8">
+      <section className="overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200">
+        <header className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:p-6">
+          <Avatar user={profile} size="lg" />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl">{profile.displayName}</h1>
+            <p className="mt-1 text-sm text-zinc-500">{details.join(' · ')}</p>
+            {profile.bio && <p className="mt-3 text-sm whitespace-pre-line text-zinc-700">{profile.bio}</p>}
           </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-            <Stat value={profile.stats.activeListings} label="ประกาศ" />
-            <Stat value={profile.stats.deals} label="ดีลสำเร็จ" />
-            <RatingBadge rating={profile.stats.rating} />
-          </div>
-          <div className="space-y-1 text-sm">
-            <div className="font-semibold">{profile.displayName}</div>
-            {profile.bio && <p className="whitespace-pre-line text-zinc-700">{profile.bio}</p>}
-            <p className="text-zinc-500">
-              {profile.location && `${profile.location} · `}เป็นสมาชิกตั้งแต่ {joined(profile.createdAt)}
-            </p>
-          </div>
+          {user?.id === profile.id && (
+            <Link to="/profile/edit" className="btn btn-secondary shrink-0 self-start sm:self-center">
+              แก้ไขโปรไฟล์
+            </Link>
+          )}
+        </header>
+        <div className="grid grid-cols-3 divide-x divide-zinc-100 border-t border-zinc-100">
+          <Stat value={rating.average === null ? '-' : `★ ${rating.average}`} label={rating.count > 0 ? `จาก ${rating.count} รีวิว` : 'ยังไม่มีรีวิว'} />
+          <Stat value={String(deals)} label="ดีลสำเร็จ" />
+          <Stat value={String(activeListings)} label="ประกาศที่เปิด" />
         </div>
-      </header>
-
-      <section className="border-t border-zinc-100">
-        <div role="tablist" className="mb-6 flex justify-center gap-10 text-sm">
-          {(
-            [
-              ['listings', `ประกาศ (${profile.stats.activeListings})`],
-              ['reviews', `รีวิว (${profile.stats.rating.count})`],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={tab === key}
-              onClick={() => setTab(key)}
-              className={`-mt-px border-t py-3 font-medium ${tab === key ? 'border-brand-600 text-brand-600' : 'border-transparent text-zinc-400 hover:text-zinc-700'}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {tab === 'reviews' ? (
-          // key: เปลี่ยนไปดูโปรไฟล์คนอื่นแล้วเริ่มรายการรีวิวใหม่ ไม่ต่อท้ายของคนเดิม
-          <ProfileReviews key={profile.username} username={profile.username} />
-        ) : listings.length === 0 ? (
-          <p className="py-12 text-center text-sm text-zinc-500">ยังไม่มีประกาศที่เปิดอยู่</p>
-        ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
-            {listings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
-        )}
       </section>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <section aria-labelledby="profile-listings" className="min-w-0">
+          <h2 id="profile-listings" className="mb-4 text-lg font-semibold text-zinc-900">
+            ประกาศที่เปิดอยู่
+          </h2>
+          {listings.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-zinc-200 px-6 py-12 text-center text-sm text-zinc-500">ยังไม่มีประกาศที่เปิดอยู่</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3">
+              {listings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section aria-labelledby="profile-reviews" className="min-w-0">
+          <h2 id="profile-reviews" className="mb-1 text-lg font-semibold text-zinc-900">
+            รีวิวล่าสุด
+          </h2>
+          {/* key: เปลี่ยนไปดูโปรไฟล์คนอื่นแล้วเริ่มรายการรีวิวใหม่ ไม่ต่อท้ายของคนเดิม */}
+          <ProfileReviews key={profile.username} username={profile.username} />
+        </section>
+      </div>
     </div>
   )
 }

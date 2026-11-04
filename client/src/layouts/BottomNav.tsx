@@ -2,7 +2,7 @@ import type { ComponentType } from 'react'
 import { NavLink } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
 import { CountBadge } from '@shared/components/CountBadge'
-import { CardsIcon, HomeIcon, PlusIcon, SwapIcon, UserIcon } from '../components/icons'
+import { CardsIcon, ChatIcon, HomeIcon, PlusIcon, SwapIcon, UserIcon } from '../components/icons'
 import { OFFER_TASKS_LABEL, offerTasks, type UserCounts } from '../features/counts/counts'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -46,7 +46,12 @@ export function BottomNav({ counts }: { counts: UserCounts | null | undefined })
     >
       <ul className="grid h-14 grid-cols-5">
         <Item to="/" end label="หน้าแรก" icon={HomeIcon} />
-        <Item to="/browse" label="เรียกดู" icon={CardsIcon} />
+        {/* คนที่ล็อกอินแล้วหาการ์ดจากแท็บหมวดกับช่องค้นหาได้ ช่องนี้จึงให้แชทซึ่งไม่มีทางเข้าอื่น */}
+        {user ? (
+          <Item to="/messages" label="แชท" icon={ChatIcon} count={counts?.unreadMessages} countLabel="ข้อความใหม่" />
+        ) : (
+          <Item to="/browse" label="เรียกดู" icon={CardsIcon} />
+        )}
         <li>
           <NavLink to="/sell" className={linkClass}>
             <span className="grid size-7 place-items-center rounded-full bg-brand-600 text-white">

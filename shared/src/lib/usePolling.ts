@@ -4,7 +4,8 @@ import { useResource } from './useResource'
 
 // ดึงข้อมูลใหม่ทุก intervalMs และทุกครั้งที่เปลี่ยนหน้า (หลังกดตอบรับหรือตอบเรื่องแล้วกลับมา ตัวเลขจะตรงทันที)
 // enabled = false จะไม่ยิง request เลย เช่น ตอนยังไม่ได้ล็อกอิน
-export function usePolling<T>(load: () => Promise<T>, intervalMs: number, enabled: boolean) {
+// refreshKey เปลี่ยนเมื่อรู้ว่าข้อมูลเปลี่ยนแล้วโดยไม่ต้องรอรอบถัดไป เช่น มีข้อความแชทเข้ามา
+export function usePolling<T>(load: () => Promise<T>, intervalMs: number, enabled: boolean, refreshKey: number = 0) {
   const { pathname } = useLocation()
   const [tick, setTick] = useState(0)
 
@@ -17,6 +18,6 @@ export function usePolling<T>(load: () => Promise<T>, intervalMs: number, enable
     return () => clearInterval(timer)
   }, [enabled, intervalMs])
 
-  const { data } = useResource(async () => (enabled ? load() : null), `${enabled}:${pathname}:${tick}`)
+  const { data } = useResource(async () => (enabled ? load() : null), `${enabled}:${pathname}:${tick}:${refreshKey}`)
   return data ?? null
 }

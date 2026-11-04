@@ -178,14 +178,12 @@ describe('สิทธิ์และลำดับขั้น', () => {
 })
 
 describe('ยกเลิก', () => {
-  it('ก่อนจ่ายยกเลิกได้ทั้งสองฝ่าย คืนสต็อก เปิดประกาศกลับ และปิดแชท', async () => {
+  it('ก่อนจ่ายยกเลิกได้ทั้งสองฝ่าย คืนสต็อก และเปิดประกาศกลับ', async () => {
     const { id, offerId, listingId } = await cashDeal()
     expect(await listingOf(listingId)).toMatchObject({ quantity: 0, status: 'CLOSED' })
     expect((await post(buyer, id, 'cancel')).body.escrow.status).toBe('CANCELLED')
     expect(await listingOf(listingId)).toMatchObject({ quantity: 1, status: 'ACTIVE' })
     expect((await offerOf(offerId)).status).toBe('CANCELLED')
-    const chat = await buyer.agent.post(`/api/offers/${offerId}/messages`).send({ body: 'ยังอยู่ไหม' })
-    expect(chat.body.error.code).toBe('OFFER_CHAT_CLOSED')
   })
 
   it('จ่ายแล้วผู้ซื้อยกเลิกเองไม่ได้ แต่ผู้ขายยกเลิกก่อนส่งของแล้วคืนเงินได้', async () => {
@@ -368,7 +366,8 @@ describe('ข้อพิพาทและหลังบ้าน', () => {
 
   it('ทีมงานอ่านแชทได้เฉพาะดีลที่มีข้อพิพาท', async () => {
     const quiet = await cashDeal()
-    await buyer.agent.post(`/api/offers/${quiet.offerId}/messages`).send({ body: 'ส่วนตัว' })
+    const room = await buyer.agent.post('/api/chat/conversations').send({ offerId: quiet.offerId })
+    await buyer.agent.post(`/api/chat/conversations/${room.body.conversation.id}/messages`).send({ body: 'ส่วนตัว' })
     const admin = await signedInAdmin()
     expect((await admin.agent.get(`/api/admin/escrows/${quiet.id}`)).body.escrow.messages).toEqual([])
 
@@ -424,6 +423,40 @@ describe('ระงับบัญชี', () => {
     const view = (await buyer.agent.get('/api/offers/outgoing')).body.offers[0].escrow
     expect(view.events.at(-1).actor).toBe('STAFF')
     expect(view.disputeReason).not.toContain(seller.id)
+  })
+})
+
+describe('ดีลสำเร็จบนโปรไฟล์', () => {
+  const dealsOf = async (id: string) => {
+    const { username } = await prisma.user.findUniqueOrThrow({ where: { id } })
+    return (await buyer.agent.get(`/api/users/${username}`)).body.profile.stats.deals as number
+  }
+
+  it('นับเมื่อโอนเงินแล้วเท่านั้น ไม่นับที่ค้างหรือคืนเงิน ทั้งฝั่งผู้ซื้อและผู้ขาย', async () => {
+    const { id } = await cashDeal()
+    expect(await dealsOf(seller.id)).toBe(0)
+    await post(buyer, id, 'pay')
+    await post(seller, id, 'ship', tracking)
+    expect(await dealsOf(seller.id)).toBe(0)
+    await post(buyer, id, 'confirm')
+    expect(await dealsOf(seller.id)).toBe(1)
+    expect(await dealsOf(buyer.id)).toBe(1)
+
+    const refunded = await cashDeal()
+    await post(buyer, refunded.id, 'pay')
+    await post(seller, refunded.id, 'ship', tracking)
+    await post(buyer, refunded.id, 'dispute', { reason: 'x' })
+    const admin = await signedInAdmin()
+    await admin.agent.post(`/api/admin/escrows/${refunded.id}/resolve`).send({ decision: 'REFUND', reason: 'x' }).expect(200)
+    expect(await dealsOf(seller.id)).toBe(1)
+  })
+
+  it('การแลกล้วนนับตั้งแต่ตอบรับ', async () => {
+    const listing = await createListing(seller.id, { type: 'TRADE', price: null })
+    const myCard = await createListing(buyer.id, { type: 'TRADE', price: null })
+    const { body } = await buyer.agent.post('/api/offers').send({ listingId: listing.id, items: [{ listingId: myCard.id }] })
+    await seller.agent.post(`/api/offers/${body.offer.id}/accept`)
+    expect(await dealsOf(seller.id)).toBe(1)
   })
 })
 

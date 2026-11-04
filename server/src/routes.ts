@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { adminRouter } from './modules/admin/admin.routes.js'
 import { authRouter } from './modules/auth/auth.routes.js'
 import { catalogPublicRouter } from './modules/catalog/catalog.routes.js'
+import { chatRouter } from './modules/chat/chat.routes.js'
 import { escrowRouter } from './modules/escrow/escrow.routes.js'
 import { listingsRouter } from './modules/listings/listings.routes.js'
 import { meRouter } from './modules/me/me.routes.js'
@@ -21,6 +22,7 @@ apiRouter.use('/listings', listingsRouter)
 apiRouter.use('/me', meRouter)
 apiRouter.use('/users', profilesRouter)
 apiRouter.use('/offers', offersRouter)
+apiRouter.use('/chat', chatRouter)
 apiRouter.use('/escrow', escrowRouter)
 apiRouter.use('/support', supportRouter)
 apiRouter.use('/admin', adminRouter)

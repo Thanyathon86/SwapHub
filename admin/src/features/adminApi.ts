@@ -200,7 +200,7 @@ export type AdminEscrowDetail = Omit<AdminEscrow, 'offer'> & {
     items: { quantity: number; listing: { id: string; title: string } }[]
   }
   // ว่างเมื่อดีลไม่เคยมีข้อพิพาท แชทเป็นเรื่องส่วนตัวของคู่ดีล
-  messages: { id: string; authorId: string; body: string; createdAt: string }[]
+  messages: { id: string; authorId: string; body: string | null; image: { width: number; height: number } | null; createdAt: string }[]
 }
 
 type TicketResponse = { ticket: AdminTicketDetail }
@@ -256,6 +256,7 @@ export const adminApi = {
   listAuditLogs: (action: AuditAction | undefined, page: number) =>
     api<AuditLogsPage>(`/admin/audit-logs?${new URLSearchParams({ page: String(page), ...(action && { action }) })}`),
 
+  escrowImageUrl: (id: string, messageId: string) => `/api/admin/escrows/${id}/messages/${messageId}/image`,
   listEscrows: (status: EscrowStatus, page: number) =>
     api<EscrowsPage>(`/admin/escrows?${new URLSearchParams({ status, page: String(page) })}`),
   getEscrow: (id: string) => api<{ escrow: AdminEscrowDetail }>(`/admin/escrows/${id}`).then((r) => r.escrow),

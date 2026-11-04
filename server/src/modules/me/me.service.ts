@@ -8,15 +8,17 @@ import { removeFile, saveFile } from '../../lib/storage.js'
 import { toPublicUser } from '../auth/auth.service.js'
 import type { UpdateProfileInput } from './me.schema.js'
 import { countEscrowActions } from '../escrow/escrow.service.js'
+import { countUnread } from '../chat/chat.service.js'
 
 // นับเฉพาะเรื่องที่ผู้ใช้ต้องทำอะไรต่อ ยังไม่มีระบบ "อ่านแล้ว" จึงไม่นับสิ่งที่แค่เปลี่ยนสถานะ
 export const getCounts = async (userId: string) => {
-  const [incomingOffers, answeredTickets, escrowActions] = await Promise.all([
+  const [incomingOffers, answeredTickets, escrowActions, unreadMessages] = await Promise.all([
     prisma.offer.count({ where: { status: 'PENDING', listing: { sellerId: userId } } }),
     prisma.supportTicket.count({ where: { userId, status: 'ANSWERED' } }),
     countEscrowActions(userId),
+    countUnread(userId),
   ])
-  return { incomingOffers, answeredTickets, escrowActions }
+  return { incomingOffers, answeredTickets, escrowActions, unreadMessages }
 }
 
 // ชื่อที่อาจทำให้คนเข้าใจผิดว่าเป็นทีมงาน กันทั้งชื่อตรง ๆ และชื่อที่มีคำเหล่านี้อยู่ข้างใน

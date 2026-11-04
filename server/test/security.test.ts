@@ -67,8 +67,8 @@ describe('request ที่ผิดรูปแบบเป็นความ�
     expect(listing.body.error.code).toBe('VALIDATION_ERROR')
 
     const target = await createListing(seller.user.id)
-    const offer = await buyer.agent.post('/api/offers').send({ listingId: target.id, cashAmount: 5 })
-    const message = await buyer.agent.post(`/api/offers/${offer.body.offer.id}/messages`).send({ body: 'a\u0000b' })
+    const room = await buyer.agent.post('/api/chat/conversations').send({ listingId: target.id })
+    const message = await buyer.agent.post(`/api/chat/conversations/${room.body.conversation.id}/messages`).send({ body: 'a\u0000b' })
     expect(message.body.error.code).toBe('VALIDATION_ERROR')
     expect(await eventsOf('SERVER_ERROR')).toHaveLength(0)
   })

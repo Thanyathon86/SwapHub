@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router'
+import { Link, useLocation, useParams, useNavigate } from 'react-router'
 import { Spinner } from '@shared/components/Spinner'
 import { useAuth } from '@shared/auth/useAuth'
 import { Avatar } from '@shared/components/Avatar'
@@ -15,6 +15,7 @@ import {
 import { listingsApi, type Listing } from '@shared/listings/listingsApi'
 import { listingBadge } from '../../features/listings/badge'
 import { ListingGallery } from '../../features/listings/ListingGallery'
+import { chatApi } from '../../features/chat/chatApi'
 import { OfferForm } from '../../features/offers/OfferForm'
 import { errorMessage } from '@shared/lib/api'
 import { useResource } from '@shared/lib/useResource'
@@ -39,6 +40,9 @@ export default function ListingDetailPage() {
   const { user } = useAuth()
   const location = useLocation()
   const [offering, setOffering] = useState(false)
+  const [openingChat, setOpeningChat] = useState(false)
+  const [chatError, setChatError] = useState<unknown>(null)
+  const navigate = useNavigate()
 
   if (error !== undefined && !listing) {
     return (
@@ -51,6 +55,18 @@ export default function ListingDetailPage() {
     )
   }
   if (!listing) return <Spinner />
+
+  const openChat = async () => {
+    setOpeningChat(true)
+    setChatError(null)
+    try {
+      const { id } = await chatApi.open({ listingId: listing.id })
+      navigate(`/messages/${id}`)
+    } catch (err) {
+      setChatError(err)
+      setOpeningChat(false)
+    }
+  }
 
   const price = formatPrice(listing.price)
   // สินค้าซีลมีป้ายประเภทบอกอยู่แล้ว ไม่ต้องขึ้น SEALED ซ้ำ
@@ -90,9 +106,15 @@ export default function ListingDetailPage() {
             ) : offering ? (
               <OfferForm listing={listing} onCancel={() => setOffering(false)} />
             ) : user ? (
-              <button type="button" onClick={() => setOffering(true)} className="btn btn-primary mt-5 w-full py-3 text-base">
-                {actionLabel}
-              </button>
+              <>
+                <button type="button" onClick={() => setOffering(true)} className="btn btn-primary mt-5 w-full py-3 text-base">
+                  {actionLabel}
+                </button>
+                <button type="button" disabled={openingChat} onClick={openChat} className="btn btn-secondary mt-2 w-full py-3 text-base">
+                  แชทกับผู้ขาย
+                </button>
+                {chatError !== null && <p className="mt-2 text-sm text-red-600">{errorMessage(chatError)}</p>}
+              </>
             ) : (
               <Link to="/login" state={{ from: location.pathname }} className="btn btn-primary mt-5 w-full py-3 text-base">
                 เข้าสู่ระบบเพื่อ{actionLabel}

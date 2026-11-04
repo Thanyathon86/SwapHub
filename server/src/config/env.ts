@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { resolve, sep } from 'node:path'
 import { z } from 'zod'
 
 // superRefine ยังทำงานแม้ URL ผิดรูปแบบ (error จากด้านล่างจะรายงานให้อยู่แล้ว) จึงห้าม new URL แบบที่ throw ได้
@@ -25,6 +26,8 @@ export const envSchema = z.object({
   LOG_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(60),
   // โฟลเดอร์เก็บรูปที่อัปโหลด (path สัมพัทธ์นับจากโฟลเดอร์ server)
   UPLOAD_DIR: z.string().min(1).default('uploads'),
+  // รูปในแชท เปิดดูได้เฉพาะคนที่มีสิทธิ์ ต้องอยู่นอก UPLOAD_DIR เพราะทุกอย่างในนั้นเปิดสาธารณะที่ /uploads
+  PRIVATE_UPLOAD_DIR: z.string().min(1).default('uploads-private'),
   // โฟลเดอร์ build ของหน้าเว็บ ตั้งแล้ว Express เสิร์ฟหน้าเว็บเองพร้อม security header (ตอน dev ไม่ต้องตั้ง Vite เสิร์ฟให้)
   WEB_CLIENT_DIR: z.string().min(1).optional(),
   WEB_ADMIN_DIR: z.string().min(1).optional(),
@@ -42,6 +45,12 @@ export const envSchema = z.object({
   }
   if (e.ADMIN_SESSION_ABSOLUTE_HOURS < e.ADMIN_SESSION_TTL_HOURS) {
     ctx.addIssue({ code: 'custom', path: ['ADMIN_SESSION_ABSOLUTE_HOURS'], message: 'Must be greater than or equal to ADMIN_SESSION_TTL_HOURS' })
+  }
+
+  // เทียบแบบ path เต็ม ใช้ตัวคั่นปิดท้าย uploads กับ uploads-private จะได้ไม่นับว่าซ้อนกัน
+  const publicRoot = `${resolve(e.UPLOAD_DIR)}${sep}`
+  if (`${resolve(e.PRIVATE_UPLOAD_DIR)}${sep}`.startsWith(publicRoot)) {
+    ctx.addIssue({ code: 'custom', path: ['PRIVATE_UPLOAD_DIR'], message: 'Must be outside UPLOAD_DIR, which is served publicly' })
   }
 
   // serveWeb แยกแอปด้วย hostname ถ้าซ้ำกันจะเปิดได้แค่แอปเดียว

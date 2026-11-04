@@ -192,7 +192,12 @@ export default function EscrowDetailPage() {
           {escrow.messages.length === 0 ? (
             <p className="text-sm text-slate-500">ไม่มีข้อความ</p>
           ) : (
-            <MessageThread messages={escrow.messages} nameOf={(m) => nameOf(m.authorId)} mine={(m) => m.authorId === escrow.sellerId} />
+            <MessageThread
+              messages={escrow.messages}
+              nameOf={(m) => nameOf(m.authorId)}
+              mine={(m) => m.authorId === escrow.sellerId}
+              imageOf={(m) => m.image && { ...m.image, src: adminApi.escrowImageUrl(escrow.id, m.id) }}
+            />
           )}
         </div>
       )}

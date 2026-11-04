@@ -46,6 +46,13 @@ export default function ProfilePage() {
           </span>
           <span className="text-zinc-400">→</span>
         </Link>
+        <Link to="/messages" className={menuClass}>
+          <span>
+            แชท
+            <CountBadge count={counts?.unreadMessages} label="ข้อความใหม่" />
+          </span>
+          <span className="text-zinc-400">→</span>
+        </Link>
         <Link to="/support" className={menuClass}>
           <span>
             ติดต่อทีมงาน

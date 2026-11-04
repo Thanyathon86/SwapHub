@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
 import { Avatar } from '@shared/components/Avatar'
 import { Spinner } from '@shared/components/Spinner'
 import { RatingBadge } from '@shared/reviews/StarRating'
 import { formatDate, formatPrice } from '@shared/listings/labels'
+import { chatApi } from '../../features/chat/chatApi'
 import { EscrowPanel } from '../../features/offers/EscrowPanel'
 import { offerStatusClass, offerStatusLabel } from '../../features/offers/labels'
-import { OfferChat } from '../../features/offers/OfferChat'
 import { offersApi, type Offer } from '../../features/offers/offersApi'
 import { ReviewPanel } from '../../features/offers/ReviewPanel'
 import { errorMessage } from '@shared/lib/api'
@@ -28,8 +28,7 @@ export default function OffersPage() {
   const { data: offers, error, reload } = useResource(offersApi[tab], tab)
   const [rowError, setRowError] = useState<{ id: string; error: unknown } | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
-  // เปิดแชทได้ทีละรายการ แชทที่เปิดอยู่ดึงข้อความใหม่เป็นระยะ ถ้าเปิดหลายอันจะยิง request ทวีคูณ
-  const [chatId, setChatId] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const act = async (offer: Offer, action: 'accept' | 'decline' | 'cancel', confirmText: string) => {
     if (!window.confirm(confirmText)) return
@@ -41,6 +40,18 @@ export default function OffersPage() {
     } catch (err) {
       setRowError({ id: offer.id, error: err })
     } finally {
+      setBusyId(null)
+    }
+  }
+
+  const openChat = async (offer: Offer) => {
+    setBusyId(offer.id)
+    setRowError(null)
+    try {
+      const { id } = await chatApi.open({ offerId: offer.id })
+      navigate(`/messages/${id}`)
+    } catch (err) {
+      setRowError({ id: offer.id, error: err })
       setBusyId(null)
     }
   }
@@ -128,18 +139,9 @@ export default function OffersPage() {
                       ติดต่อ {counterpart.displayName}: {counterpart.email}
                     </p>
                   )}
-                  {user && (
-                    <button
-                      type="button"
-                      onClick={() => setChatId(chatId === offer.id ? null : offer.id)}
-                      aria-expanded={chatId === offer.id}
-                      className="btn btn-secondary"
-                    >
-                      {chatId === offer.id ? 'ซ่อนแชท' : 'แชท'}
-                      {offer._count.messages > 0 && <span className="text-zinc-500"> ({offer._count.messages})</span>}
-                    </button>
-                  )}
-                  {chatId === offer.id && user && <OfferChat offerId={offer.id} me={user.id} other={counterpart} />}
+                  <button type="button" disabled={busy} onClick={() => openChat(offer)} className="btn btn-secondary">
+                    แชท
+                  </button>
                   {offer.escrow && (
                     <EscrowPanel escrow={offer.escrow} role={tab === 'incoming' ? 'SELLER' : 'BUYER'} onChanged={reload} />
                   )}

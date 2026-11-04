@@ -5,6 +5,8 @@ const reason = z.string().trim().min(1).max(1000)
 
 export const escrowIdParams = z.strictObject({ id: z.uuid() })
 
+export const escrowImageParams = z.strictObject({ id: z.uuid(), messageId: z.uuid() })
+
 export const shipEscrowSchema = z.strictObject({
   carrier: z.string().trim().min(1).max(60),
   trackingNumber: z.string().trim().min(1).max(60),
@@ -23,6 +25,7 @@ export const resolveEscrowSchema = z.strictObject({
 })
 
 export type EscrowIdParams = z.infer<typeof escrowIdParams>
+export type EscrowImageParams = z.infer<typeof escrowImageParams>
 export type ShipEscrowInput = z.infer<typeof shipEscrowSchema>
 export type DisputeEscrowInput = z.infer<typeof disputeEscrowSchema>
 export type AdminEscrowsQuery = z.infer<typeof adminEscrowsQuery>

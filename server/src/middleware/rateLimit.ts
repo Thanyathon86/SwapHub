@@ -56,3 +56,14 @@ export const loginAccountLimiter = limiter('login-account', { ...perEmail, limit
 
 // ตัวนับต่อ IP กันการยิงอีเมลใส่คนเดียวจากหลาย IP ไม่ได้ ตอบ 429 เหมือนกันทุกอีเมลจึงไม่บอกว่ามีบัญชีไหม
 export const resetAccountLimiter = limiter('reset-account', { ...perEmail, limit: 5, windowMs: HOUR_MS })
+
+// นับต่อบัญชี เพราะหลายคนใช้ IP ร่วมกันได้ ต้องอยู่หลัง requireAuth
+const perUser: Partial<Options> = {
+  keyGenerator: (req) => req.user?.id ?? 'anonymous',
+  standardHeaders: false,
+}
+
+// คุยปกติไม่ถึงนี้ กันการส่งรัวใส่อีกฝ่าย
+export const chatSendLimiter = limiter('chat-send', { ...perUser, limit: 40, windowMs: 60 * 1000 })
+// แต่ละรูปกิน CPU ของ sharp และพื้นที่ดิสก์ จึงเข้มกว่าข้อความ
+export const chatImageLimiter = limiter('chat-image', { ...perUser, limit: 30 })

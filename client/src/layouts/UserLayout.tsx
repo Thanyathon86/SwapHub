@@ -1,10 +1,11 @@
-import { Link, NavLink, Outlet, ScrollRestoration, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, ScrollRestoration, useMatch, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/useAuth'
 import { LogoMark } from '@shared/brand/Logo'
 import { Avatar } from '@shared/components/Avatar'
 import { CountBadge } from '@shared/components/CountBadge'
 import { usePolling } from '@shared/lib/usePolling'
 import { PlusIcon } from '../components/icons'
+import { useChatStreamConnection, useCountsRefreshKey } from '../features/chat/chatStream'
 import { fetchCounts, OFFER_TASKS_LABEL, offerTasks } from '../features/counts/counts'
 import { BottomNav } from './BottomNav'
 import { HeaderSearch } from './HeaderSearch'
@@ -20,7 +21,13 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 export function UserLayout() {
   const { user, status, logout } = useAuth()
   const navigate = useNavigate()
-  const counts = usePolling(fetchCounts, COUNTS_INTERVAL_MS, user !== null)
+  useChatStreamConnection(user !== null)
+  const countsKey = useCountsRefreshKey(user?.id)
+  const counts = usePolling(fetchCounts, COUNTS_INTERVAL_MS, user !== null, countsKey)
+  // แชทใช้ความสูงเต็มจอเหมือนแอป แท็บหมวดกับ footer จะกินที่จนช่องพิมพ์ตกขอบ
+  const inChat = useMatch('/messages/*') !== null
+  // ในห้องแชทช่องพิมพ์อยู่ล่างสุดอยู่แล้ว ซ่อนเมนูล่างให้ข้อความเห็นได้มากขึ้น มีปุ่มย้อนกลับที่หัวห้อง
+  const inRoom = useMatch('/messages/:id') !== null
 
   const onLogout = async () => {
     await logout().catch(() => undefined)
@@ -29,7 +36,7 @@ export function UserLayout() {
 
   return (
     // เว้นด้านล่างเท่าแถบเมนูมือถือ ไม่งั้น footer กับปุ่มท้ายหน้าจะโดนแถบบังจนกดไม่ได้
-    <div className="flex min-h-screen flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+    <div className={`flex flex-col lg:pb-0 ${inChat ? 'h-dvh' : 'min-h-screen'} ${inRoom ? '' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
       <header className="bg-white">
         <div className="flex h-14 items-stretch lg:h-16">
           <Link
@@ -56,6 +63,10 @@ export function UserLayout() {
                     <NavLink to="/offers" className={navClass}>
                       ข้อเสนอ
                       <CountBadge count={offerTasks(counts) ?? undefined} label={OFFER_TASKS_LABEL} />
+                    </NavLink>
+                    <NavLink to="/messages" className={navClass}>
+                      แชท
+                      <CountBadge count={counts?.unreadMessages} label="ข้อความใหม่" />
                     </NavLink>
                     <button type="button" onClick={onLogout} className={navClass({ isActive: false })}>
                       ออกจากระบบ
@@ -87,12 +98,12 @@ export function UserLayout() {
           </div>
         </div>
       </header>
-      <StoreTabs />
-      <main className="flex-1">
+      {!inChat && <StoreTabs />}
+      <main className={`flex-1 ${inChat ? 'min-h-0 border-t border-zinc-200 lg:bg-zinc-50' : ''}`}>
         <Outlet context={counts} />
       </main>
-      <SiteFooter />
-      <BottomNav counts={counts} />
+      {!inChat && <SiteFooter />}
+      {!inRoom && <BottomNav counts={counts} />}
       {/* หน้าแรกยาวขึ้นมาก ถ้าไม่มีตัวนี้ กดการ์ดแถวล่าง ๆ แล้วหน้าถัดไปจะเปิดค้างที่ตำแหน่งเลื่อนเดิม */}
       <ScrollRestoration />
     </div>

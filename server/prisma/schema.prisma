@@ -36,26 +36,30 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  sessions         Session[]
-  listings         Listing[] @relation("ListingSeller")
-  reviewedListings Listing[] @relation("ListingReviewer")
-  offers           Offer[]
-  auditActions     AuditLog[] @relation("AuditActor")
-  auditTargets     AuditLog[] @relation("AuditTarget")
-  events           EventLog[]
-  supportTickets   SupportTicket[]  @relation("TicketOwner")
-  assignedTickets  SupportTicket[]  @relation("TicketAssignee")
-  supportMessages  SupportMessage[]
-  resetTokens      PasswordResetToken[]
-  reviewsGiven     Review[]           @relation("ReviewAuthor")
-  reviewsReceived  Review[]           @relation("ReviewSubject")
-  reviewsRemoved   Review[]           @relation("ReviewRemover")
-  offerMessages    OfferMessage[]
-  escrowsAsBuyer   Escrow[]           @relation("EscrowBuyer")
-  escrowsAsSeller  Escrow[]           @relation("EscrowSeller")
-  escrowsDisputed  Escrow[]           @relation("EscrowDisputer")
-  escrowsResolved  Escrow[]           @relation("EscrowResolver")
-  escrowEvents     EscrowEvent[]
+  sessions              Session[]
+  listings              Listing[]            @relation("ListingSeller")
+  reviewedListings      Listing[]            @relation("ListingReviewer")
+  offers                Offer[]
+  auditActions          AuditLog[]           @relation("AuditActor")
+  auditTargets          AuditLog[]           @relation("AuditTarget")
+  events                EventLog[]
+  supportTickets        SupportTicket[]      @relation("TicketOwner")
+  assignedTickets       SupportTicket[]      @relation("TicketAssignee")
+  supportMessages       SupportMessage[]
+  resetTokens           PasswordResetToken[]
+  reviewsGiven          Review[]             @relation("ReviewAuthor")
+  reviewsReceived       Review[]             @relation("ReviewSubject")
+  reviewsRemoved        Review[]             @relation("ReviewRemover")
+  conversationsAsBuyer  Conversation[]       @relation("ConversationBuyer")
+  conversationsAsSeller Conversation[]       @relation("ConversationSeller")
+  chatMessages          ChatMessage[]
+  chatBlocksMade        ChatBlock[]          @relation("ChatBlocker")
+  chatBlocksReceived    ChatBlock[]          @relation("ChatBlocked")
+  escrowsAsBuyer        Escrow[]             @relation("EscrowBuyer")
+  escrowsAsSeller       Escrow[]             @relation("EscrowSeller")
+  escrowsDisputed       Escrow[]             @relation("EscrowDisputer")
+  escrowsResolved       Escrow[]             @relation("EscrowResolver")
+  escrowEvents          EscrowEvent[]
 }
 
 model Session {
@@ -170,9 +174,10 @@ model Listing {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  offers    Offer[]
-  offeredIn OfferItem[]
-  images    ListingImage[]
+  offers        Offer[]
+  offeredIn     OfferItem[]
+  images        ListingImage[]
+  conversations Conversation[]
 
   @@index([status, gameId])
   @@index([sellerId])
@@ -195,10 +200,9 @@ model Offer {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  items    OfferItem[]
-  reviews  Review[]
-  messages OfferMessage[]
-  escrow   Escrow?
+  items   OfferItem[]
+  reviews Review[]
+  escrow  Escrow?
 
   @@index([listingId, status])
   @@index([buyerId])
@@ -370,40 +374,79 @@ model PasswordResetToken {
 
 // คะแนนที่คู่ดีลให้กันหลังตอบรับข้อเสนอ หนึ่งคนให้ได้หนึ่งรีวิวต่อดีล แก้ได้ภายใน 30 วันหลังตอบรับ (ตรวจใน service)
 model Review {
-  id         String   @id @default(uuid()) @db.Uuid
-  offerId    String   @db.Uuid
-  offer      Offer    @relation(fields: [offerId], references: [id])
-  reviewerId String   @db.Uuid
-  reviewer   User     @relation("ReviewAuthor", fields: [reviewerId], references: [id])
-  revieweeId String   @db.Uuid
-  reviewee   User     @relation("ReviewSubject", fields: [revieweeId], references: [id])
+  id           String    @id @default(uuid()) @db.Uuid
+  offerId      String    @db.Uuid
+  offer        Offer     @relation(fields: [offerId], references: [id])
+  reviewerId   String    @db.Uuid
+  reviewer     User      @relation("ReviewAuthor", fields: [reviewerId], references: [id])
+  revieweeId   String    @db.Uuid
+  reviewee     User      @relation("ReviewSubject", fields: [revieweeId], references: [id])
   // 1-5 ดาว ตรวจช่วงค่าด้วย zod
-  rating     Int
-  comment    String?
+  rating       Int
+  comment      String?
   // admin ซ่อนรีวิวที่ไม่เหมาะสม ไม่ลบแถวจริงเพื่อเก็บเป็นหลักฐาน และกันคนเขียนสร้างรีวิวใหม่ในดีลเดิม
   removedAt    DateTime?
   removedById  String?   @db.Uuid
   removedBy    User?     @relation("ReviewRemover", fields: [removedById], references: [id])
   removeReason String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@unique([offerId, reviewerId])
   // หน้าโปรไฟล์ดึงรีวิวที่คนนี้ได้รับเรียงล่าสุดก่อน และคิดค่าเฉลี่ย
   @@index([revieweeId, createdAt])
 }
 
-// แชทระหว่างผู้ขอกับเจ้าของประกาศในแต่ละข้อเสนอ แก้หรือลบไม่ได้ เก็บไว้เป็นหลักฐานเวลามีเรื่องร้องเรียน
-model OfferMessage {
-  id        String   @id @default(uuid()) @db.Uuid
-  offerId   String   @db.Uuid
-  offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  authorId  String   @db.Uuid
-  author    User     @relation(fields: [authorId], references: [id])
-  body      String
+// ห้องแชทหนึ่งห้องต่อหนึ่งประกาศต่อผู้ซื้อหนึ่งคน ทุกห้องมีการ์ดเป็นบริบท และข้อเสนอของคู่เดียวกันในประกาศนี้ใช้ห้องเดียวกัน
+model Conversation {
+  id               String    @id @default(uuid()) @db.Uuid
+  listingId        String    @db.Uuid
+  listing          Listing   @relation(fields: [listingId], references: [id])
+  buyerId          String    @db.Uuid
+  buyer            User      @relation("ConversationBuyer", fields: [buyerId], references: [id])
+  // เก็บซ้ำจาก listing เพื่อให้ query กล่องข้อความใช้ index ได้ เจ้าของประกาศไม่มีทางเปลี่ยน
+  sellerId         String    @db.Uuid
+  seller           User      @relation("ConversationSeller", fields: [sellerId], references: [id])
+  // null = เปิดห้องแล้วยังไม่มีใครพิมพ์ ไม่แสดงในกล่องข้อความ
+  lastMessageAt    DateTime?
+  buyerLastReadAt  DateTime?
+  sellerLastReadAt DateTime?
+  createdAt        DateTime  @default(now())
+
+  messages ChatMessage[]
+
+  @@unique([listingId, buyerId])
+  @@index([buyerId, lastMessageAt])
+  @@index([sellerId, lastMessageAt])
+}
+
+// แก้หรือลบไม่ได้ เก็บไว้เป็นหลักฐานเวลามีข้อพิพาท มีข้อความหรือรูปอย่างใดอย่างหนึ่ง (ตรวจใน service)
+model ChatMessage {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  authorId       String       @db.Uuid
+  author         User         @relation(fields: [authorId], references: [id])
+  body           String?
+  // รูปอยู่ใน storage ส่วนตัว ไม่ผ่าน /uploads และ key ไม่ส่งให้ client
+  imageKey       String?      @unique
+  imageWidth     Int?
+  imageHeight    Int?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// บล็อกแล้วส่งข้อความหากันไม่ได้ทุกห้อง ไม่ว่าใครเป็นคนบล็อก ดีลที่ค้างยังดำเนินต่อได้
+model ChatBlock {
+  blockerId String   @db.Uuid
+  blocker   User     @relation("ChatBlocker", fields: [blockerId], references: [id])
+  blockedId String   @db.Uuid
+  blocked   User     @relation("ChatBlocked", fields: [blockedId], references: [id])
   createdAt DateTime @default(now())
 
-  @@index([offerId, createdAt])
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
 }
 
 // AWAITING_PAYMENT -> HELD -> SHIPPED -> RELEASED เป็นเส้นปกติ

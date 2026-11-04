@@ -44,6 +44,19 @@ describe('env ตอน production', () => {
   })
 })
 
+describe('env ของรูปส่วนตัว', () => {
+  const base = { DATABASE_URL: production.DATABASE_URL, CLIENT_ORIGIN: 'http://localhost:5173' }
+
+  it('ต้องอยู่นอกโฟลเดอร์ที่เปิดสาธารณะ', () => {
+    expect(failedFields({ ...base, UPLOAD_DIR: 'files', PRIVATE_UPLOAD_DIR: 'files/chat' })).toEqual(['PRIVATE_UPLOAD_DIR'])
+    expect(failedFields({ ...base, UPLOAD_DIR: 'files', PRIVATE_UPLOAD_DIR: 'files' })).toEqual(['PRIVATE_UPLOAD_DIR'])
+  })
+
+  it('ชื่อขึ้นต้นเหมือนกันแต่คนละโฟลเดอร์ใช้ได้', () => {
+    expect(failedFields({ ...base, UPLOAD_DIR: 'uploads', PRIVATE_UPLOAD_DIR: 'uploads-private' })).toEqual([])
+  })
+})
+
 describe('env ของการเสิร์ฟหน้าเว็บ', () => {
   it('production ต้องตั้งโฟลเดอร์ build ทั้งสองแอป ไม่งั้นหน้าเว็บจะไม่มี security header', () => {
     const { WEB_CLIENT_DIR: _client, ...noClient } = production

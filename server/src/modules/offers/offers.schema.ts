@@ -25,8 +25,5 @@ export const createOfferSchema = z
 
 export const offerIdParams = z.strictObject({ id: z.uuid() })
 
-export const offerMessageSchema = z.strictObject({ body: z.string().trim().min(1).max(2000) })
-
 export type CreateOfferInput = z.infer<typeof createOfferSchema>
 export type OfferIdParams = z.infer<typeof offerIdParams>
-export type OfferMessageInput = z.infer<typeof offerMessageSchema>

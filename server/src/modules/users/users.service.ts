@@ -2,6 +2,7 @@ import { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { recordAudit } from '../audit/audit.service.js'
+import { closeStreamsOf } from '../chat/chatEvents.js'
 import { settleEscrowsOfSuspendedUser } from '../escrow/escrow.service.js'
 import { cancelPendingOffersOfUser } from '../offers/cancelPendingOffers.js'
 import type { ListUsersQuery, UpdateUserRoleInput, UpdateUserStatusInput } from './users.schema.js'
@@ -56,7 +57,7 @@ export const setUserStatus = async (actorId: string, userId: string, { status }:
   // ระงับ admin ตรง ๆ ไม่ได้ ต้องถอดสิทธิ์ก่อน จะได้มี log การถอดสิทธิ์แยกให้เห็นชัด
   if (target.role === 'ADMIN') throw new AppError(403, 'CANNOT_MODIFY_ADMIN', 'Cannot change another admin')
 
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     const user = await tx.user.update({ where: { id: userId }, data: { status }, select: adminUserSelect })
     // requireAuth เช็ก status ทุก request อยู่แล้ว ลบ session ด้วยอีกชั้นเผื่อมีโค้ดที่ลืมเช็ก
     if (status === 'SUSPENDED') {
@@ -74,6 +75,9 @@ export const setUserStatus = async (actorId: string, userId: string, { status }:
     }
     return user
   })
+  // ตัดหลัง commit ถ้า transaction ล้ม บัญชียังใช้งานได้ตามปกติ
+  if (status === 'SUSPENDED') closeStreamsOf(userId)
+  return updated
 }
 
 export const setUserRole = async (actorId: string, userId: string, { role }: UpdateUserRoleInput) => {

@@ -75,6 +75,17 @@ export const findValidSession = async (token: string) => {
   return { ...session, renewed: false }
 }
 
+// ตรวจอย่างเดียว ไม่ต่ออายุ ใช้กับการเชื่อมต่อที่เปิดค้าง ซึ่งตั้ง cookie ใหม่ไม่ได้ ถ้าต่ออายุใน DB อย่างเดียว cookie จะหมดก่อน session
+export const isSessionActive = async (token: string) => {
+  const session = await prisma.session.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { expiresAt: true, createdAt: true, user: { select: { role: true, status: true } } },
+  })
+  if (!session || session.user.status !== 'ACTIVE') return false
+  const deadline = session.createdAt.getTime() + lifetimes[session.user.role].absoluteMs
+  return Math.min(session.expiresAt.getTime(), deadline) > Date.now()
+}
+
 export const deleteExpiredSessions = () => prisma.session.deleteMany({ where: { expiresAt: { lte: new Date() } } })
 
 // คืน userId ของ session ที่ลบ ไว้ให้ log ว่าใคร logout (null ถ้าไม่มี session นี้อยู่แล้ว)

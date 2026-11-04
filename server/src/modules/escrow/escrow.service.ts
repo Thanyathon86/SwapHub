@@ -4,6 +4,7 @@ import { AppError } from '../../lib/errors.js'
 import { payments } from '../../lib/payments.js'
 import { prisma } from '../../lib/prisma.js'
 import { recordAudit } from '../audit/audit.service.js'
+import { listDealMessages, readDealImage } from '../chat/chatMessages.js'
 import type { AdminEscrowsQuery, DisputeEscrowInput, ResolveEscrowInput, ShipEscrowInput } from './escrow.schema.js'
 
 const HOUR_MS = 60 * 60 * 1000
@@ -12,8 +13,6 @@ const PAYMENT_WINDOW_MS = 48 * HOUR_MS
 const SHIP_WINDOW_MS = 5 * DAY_MS
 const CONFIRM_WINDOW_MS = 7 * DAY_MS
 const PAGE_SIZE = 30
-// แชทของดีลที่ admin เปิดอ่านตอนตัดสินข้อพิพาท
-const ADMIN_MESSAGE_LIMIT = 200
 
 // เงินยังอยู่กลาง admin เข้าไปตัดสินได้
 const HOLDING: EscrowStatus[] = ['HELD', 'SHIPPED', 'DISPUTED']
@@ -399,6 +398,7 @@ export const getEscrowForAdmin = async (id: string) => {
       offer: {
         select: {
           id: true,
+          listingId: true,
           quantity: true,
           message: true,
           listing: { select: { id: true, title: true } },
@@ -409,15 +409,18 @@ export const getEscrowForAdmin = async (id: string) => {
   })
   if (!escrow) throw notFound()
   // แชทเป็นเรื่องส่วนตัวของคู่ดีล เปิดให้ทีมงานอ่านเฉพาะดีลที่มีข้อพิพาท
-  const latest = escrow.disputedAt
-    ? await prisma.offerMessage.findMany({
-        where: { offerId: escrow.offerId },
-        select: { id: true, authorId: true, body: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-        take: ADMIN_MESSAGE_LIMIT,
-      })
-    : []
-  return { ...escrow, messages: latest.reverse() }
+  const messages = escrow.disputedAt ? await listDealMessages(escrow.offer.listingId, escrow.buyerId) : []
+  return { ...escrow, messages }
+}
+
+// เงื่อนไขเดียวกับการอ่านแชท รูปในห้องเปิดให้ทีมงานเฉพาะดีลที่มีข้อพิพาท
+export const readEscrowChatImage = async (id: string, messageId: string) => {
+  const escrow = await prisma.escrow.findUnique({
+    where: { id },
+    select: { disputedAt: true, buyerId: true, offer: { select: { listingId: true } } },
+  })
+  if (!escrow?.disputedAt) throw notFound()
+  return readDealImage(escrow.offer.listingId, escrow.buyerId, messageId)
 }
 
 export const resolveEscrow = async (actorId: string, id: string, { decision, reason }: ResolveEscrowInput) => {

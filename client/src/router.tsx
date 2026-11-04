@@ -14,6 +14,7 @@ import EditProfilePage from './pages/user/EditProfilePage'
 import LoginPage from './pages/public/LoginPage'
 import RegisterPage from './pages/public/RegisterPage'
 import ResetPasswordPage from './pages/public/ResetPasswordPage'
+import MessagesPage from './pages/user/MessagesPage'
 import MyListingsPage from './pages/user/MyListingsPage'
 import NewListingPage from './pages/user/NewListingPage'
 import NewTicketPage from './pages/user/NewTicketPage'
@@ -32,6 +33,14 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'browse', element: <BrowsePage /> },
       { path: 'listings/:id', element: <ListingDetailPage /> },
+      {
+        // แชทใช้ความสูงเต็มจอ จึงไม่อยู่ใต้ ContainedLayout
+        element: <RequireAuth />,
+        children: [
+          { path: 'messages', element: <MessagesPage /> },
+          { path: 'messages/:id', element: <MessagesPage /> },
+        ],
+      },
       {
         element: <ContainedLayout />,
         children: [

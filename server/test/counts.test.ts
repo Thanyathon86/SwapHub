@@ -15,9 +15,9 @@ describe('GET /api/me/counts', () => {
     await prisma.supportTicket.create({ data: { userId: seller.user.id, subject: 's', category: 'OTHER', status: 'ANSWERED' } })
     await prisma.supportTicket.create({ data: { userId: seller.user.id, subject: 's', category: 'OTHER', status: 'OPEN' } })
 
-    expect((await seller.agent.get('/api/me/counts')).body).toEqual({ incomingOffers: 1, answeredTickets: 1, escrowActions: 0 })
+    expect((await seller.agent.get('/api/me/counts')).body).toEqual({ incomingOffers: 1, answeredTickets: 1, escrowActions: 0, unreadMessages: 0 })
     // ฝั่งผู้ซื้อไม่มีอะไรรอตอบ
-    expect((await buyer.agent.get('/api/me/counts')).body).toEqual({ incomingOffers: 0, answeredTickets: 0, escrowActions: 0 })
+    expect((await buyer.agent.get('/api/me/counts')).body).toEqual({ incomingOffers: 0, answeredTickets: 0, escrowActions: 0, unreadMessages: 0 })
   })
 })
 
