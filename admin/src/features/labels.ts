@@ -9,6 +9,10 @@ export const auditActionLabels: Record<AuditAction, Badge> = {
   USER_SUSPENDED: { text: 'ระงับบัญชี', className: 'bg-red-100 text-red-700' },
   USER_REACTIVATED: { text: 'ปลดระงับ', className: 'bg-green-100 text-green-700' },
   REVIEW_REMOVED: { text: 'ซ่อนรีวิว', className: 'bg-rose-100 text-rose-700' },
+  LISTING_APPROVED: { text: 'อนุมัติประกาศ', className: 'bg-slate-100 text-slate-700' },
+  LISTING_REJECTED: { text: 'ปฏิเสธประกาศ', className: 'bg-amber-100 text-amber-800' },
+  CATALOG_CHANGED: { text: 'แก้เกม/บริษัทเกรด', className: 'bg-blue-100 text-blue-700' },
+  TICKET_CLOSED: { text: 'ปิดเรื่องที่แจ้ง', className: 'bg-slate-100 text-slate-700' },
 }
 
 // สีแดง/เหลืองสงวนไว้ให้เหตุการณ์ที่อาจเป็นปัญหา เหตุการณ์ปกติใช้สีเทา

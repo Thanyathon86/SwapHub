@@ -43,7 +43,16 @@ export type AdminUser = {
 export type UsersQuery = { q?: string; status?: UserStatus; role?: Role; page: number }
 export type UsersPage = { users: AdminUser[]; total: number; page: number; pageSize: number }
 
-export type AuditAction = 'USER_PROMOTED' | 'USER_DEMOTED' | 'USER_SUSPENDED' | 'USER_REACTIVATED' | 'REVIEW_REMOVED'
+export type AuditAction =
+  | 'USER_PROMOTED'
+  | 'USER_DEMOTED'
+  | 'USER_SUSPENDED'
+  | 'USER_REACTIVATED'
+  | 'REVIEW_REMOVED'
+  | 'LISTING_APPROVED'
+  | 'LISTING_REJECTED'
+  | 'CATALOG_CHANGED'
+  | 'TICKET_CLOSED'
 
 type AuditParty = { id: string; displayName: string; email: string }
 
@@ -53,7 +62,8 @@ export type AuditLog = {
   detail: string | null
   createdAt: string
   actor: AuditParty
-  targetUser: AuditParty
+  // null เมื่อไม่ได้เจาะจงผู้ใช้คนเดียว เช่น แก้ข้อมูลเกม ดูรายละเอียดจาก detail
+  targetUser: AuditParty | null
 }
 
 export type AuditLogsPage = { logs: AuditLog[]; total: number; page: number; pageSize: number }
@@ -88,7 +98,7 @@ export type Dashboard = {
   security24h: { loginFailed: number; rateLimited: number; accessDenied: number; serverErrors: number }
   recentAudit: (Omit<AuditLog, 'actor' | 'targetUser'> & {
     actor: { id: string; displayName: string }
-    targetUser: { id: string; displayName: string }
+    targetUser: { id: string; displayName: string } | null
   })[]
 }
 
@@ -181,7 +191,8 @@ export const adminApi = {
     api<{ user: AdminUser }>(`/admin/users/${id}/status`, { method: 'PATCH', body: { status } }),
   setUserRole: (id: string, role: Role) =>
     api<{ user: AdminUser }>(`/admin/users/${id}/role`, { method: 'PATCH', body: { role } }),
-  listAuditLogs: (page: number) => api<AuditLogsPage>(`/admin/audit-logs?page=${page}`),
+  listAuditLogs: (action: AuditAction | undefined, page: number) =>
+    api<AuditLogsPage>(`/admin/audit-logs?${new URLSearchParams({ page: String(page), ...(action && { action }) })}`),
 
   listReviews: ({ q, status, page }: ReviewsQuery) =>
     api<ReviewsPage>(`/admin/reviews?${new URLSearchParams({ status, page: String(page), ...(q && { q }) })}`),

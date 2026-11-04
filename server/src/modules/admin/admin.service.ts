@@ -74,6 +74,8 @@ export const getDashboard = async () => {
       _count: { _all: true },
     }),
     prisma.auditLog.findMany({
+      // การอนุมัติประกาศเป็นงานประจำจำนวนมาก ถ้ารวมด้วยจะดันการเปลี่ยนสิทธิ์หรือการระงับบัญชีตกจากการ์ด 5 แถวนี้
+      where: { action: { not: 'LISTING_APPROVED' } },
       include: {
         actor: { select: { id: true, displayName: true } },
         targetUser: { select: { id: true, displayName: true } },

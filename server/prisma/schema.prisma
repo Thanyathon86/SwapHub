@@ -217,6 +217,10 @@ enum AuditAction {
   USER_SUSPENDED
   USER_REACTIVATED
   REVIEW_REMOVED
+  LISTING_APPROVED
+  LISTING_REJECTED
+  CATALOG_CHANGED
+  TICKET_CLOSED
 }
 
 // บันทึกว่า admin คนไหนทำอะไรกับใคร ไว้ตรวจย้อนหลังเมื่อมีการใช้สิทธิ์ผิด
@@ -226,14 +230,17 @@ model AuditLog {
   actorId      String      @db.Uuid
   actor        User        @relation("AuditActor", fields: [actorId], references: [id])
   action       AuditAction
-  targetUserId String      @db.Uuid
-  targetUser   User        @relation("AuditTarget", fields: [targetUserId], references: [id])
-  // เหตุผลที่ admin กรอก (เช่นตอนซ่อนรีวิว) ไว้ให้ตรวจย้อนหลังว่าใช้สิทธิ์สมเหตุสมผลไหม
+  // null เมื่อการกระทำไม่ได้เจาะจงผู้ใช้คนเดียว เช่น แก้ข้อมูลเกม รายละเอียดอยู่ใน detail
+  targetUserId String?     @db.Uuid
+  // ระบุ Restrict เอง เพราะ relation แบบ null ได้จะเป็น SetNull โดยปริยาย ซึ่งทำให้ประวัติเสียว่าใครถูกกระทำ
+  targetUser   User?       @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+  // เหตุผลที่ admin กรอก (เช่นตอนซ่อนรีวิว) หรือสิ่งที่ถูกแก้ ไว้ตรวจย้อนหลังว่าใช้สิทธิ์สมเหตุสมผลไหม
   detail       String?
   createdAt    DateTime    @default(now())
 
   @@index([createdAt])
   @@index([targetUserId])
+  @@index([action, createdAt])
 }
 
 enum EventType {

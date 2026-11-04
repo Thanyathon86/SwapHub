@@ -65,6 +65,10 @@ const auditIcons: Record<AuditAction, IconName> = {
   USER_SUSPENDED: 'ban',
   USER_REACTIVATED: 'refresh',
   REVIEW_REMOVED: 'star',
+  LISTING_APPROVED: 'tag',
+  LISTING_REJECTED: 'tag',
+  CATALOG_CHANGED: 'cards',
+  TICKET_CLOSED: 'message',
 }
 
 const securityRows: { key: keyof Dashboard['security24h']; type: EventType; label: string }[] = [
@@ -167,7 +171,8 @@ export default function DashboardPage() {
                       <Icon name={auditIcons[log.action]} className="size-4.5" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-slate-800">{log.targetUser.displayName}</div>
+                      {/* การแก้เกมหรือบริษัทเกรดไม่มีผู้ใช้เป้าหมาย แสดงว่าแก้อะไรแทน */}
+                      <div className="truncate text-sm font-medium text-slate-800">{log.targetUser?.displayName ?? log.detail}</div>
                       <div className="truncate text-xs text-slate-500">
                         โดย {log.actor.displayName} · {formatDateTime(log.createdAt)}
                       </div>

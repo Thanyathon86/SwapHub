@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { processImage } from '../../lib/images.js'
 import { prisma } from '../../lib/prisma.js'
 import { removeFile, saveFile } from '../../lib/storage.js'
+import { recordAudit } from '../audit/audit.service.js'
 import { cancelPendingOffers } from '../offers/cancelPendingOffers.js'
 import { ratingOf } from '../reviews/reviews.service.js'
 import type {
@@ -307,22 +308,32 @@ export const listForReview = async ({ status, page }: AdminListingsQuery) => {
   return { listings, total, page, pageSize: PAGE_SIZE }
 }
 
-export const reviewListing = async (adminId: string, id: string, input: ReviewListingInput) => {
-  const approved = input.decision === 'APPROVE'
-  // where มี status กัน admin สองคนตรวจประกาศเดียวกันพร้อมกันแล้วผลทับกัน
-  const { count } = await prisma.listing.updateMany({
-    where: { id, status: 'PENDING_REVIEW' },
-    data: {
-      status: approved ? 'ACTIVE' : 'REJECTED',
-      rejectReason: approved ? null : input.reason,
-      reviewedById: adminId,
-      reviewedAt: new Date(),
-    },
+export const reviewListing = (adminId: string, id: string, input: ReviewListingInput) =>
+  prisma.$transaction(async (tx) => {
+    const approved = input.decision === 'APPROVE'
+    // where มี status กัน admin สองคนตรวจประกาศเดียวกันพร้อมกันแล้วผลทับกัน
+    const { count } = await tx.listing.updateMany({
+      where: { id, status: 'PENDING_REVIEW' },
+      data: {
+        status: approved ? 'ACTIVE' : 'REJECTED',
+        rejectReason: approved ? null : input.reason,
+        reviewedById: adminId,
+        reviewedAt: new Date(),
+      },
+    })
+    if (count === 0) {
+      const exists = await tx.listing.count({ where: { id } })
+      if (!exists) throw notFound()
+      throw new AppError(409, 'LISTING_ALREADY_REVIEWED', 'Listing has already been reviewed')
+    }
+    const listing = await tx.listing.findUniqueOrThrow({ where: { id }, include: adminInclude })
+    // reviewedById ถูกล้างเมื่อผู้ขายแก้ประกาศ ประวัติว่าใครตรวจอะไรจึงต้องอยู่ที่นี่ และเก็บชื่อการ์ด ณ ตอนตรวจไว้ด้วย
+    const subject = `ประกาศ "${listing.title}" (${id})`
+    await recordAudit(tx, {
+      actorId: adminId,
+      action: approved ? 'LISTING_APPROVED' : 'LISTING_REJECTED',
+      targetUserId: listing.sellerId,
+      detail: approved ? subject : `${subject}: ${input.reason}`,
+    })
+    return listing
   })
-  if (count === 0) {
-    const exists = await prisma.listing.count({ where: { id } })
-    if (!exists) throw notFound()
-    throw new AppError(409, 'LISTING_ALREADY_REVIEWED', 'Listing has already been reviewed')
-  }
-  return prisma.listing.findUniqueOrThrow({ where: { id }, include: adminInclude })
-}

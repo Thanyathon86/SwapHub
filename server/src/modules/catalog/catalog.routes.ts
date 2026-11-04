@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { getAuthUser } from '../../middleware/requireAuth.js'
 import { uploadImage } from '../../middleware/uploadImage.js'
 import { validate } from '../../middleware/validate.js'
 import {
@@ -24,23 +25,23 @@ catalogAdminRouter.get('/games', async (_req, res) => {
 })
 
 catalogAdminRouter.post('/games', validate({ body: createGameSchema }), async (req, res) => {
-  res.status(201).json({ game: await catalogService.createGame(req.body as CreateGameInput) })
+  res.status(201).json({ game: await catalogService.createGame(getAuthUser(req).id, req.body as CreateGameInput) })
 })
 
 catalogAdminRouter.patch('/games/:id', validate({ params: idParams, body: updateGameSchema }), async (req, res) => {
   const { id } = req.params as IdParams
-  res.json({ game: await catalogService.updateGame(id, req.body as UpdateGameInput) })
+  res.json({ game: await catalogService.updateGame(getAuthUser(req).id, id, req.body as UpdateGameInput) })
 })
 
 catalogAdminRouter.post('/games/:id/image', validate({ params: idParams }), uploadImage, async (req, res) => {
   const { id } = req.params as IdParams
   // uploadImage รับประกันว่ามี req.file แล้ว
-  res.json({ game: await catalogService.setGameImage(id, req.file!.buffer) })
+  res.json({ game: await catalogService.setGameImage(getAuthUser(req).id, id, req.file!.buffer) })
 })
 
 catalogAdminRouter.delete('/games/:id/image', validate({ params: idParams }), async (req, res) => {
   const { id } = req.params as IdParams
-  res.json({ game: await catalogService.removeGameImage(id) })
+  res.json({ game: await catalogService.removeGameImage(getAuthUser(req).id, id) })
 })
 
 catalogAdminRouter.get('/grading-companies', async (_req, res) => {
@@ -48,7 +49,7 @@ catalogAdminRouter.get('/grading-companies', async (_req, res) => {
 })
 
 catalogAdminRouter.post('/grading-companies', validate({ body: createGradingCompanySchema }), async (req, res) => {
-  const gradingCompany = await catalogService.createGradingCompany(req.body as CreateGradingCompanyInput)
+  const gradingCompany = await catalogService.createGradingCompany(getAuthUser(req).id, req.body as CreateGradingCompanyInput)
   res.status(201).json({ gradingCompany })
 })
 
@@ -57,7 +58,7 @@ catalogAdminRouter.patch(
   validate({ params: idParams, body: updateGradingCompanySchema }),
   async (req, res) => {
     const { id } = req.params as IdParams
-    const gradingCompany = await catalogService.updateGradingCompany(id, req.body as UpdateGradingCompanyInput)
+    const gradingCompany = await catalogService.updateGradingCompany(getAuthUser(req).id, id, req.body as UpdateGradingCompanyInput)
     res.json({ gradingCompany })
   },
 )

@@ -75,5 +75,5 @@ supportAdminRouter.post('/tickets/:id/assign', validate({ params: ticketIdParams
 
 supportAdminRouter.post('/tickets/:id/close', validate({ params: ticketIdParams }), async (req, res) => {
   const { id } = req.params as TicketIdParams
-  res.json({ ticket: await supportService.closeTicket(id) })
+  res.json({ ticket: await supportService.closeTicket(getAuthUser(req).id, id) })
 })

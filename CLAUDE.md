@@ -26,7 +26,7 @@
 | `Review` | คะแนน 1–5 + ความเห็นที่คู่ดีลให้กันหลัง offer `ACCEPTED` ฝ่ายละหนึ่งรีวิวต่อดีล (unique `offerId + reviewerId`) แก้ได้ภายใน 30 วันหลังตอบรับ admin ซ่อนได้ (`removedAt`, ไม่ลบแถวจริง) |
 | `OfferItem` | ประกาศของผู้ขอที่เอามาแลกใน `Offer` |
 | `OfferMessage` | แชทระหว่างสองฝ่ายใน `Offer` แก้/ลบไม่ได้ |
-| `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร หรือซ่อนรีวิวของใคร (`AuditAction`, เหตุผลอยู่ใน `detail`) มีแค่ API อ่าน ห้ามเพิ่ม API แก้หรือลบ |
+| `AuditLog` | บันทึกว่า admin คนไหนเปลี่ยนบทบาท/สถานะของใคร ซ่อนรีวิว ตรวจประกาศ แก้เกมหรือบริษัทเกรด หรือปิดเรื่องที่แจ้ง (`AuditAction`, เหตุผลหรือสิ่งที่ถูกแก้อยู่ใน `detail`, `targetUserId` เป็น null เมื่อไม่ได้เจาะจงผู้ใช้คนเดียว) มีแค่ API อ่าน (กรองด้วย `action`) ห้ามเพิ่ม API แก้หรือลบ |
 | `EventLog` | log เหตุการณ์ (`EventType`: ล็อกอิน, rate limit, access denied, server error) ลบอัตโนมัติเมื่อเกิน `LOG_RETENTION_DAYS` (default 60) |
 | `PasswordResetToken` | ลิงก์ลืมรหัสผ่าน เก็บแค่ sha256, หมดอายุ 30 นาที, ใช้ได้ครั้งเดียว ขอใหม่แล้วอันเก่าใช้ไม่ได้ |
 | `SupportTicket` | เรื่องที่ user แจ้ง admin มี `status`: `OPEN` (รอทีมงาน) ⇄ `ANSWERED` (รอผู้ใช้) → `CLOSED` และ `assigneeId` (admin ที่รับเรื่อง) |
@@ -91,7 +91,7 @@ server/   Express 5 + Prisma 7 (adapter-pg) + PostgreSQL 18 + zod 4 + TypeScript
 | `server/` | `npm run typecheck` | ตรวจ type ทั้ง `src/` และ `test/` |
 | `server/` | `npm test` | รัน test (Vitest + Supertest) กับ DB `<ชื่อ DB>_test` ที่สร้างและ migrate ให้อัตโนมัติ |
 | `server/` | `npm run build` | compile ไป `dist/` |
-| `server/` | `npm run db:migrate` | สร้าง migration และอัปเดตตารางตาม `schema.prisma` |
+| `server/` | `npm run db:migrate` | สร้าง migration และอัปเดตตารางตาม `schema.prisma` (Prisma 7 ไม่สร้าง client ให้ ต้องรัน `db:generate` ต่อ) |
 | `server/` | `npm run db:generate` | สร้าง Prisma Client ใหม่ (ไปที่ `src/generated/prisma`, ไม่ commit) |
 | `server/` | `npm run db:studio` | เปิดดูข้อมูลใน DB |
 | `server/` | `npm run db:seed` | ลงเกม/บริษัทเกรดเริ่มต้น และสร้าง admin ถ้าตั้ง `ADMIN_EMAIL`/`ADMIN_PASSWORD` ไว้ (รันซ้ำได้ ไม่ยกบัญชีผู้ใช้ที่มีอยู่เป็น admin และไม่รับรหัสตัวอย่างหรือรหัสเดาง่าย) |
@@ -157,7 +157,7 @@ shared/src/                 import ด้วย '@shared/...' (alias ใน vite
 - `shared/` ห้าม import จาก `client/` หรือ `admin/` ใส่เฉพาะของที่ทั้งสองแอปใช้จริง เพราะแก้ shared พังจะพังทั้งคู่ ของที่ใช้แอปเดียวให้อยู่ในแอปนั้น
 - แก้ `shared/` แล้วต้อง build ทั้ง client และ admin
 - admin ตั้ง/ถอดสิทธิ์ admin คนอื่นได้ (`PATCH /api/admin/users/:id/role`) แต่แก้บัญชีตัวเองไม่ได้ ทำให้เหลือ admin อย่างน้อย 1 คนเสมอ ระงับ admin ตรง ๆ ไม่ได้ต้องถอดสิทธิ์ก่อน เปลี่ยน role แล้วลบ session ทั้งหมดของคนนั้น
-- การกระทำของ admin ที่กระทบผู้ใช้ ให้บันทึกด้วย `recordAudit(tx, ...)` ใน transaction เดียวกับการเปลี่ยนแปลง
+- การกระทำของ admin ที่กระทบผู้ใช้ ให้บันทึกด้วย `recordAudit(tx, ...)` ใน transaction เดียวกับการเปลี่ยนแปลง บันทึกเฉพาะที่เปลี่ยนจริง ถ้ากระทบหลายคนไม่ต้องใส่ `targetUserId` แล้วบอกรายละเอียดใน `detail` การ์ดบน dashboard ไม่นับ `LISTING_APPROVED` เพราะเป็นงานประจำจำนวนมาก
 - เหตุการณ์ด้านความปลอดภัยให้บันทึกด้วย `logEvent(req, ...)` จาก `lib/events.ts` (ไม่ await, พลาดแล้ว request ไม่ล้ม) ห้ามใส่รหัสผ่าน, token, body หรือ error message เต็มลง log เหตุการณ์ที่อาจถูกยิงรัว ๆ ใช้ `logEventThrottled`
 - งานกวาดข้อมูลเก่า (session หมดอายุ, EventLog เกินกำหนด) อยู่ใน `index.ts` รันทุกชั่วโมง
 - อีเมลของผู้ใช้ไม่ส่งให้คนอื่นเห็น ยกเว้น admin และคู่ offer ที่ `ACCEPTED` แล้ว (ไว้ติดต่อนอกระบบหลังตกลงกัน)

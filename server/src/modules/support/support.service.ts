@@ -1,6 +1,7 @@
 import type { Prisma } from '../../generated/prisma/client.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
+import { recordAudit } from '../audit/audit.service.js'
 import type { AdminTicketsQuery, CreateTicketInput } from './support.schema.js'
 
 // กันผู้ใช้คนเดียวเปิดเรื่องรัว ๆ จนคิวทีมงานเต็ม
@@ -136,7 +137,15 @@ export const assignTicket = async (adminId: string, id: string) => {
   return getTicket(id)
 }
 
-export const closeTicket = async (id: string) => {
-  await updateOpenTicket(prisma, scope(id), { status: 'CLOSED', closedAt: new Date() })
+// ผู้ใช้ตอบต่อในเรื่องที่ปิดแล้วไม่ได้ จึงต้องรู้ว่า admin คนไหนปิด ส่วนที่ผู้ใช้ปิดเรื่องของตัวเองไม่ต้องลง log
+export const closeTicket = async (adminId: string, id: string) => {
+  await prisma.$transaction(async (tx) => {
+    await updateOpenTicket(tx, scope(id), { status: 'CLOSED', closedAt: new Date() })
+    const { userId, subject } = await tx.supportTicket.findUniqueOrThrow({
+      where: { id },
+      select: { userId: true, subject: true },
+    })
+    await recordAudit(tx, { actorId: adminId, action: 'TICKET_CLOSED', targetUserId: userId, detail: `เรื่อง "${subject}" (${id})` })
+  })
   return getTicket(id)
 }
